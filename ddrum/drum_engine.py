@@ -1,7 +1,10 @@
+"""
+    TODO    :   Base class with upsampler, get_rate.
+"""
+
 import numpy as np
 from scipy.signal import resample as resample
 from parameters import SAMPLE_RATE, CONTROL_RATE
-
 
 class ADSR:
     """
@@ -44,6 +47,10 @@ class ADSR:
 
     def __call__(self, dur):
         return self.play(dur)
+
+    @staticmethod
+    def get_rate():
+        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
 
     def get_a(self):
         return self.__a
@@ -141,6 +148,10 @@ class VCO:
         self.set_f0(f0)
         return self.play()
 
+    @staticmethod
+    def get_rate():
+        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
+
     def get_f0(self):
         return self.__f0
 
@@ -166,3 +177,55 @@ class VCO:
         out_length = len(f0) * SAMPLE_RATE / CONTROL_RATE
         up_sampled = resample(f0, int(out_length))
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
+
+
+class VCA:
+    """
+    Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
+
+    """
+
+    def __init__(self):
+        self.__envelope = np.array([])
+        self.__audio = np.array([])
+
+    def __call__(self, envelope, audio):
+        self.set_envelope(envelope)
+        self.set_audio(audio)
+        return self.play()
+
+    def get_envelope(self):
+        return self.__envelope
+
+    def set_envelope(self, envelope):
+        envelope = np.clip(envelope, 0, 1)
+        self.__envelope = envelope
+
+    def get_audio(self):
+        return self.__audio
+
+    def set_audio(self, audio):
+        audio = np.clip(audio, -1, 1)
+        self.__audio = audio
+
+    @staticmethod
+    def get_rate():
+        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
+
+    @staticmethod
+    def to_sample_rate(x):
+        out_length = len(x) * SAMPLE_RATE / CONTROL_RATE
+        return resample(x, int(out_length))
+
+    @staticmethod
+    def fix_length(x, length):
+        if len(x) < length:
+            x = np.pad(x, [0, length - len(x)])
+        elif len(x) > length:
+            x = x[:length]
+        return x
+
+    def play(self):
+        amp = self.to_sample_rate(self.get_envelope())
+        signal = self.fix_length(self.get_audio(), len(amp))
+        return amp * signal
