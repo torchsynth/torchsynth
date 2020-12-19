@@ -111,7 +111,7 @@ class ADSR:
         return self._release
 
     def play(self, dur):
-        return np.concatenate((self.note_on(), np.full(dur*CONTROL_RATE, self.get_s()), self.note_off()))
+        return np.concatenate((self.note_on(), np.full(int(dur*CONTROL_RATE), self.get_s()), self.note_off()))
 
 
 class VCO:
