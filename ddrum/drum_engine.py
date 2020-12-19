@@ -1,23 +1,52 @@
 """
-    TODO    :   Base class with upsampler, get_rate.
+    TODO    :   - VCA is slow. Blocks? Not sure what's best for tensors.
+                - Convert operations to tensors, obvs.
 """
 
 import numpy as np
 from scipy.signal import resample as resample
 from parameters import SAMPLE_RATE, CONTROL_RATE
 
-class ADSR:
+
+class SynthModule:
+    """
+    Base class for synthesis modules. Mostly helper functions for the moment.
+
+    """
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def get_rate():
+        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
+
+    @staticmethod
+    def to_sample_rate(x):
+        out_length = len(x) * SAMPLE_RATE / CONTROL_RATE
+        return resample(x, int(out_length))
+
+    @staticmethod
+    def fix_length(x, length):
+        if len(x) < length:
+            x = np.pad(x, [0, length - len(x)])
+        elif len(x) > length:
+            x = x[:length]
+        return x
+
+
+class ADSR(SynthModule):
     """
     Envelope class for building a control rate ADSR signal. Use play() to output envelope.
 
     Parameters
     ----------
 
-    a (flt)     :   attack time (sec)
-    d (flt)     :   decay time (sec)
-    s (flt)     :   sustain value between 0-1
-    r (flt)     :   release time (sec)
-    alpha (flt) :   envelope curve. 1 is linear envelope, >1 is exponential.
+    a (flt)             :   attack time (sec)
+    d (flt)             :   decay time (sec)
+    s (flt)             :   sustain value between 0-1
+    r (flt)             :   release time (sec)
+    alpha (flt)         :   envelope curve. 1 is linear envelope, >1 is exponential
+    sustain_for (flt)   :   sustain length (sec)
 
     Examples
     --------
@@ -27,12 +56,14 @@ class ADSR:
 
     """
 
-    def __init__(self, a=0.25, d=0.25, s=0.5, r=0.5, alpha=3):
+    def __init__(self, a=0.25, d=0.25, s=0.5, r=0.5, alpha=3, sustain_for=0.5):
+        SynthModule.__init__(self)
         self.__a = 0
         self.__d = 0
         self.__s = 0
         self.__r = 0
         self.__alpha = 0
+        self.__sustain_for = 0
 
         self._attack = np.array([])
         self._decay = np.array([])
@@ -44,13 +75,11 @@ class ADSR:
         self.set_a(a)
         self.set_d(d)
         self.set_r(r)
+        self.set_sustain_for(sustain_for)
 
     def __call__(self, dur):
-        return self.play(dur)
-
-    @staticmethod
-    def get_rate():
-        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
+        self.set_sustain_for(dur)
+        return self.play()
 
     def get_a(self):
         return self.__a
@@ -107,6 +136,15 @@ class ADSR:
         else:
             self.__alpha = alpha
 
+    def get_sustain_for(self):
+        return self.__sustain_for
+
+    def set_sustain_for(self, val):
+        if val < 0:
+            self.__sustain_for = 0
+        else:
+            self.__sustain_for = val
+
     def __ramp(self, value):
         t = np.linspace(0, value, int(value*CONTROL_RATE), endpoint=False)
         return (t/value)**self.__alpha
@@ -117,11 +155,13 @@ class ADSR:
     def note_off(self):
         return self._release
 
-    def play(self, dur):
-        return np.concatenate((self.note_on(), np.full(int(dur*CONTROL_RATE), self.get_s()), self.note_off()))
+    def play(self):
+        return np.concatenate((self.note_on(),
+                               np.full(int(self.get_sustain_for()*CONTROL_RATE), self.get_s()),
+                               self.note_off()))
 
 
-class VCO:
+class VCO(SynthModule):
     """
     Voltage controlled oscillator. Accepts control rate instantaneous frequency, outputs audio.
 
@@ -141,16 +181,13 @@ class VCO:
     """
 
     def __init__(self):
+        SynthModule.__init__(self)
         self.__f0 = []
         self.__phase = 0
 
     def __call__(self, f0):
         self.set_f0(f0)
         return self.play()
-
-    @staticmethod
-    def get_rate():
-        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
 
     def get_f0(self):
         return self.__f0
@@ -172,20 +209,19 @@ class VCO:
         self.set_phase(arg[-1])
         return np.cos(arg)
 
-    @staticmethod
-    def to_arg(f0):
-        out_length = len(f0) * SAMPLE_RATE / CONTROL_RATE
-        up_sampled = resample(f0, int(out_length))
+    def to_arg(self, f0):
+        up_sampled = self.to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
 
-class VCA:
+class VCA(SynthModule):
     """
     Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
 
     """
 
     def __init__(self):
+        SynthModule.__init__(self)
         self.__envelope = np.array([])
         self.__audio = np.array([])
 
@@ -207,23 +243,6 @@ class VCA:
     def set_audio(self, audio):
         audio = np.clip(audio, -1, 1)
         self.__audio = audio
-
-    @staticmethod
-    def get_rate():
-        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
-
-    @staticmethod
-    def to_sample_rate(x):
-        out_length = len(x) * SAMPLE_RATE / CONTROL_RATE
-        return resample(x, int(out_length))
-
-    @staticmethod
-    def fix_length(x, length):
-        if len(x) < length:
-            x = np.pad(x, [0, length - len(x)])
-        elif len(x) > length:
-            x = x[:length]
-        return x
 
     def play(self):
         amp = self.to_sample_rate(self.get_envelope())
