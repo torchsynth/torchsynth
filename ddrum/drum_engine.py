@@ -101,7 +101,7 @@ class ADSR:
             self.__alpha = alpha
 
     def __ramp(self, value):
-        t = np.linspace(0, value, value*CONTROL_RATE, endpoint=False)
+        t = np.linspace(0, value, int(value*CONTROL_RATE), endpoint=False)
         return (t/value)**self.__alpha
 
     def note_on(self):
