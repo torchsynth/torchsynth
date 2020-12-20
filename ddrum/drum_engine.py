@@ -77,7 +77,7 @@ class ADSR(SynthModule):
         self.set_r(r)
         self.set_sustain_for(sustain_for)
 
-    def __call__(self, dur):
+    def __call__(self, dur=0):
         self.set_sustain_for(dur)
         return self.play()
 
