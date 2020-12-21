@@ -130,3 +130,6 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+# Audio demos stay local
+/tests/audio_out/
