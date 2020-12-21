@@ -5,7 +5,7 @@
 
 import numpy as np
 from scipy.signal import resample as resample
-from parameters import SAMPLE_RATE, CONTROL_RATE
+from ddrum.parameters import SAMPLE_RATE, CONTROL_RATE
 
 
 class SynthModule:
