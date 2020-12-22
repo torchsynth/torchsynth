@@ -16,7 +16,9 @@ class SynthModule:
     Base class for synthesis modules. Mostly helper functions for the moment.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE):
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
         self.sample_rate = SAMPLE_RATE
         self.control_rate = CONTROL_RATE
 
@@ -54,7 +56,16 @@ class ADSR(SynthModule):
     Envelope class for building a control rate ADSR signal
     """
 
-    def __init__(self, a: float =0.25, d: float =0.25, s: float =0.5, r: float =0.5, alpha: float =3.0, sample_rate: int =SAMPLE_RATE, control_rate :int =CONTROL_RATE):
+    def __init__(
+        self,
+        a: float = 0.25,
+        d: float = 0.25,
+        s: float = 0.5,
+        r: float = 0.5,
+        alpha: float = 3.0,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
         """
         Parameters
         ----------
@@ -75,7 +86,7 @@ class ADSR(SynthModule):
         self.a = a
 
         # TODO: WHY? does it have to have an upper bound of 1?
-        assert d >=0 and d <= 1
+        assert d >= 0 and d <= 1
         self.d = d
 
         assert r >= 0
@@ -103,12 +114,14 @@ class ADSR(SynthModule):
     @property
     def attack(self):
         return self._ramp(self.a)
+
     # I don't really under why we don't define sustain here
     # even it's simple, just to be clear
     @property
     def decay(self):
         # TODO: This is a bit obtuse and would be great to explain
         return self._ramp(self.d)[::-1] * (1 - self.s) + self.s
+
     def sustain(self, duration):
         return np.full(round(int(duration * CONTROL_RATE)), fill_value=self.s)
 
@@ -130,11 +143,16 @@ class ADSR(SynthModule):
         Create a ramp function for a certain duration in seconds,
         applying the envelope curve and returning it in control rate.
         """
-        t = np.linspace(0, duration, int(round(duration * self.control_rate)), endpoint=False)
+        t = np.linspace(
+            0, duration, int(round(duration * self.control_rate)), endpoint=False
+        )
         return (t / duration) ** self.alpha
 
     def __str__(self):
-        return f"ADRS(a={self.a}, d={self.d}, s={self.s}, r={self.r}, alpha={self.alpha})"
+        return (
+            f"ADRS(a={self.a}, d={self.d}, s={self.s}, r={self.r}, alpha={self.alpha})"
+        )
+
 
 class VCO(SynthModule):
     """
@@ -155,7 +173,9 @@ class VCO(SynthModule):
 
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE):
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.__f0 = []
         self.__phase = 0
@@ -195,7 +215,9 @@ class VCA(SynthModule):
 
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE):
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.__envelope = np.array([])
         self.__audio = np.array([])
