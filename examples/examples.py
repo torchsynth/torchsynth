@@ -5,12 +5,14 @@
 # Just note that all ipd.Audio play widgets normalize the audio.
 
 # +
+# %load_ext autoreload
+# %autoreload 2
 # %matplotlib inline
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from ddrum.drum_engine import ADSR, VCO, VCA
+from ddspdrum.module import ADSR, VCO, VCA
 from scipy.signal import stft as stft
 from scipy.io import wavfile as wavfile
 import librosa.display
@@ -31,37 +33,34 @@ f0 = 440
 dur = a + d + r + sustain_for
 
 # Envelope test
-myADSR = ADSR(a, d, s, r, alpha)
+adsr = ADSR(a, d, s, r, alpha)
 # TODO: Can you explain the envelope here?
-env = myADSR(sustain_for)
+env = adsr(sustain_for)
 
-t_cr = np.linspace(0, dur, int(dur * myADSR.get_rate()['control']), endpoint=False)
-t_sr = np.linspace(0, dur, int(dur * myADSR.get_rate()['sample']), endpoint=False)
+# Let's avoid cryptic variables names when possible
+t_cr = np.linspace(0, dur, int(dur * adsr.control_rate), endpoint=False)
+t_sr = np.linspace(0, dur, int(dur * adsr.sample_rate), endpoint=False)
 
 plt.plot(t_cr, env)
-plt.title('a={}, d={}, s={}, r={}, alpha={}'.format(myADSR.get_a(),
-                                                    myADSR.get_d(),
-                                                    myADSR.get_s(),
-                                                    myADSR.get_r(),
-                                                    myADSR.get_alpha()))
+plt.title(adsr)
 plt.xlabel('time (sec)')
 plt.ylabel('amplitude')
 plt.show()
 
 # VCO test
 test_f0 = f0*(env + 1)
-myVCO = VCO()
-vco_out = myVCO(test_f0)
+vco = VCO()
+vco_out = vco(test_f0)
 
 # +
 X = librosa.stft(vco_out)
 Xdb = librosa.amplitude_to_db(abs(X))
 plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=myADSR.get_rate()['sample'], x_axis='time', y_axis='hz')
+librosa.display.specshow(Xdb, sr=vco.sample_rate, x_axis='time', y_axis='hz')
 plt.ylim(0, 2000)
 plt.show()
 
-ipd.Audio(vco_out, rate=myADSR.get_rate()['sample'])
+ipd.Audio(vco_out, rate=vco.sample_rate)
 # -
 
 # VCA test
