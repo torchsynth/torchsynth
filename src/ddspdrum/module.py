@@ -160,17 +160,11 @@ class VCO(SynthModule):
 
     TODO: more than just cosine.
 
-    Parameters
-    ---------
-
-    None.
-
     Examples
     --------
 
     >>> myVCO = VCO()
     >>> two_8ve_chirp = myVCO(np.linspace(440, 1760, 1000))
-
     """
 
     def __init__(
@@ -208,11 +202,9 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
-
 class VCA(SynthModule):
     """
     Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
-
     """
 
     def __init__(

@@ -64,8 +64,8 @@ ipd.Audio(vco_out, rate=vco.sample_rate)
 # -
 
 # VCA test
-myVCA = VCA()
-vca_out = myVCA(env, vco_out)
+vca = VCA()
+vca_out = vca(env, vco_out)
 
 # +
 plt.plot(t_sr, vca_out)
@@ -76,12 +76,11 @@ plt.show()
 X = librosa.stft(vca_out)
 Xdb = librosa.amplitude_to_db(abs(X))
 plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=myADSR.get_rate()['sample'], x_axis='time', y_axis='hz')
+librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis='time', y_axis='hz')
 plt.ylim(0, 2000)
 plt.show()
 
-# This is weird, why do we grab the sample rate from myADSR and not myVCA?
-ipd.Audio(vca_out, rate=myADSR.get_rate()['sample'])
+ipd.Audio(vca_out, rate=vca.sample_rate)
 # -
 
 
