@@ -115,8 +115,6 @@ class ADSR(SynthModule):
     def attack(self):
         return self._ramp(self.a)
 
-    # I don't really under why we don't define sustain here
-    # even it's simple, just to be clear
     @property
     def decay(self):
         # TODO: This is a bit obtuse and would be great to explain
