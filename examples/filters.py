@@ -15,11 +15,11 @@
 
 # # Filter Examples
 #
-# Example usage of two types of filters. A finite impulse response lowpass and an infinite impulse response state variable filter.
+# Example usage of three types of filters. Two finite impulse response (FIR) lowpasses and an infinite impulse response (IIR) state variable filter.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ddrum.drum_engine import SVF, FIR
+from ddrum.drum_engine import SVF, FIR, MovingAverage
 import ddrum.dsp_utils as utils
 import IPython.display as ipd
 
@@ -36,6 +36,8 @@ plt.specgram(noise, Fs=sample_rate)
 plt.show()
 # -
 
+# **FIR - Windowed Sinc**
+#
 # Finite Impulse Response (FIR) lowpass with a cutoff frequency of 5000Hz. Filter length controls the slope of the cutoff. A longer filter will have a sharper cutoff.
 
 # +
@@ -60,6 +62,32 @@ plt.specgram(filtered_fir, Fs=sample_rate)
 plt.show()
 # -
 
+# **FIR - Moving Average**
+
+# +
+ma_lpf = MovingAverage()
+filtered_ma = ma_lpf(noise)
+ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
+
+# Plot Spectrogram
+plt.specgram(filtered_ma, Fs=sample_rate)
+plt.show()
+# -
+
+# Moving average with a longer filter
+
+# +
+ma_lpf = MovingAverage(filter_length=64)
+filtered_ma = ma_lpf(noise)
+ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
+
+# Plot Spectrogram
+plt.specgram(filtered_ma, Fs=sample_rate)
+plt.show()
+# -
+
+# **IIR -State Variable Filter**
+#
 # State variable filter with the same cutoff -- the slope is much more relaxed with this filter
 
 # +
@@ -76,6 +104,30 @@ plt.show()
 
 # +
 svf = SVF(mode='LPF', cutoff=5000, resonance=20.0)
+filtered_svf = svf(noise)
+ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
+
+# Plot Spectrogram
+plt.specgram(filtered_svf, Fs=sample_rate)
+plt.show()
+# -
+
+# SVF as a high-pass filter
+
+# +
+svf = SVF(mode='HPF', cutoff=5000, resonance=20.0)
+filtered_svf = svf(noise)
+ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
+
+# Plot Spectrogram
+plt.specgram(filtered_svf, Fs=sample_rate)
+plt.show()
+# -
+
+# SVF as a band-pass filter
+
+# +
+svf = SVF(mode='BPF', cutoff=5000, resonance=20.0)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 

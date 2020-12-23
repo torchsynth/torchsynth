@@ -268,6 +268,10 @@ class SVF(SynthModule):
 
     def __call__(self, audio: np.ndarray, cutoff_mod: np.ndarray = None,
                  cutoff_mod_amount: float = 0.0) -> np.ndarray:
+        """
+        Process audio samples
+        """
+
         h = np.zeros(2)
         y = np.zeros_like(audio)
 
@@ -333,9 +337,13 @@ class FIR(SynthModule):
         self.cutoff = cutoff
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
+        """
+        Filter audio samples
+        TODO: Cutoff frequency modulation, if there is an efficient way to do it
+        """
+
         impulse = self.windowed_sinc(self.cutoff, self.filter_length)
         y = np.convolve(audio, impulse)
-
         return y
 
 
@@ -347,6 +355,7 @@ class FIR(SynthModule):
 
         ir = np.zeros(filter_length + 1)
         omega = 2 * np.pi * cutoff / self.sample_rate
+
         for i in range(filter_length + 1):
             n = (i - filter_length / 2)
             if n != 0:
@@ -360,3 +369,23 @@ class FIR(SynthModule):
         ir /= omega
 
         return ir
+
+
+class MovingAverage(SynthModule):
+    """
+    A finite impulse response moving average filter
+    """
+
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
+        super().__init__()
+        self.sample_rate = sample_rate
+        self.filter_length = filter_length
+
+    def __call__(self, audio: np.ndarray) -> np.ndarray:
+        """
+        Filter audio samples
+        """
+
+        impulse = np.ones(self.filter_length) / self.filter_length
+        y = np.convolve(audio, impulse)
+        return y
