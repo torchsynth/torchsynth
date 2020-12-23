@@ -306,6 +306,8 @@ class SVF(SynthModule):
                 y[i] = lpf
             elif self.mode == 'BPF':
                 y[i] = bpf
+            elif self.mode == 'BSF':
+                y[i] = hpf + lpf
             else:
                 y[i] = hpf
 

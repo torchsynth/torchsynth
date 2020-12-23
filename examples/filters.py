@@ -136,6 +136,18 @@ plt.specgram(filtered_svf, Fs=sample_rate)
 plt.show()
 # -
 
+# SVF as a band-stop filter (no resonance now)
+
+# +
+svf = SVF(mode='BSF', cutoff=5000)
+filtered_svf = svf(noise)
+ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
+
+# Plot Spectrogram
+plt.specgram(filtered_svf, Fs=sample_rate)
+plt.show()
+# -
+
 # **Kick drum with SVF**
 #
 # With high resonance and an envelope applied to the cutoff frequency we can get something like a kick drum. To get the filter resonating we can use a short burst of noise.
@@ -156,9 +168,3 @@ svf = SVF(mode='LPF', cutoff=45, resonance=50)
 kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
-
-# + pycharm={"name": "#%%\n"}
-
-# -
-
-
