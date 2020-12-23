@@ -133,3 +133,5 @@ dmypy.json
 
 # Audio demos stay local
 /tests/audio_out/
+
+*.ipynb
