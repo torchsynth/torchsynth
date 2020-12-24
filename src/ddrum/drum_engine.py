@@ -252,9 +252,9 @@ class VCA(SynthModule):
 
 class SVF(SynthModule):
     """
-    A State Variable Filter
-
-    Recursive filter structure for low-pass
+    A State Variable Filter that can do lowpass, highpass, bandpass, and bandreject
+    filtering. Allows modulation of the cutoff frequency and an adjustable resonance
+    parameter. Can self-oscillate to make a sine / cosine wave.
     """
 
     def __init__(self, mode: str = 'LPF', cutoff: float = 1000, resonance: float = 0.707,
