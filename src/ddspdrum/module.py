@@ -70,8 +70,10 @@ class ADSR(SynthModule):
         Parameters
         ----------
         a                   :   attack time (sec), >= 0
-        d                   :   decay time (sec) in [0, 1]
-        s                   :   sustain amplitude between 0-1
+        d                   :   decay time (sec), >= 0
+        s                   :   sustain amplitude between 0-1. The only part of
+                                ADSR that (confusingly, by convention) is not in
+                                the seconds domain.
         r                   :   release time (sec), >= 0
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is exponential.
         """
@@ -85,18 +87,17 @@ class ADSR(SynthModule):
         assert a >= 0
         self.a = a
 
-        # TODO: WHY? does it have to have an upper bound of 1?
-        assert d >= 0 and d <= 1
+        assert d >= 0
         self.d = d
 
         assert r >= 0
         self.r = r
 
-    def __call__(self, duration):
+    def __call__(self, sustain_duration):
         """
         Play, for some duration in seconds.
         """
-        assert duration >= 0
+        assert sustain_duration >= 0
         return np.concatenate(
             (
                 # Is this the DSP-way of thinking about it, (note on and note off)
@@ -106,7 +107,7 @@ class ADSR(SynthModule):
                 # defined in __init__. How common is it to create a module and
                 # with fixed settings and use it several times with different
                 # duration?
-                self.sustain(duration),
+                self.sustain(sustain_duration),
                 self.note_off,
             )
         )
