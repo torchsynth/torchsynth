@@ -201,6 +201,7 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
+
 class VCA(SynthModule):
     """
     Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
