@@ -1,164 +1,155 @@
 """
+Synth modules.
+
     TODO    :   - VCA is slow. Blocks? Not sure what's best for tensors.
                 - Convert operations to tensors, obvs.
 """
 
 import numpy as np
-from scipy.signal import resample as resample
-from ddrum.parameters import SAMPLE_RATE, CONTROL_RATE
+from scipy.signal import resample
+
+from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
 
 
 class SynthModule:
     """
     Base class for synthesis modules. Mostly helper functions for the moment.
-
     """
-    def __init__(self):
-        pass
 
-    @staticmethod
-    def get_rate():
-        return {'control': CONTROL_RATE, 'sample': SAMPLE_RATE}
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
+        self.sample_rate = SAMPLE_RATE
+        self.control_rate = CONTROL_RATE
 
-    @staticmethod
-    def to_sample_rate(x):
-        out_length = len(x) * SAMPLE_RATE / CONTROL_RATE
-        return resample(x, int(out_length))
+    def control_to_sample_rate(self, control: np.array) -> np.array:
+        """
+        Resample a control signal to the sample rate
+        TODO: One thing I worry about with all these casts to
+        ints back and forth between sample and control rate is
+        off-by-one errors.
+        I'm beginning to believe we should standardize as much
+        as possible on nsamples in most places instead of
+        float duration in seconds, and just convert to ncontrol
+        when needed..
+        """
+        # Right now it appears that all signals are 1d, but later
+        # we'll probably convert things to 2d: instance x signal
+        assert control.ndim == 1
+        nsamples = int(round(len(control) * self.sample_rate / self.control_rate))
+        return resample(control, nsamples)
 
-    @staticmethod
-    def fix_length(x, length):
-        if len(x) < length:
-            x = np.pad(x, [0, length - len(x)])
-        elif len(x) > length:
-            x = x[:length]
-        return x
+    def fix_length(self, signal: np.array, length: int) -> np.array:
+        # Right now it appears that all signals are 1d, but later
+        # we'll probably convert things to 2d: instance x signal
+        assert signal.ndim == 1
+        if len(signal) < length:
+            signal = np.pad(signal, [0, length - len(signal)])
+        elif len(signal) > length:
+            signal = signal[:length]
+        assert signal.shape == (length,)
+        return signal
 
 
 class ADSR(SynthModule):
     """
-    Envelope class for building a control rate ADSR signal. Use play() to output envelope.
-
-    Parameters
-    ----------
-
-    a (flt)             :   attack time (sec)
-    d (flt)             :   decay time (sec)
-    s (flt)             :   sustain value between 0-1
-    r (flt)             :   release time (sec)
-    alpha (flt)         :   envelope curve. 1 is linear envelope, >1 is exponential
-    sustain_for (flt)   :   sustain length (sec)
-
-    Examples
-    --------
-
-    >>> myADSR = ADSR(0.5, 0.5, 0.5, 0.5, 3)
-    >>> print(myADSR(1))
-
+    Envelope class for building a control rate ADSR signal
     """
 
-    def __init__(self, a=0.25, d=0.25, s=0.5, r=0.5, alpha=3, sustain_for=0.5):
-        SynthModule.__init__(self)
-        self.__a = 0
-        self.__d = 0
-        self.__s = 0
-        self.__r = 0
-        self.__alpha = 0
-        self.__sustain_for = 0
+    def __init__(
+        self,
+        a: float = 0.25,
+        d: float = 0.25,
+        s: float = 0.5,
+        r: float = 0.5,
+        alpha: float = 3.0,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
+        """
+        Parameters
+        ----------
+        a                   :   attack time (sec), >= 0
+        d                   :   decay time (sec) in [0, 1]
+        s                   :   sustain amplitude between 0-1
+        r                   :   release time (sec), >= 0
+        alpha               :   envelope curve, >= 0. 1 is linear, >1 is exponential.
+        """
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        assert alpha >= 0
+        self.alpha = alpha
 
-        self._attack = np.array([])
-        self._decay = np.array([])
-        self._sustain = 0
-        self._release = np.array([])
+        assert s >= 0 and s <= 1
+        self.s = s
 
-        self.set_alpha(alpha)
-        self.set_s(s)
-        self.set_a(a)
-        self.set_d(d)
-        self.set_r(r)
-        self.set_sustain_for(sustain_for)
+        assert a >= 0
+        self.a = a
 
-    def __call__(self, dur=0):
-        self.set_sustain_for(dur)
-        return self.play()
+        # TODO: WHY? does it have to have an upper bound of 1?
+        assert d >= 0 and d <= 1
+        self.d = d
 
-    def get_a(self):
-        return self.__a
+        assert r >= 0
+        self.r = r
 
-    def set_a(self, a):
-        if a < 0:
-            self.__a = 0
-        else:
-            self.__a = a
+    def __call__(self, duration):
+        """
+        Play, for some duration in seconds.
+        """
+        assert duration >= 0
+        return np.concatenate(
+            (
+                # Is this the DSP-way of thinking about it, (note on and note off)
+                # or can we change this just to self.attack, self.decay, etc.
+                self.note_on,
+                # This makes me believe that duration should maybe be a class value
+                # defined in __init__. How common is it to create a module and
+                # with fixed settings and use it several times with different
+                # duration?
+                self.sustain(duration),
+                self.note_off,
+            )
+        )
 
-        self._attack = self.__ramp(self.__a)
+    @property
+    def attack(self):
+        return self._ramp(self.a)
 
-    def get_d(self):
-        return self.__d
+    @property
+    def decay(self):
+        # TODO: This is a bit obtuse and would be great to explain
+        return self._ramp(self.d)[::-1] * (1 - self.s) + self.s
 
-    def set_d(self, d):
-        if d < 0:
-            self.__d = 0
-        elif d > 1:
-            self.__d = 1
-        else:
-            self.__d = d
+    def sustain(self, duration):
+        return np.full(round(int(duration * CONTROL_RATE)), fill_value=self.s)
 
-        self._decay = self.__ramp(self.__d)[::-1] * (1 - self.get_s()) + self.get_s()
+    @property
+    def release(self):
+        # TODO: This is a bit obtuse and would be great to explain
+        return self._ramp(self.r)[::-1] * self.s
 
-    def get_s(self):
-        return self.__s
-
-    def set_s(self, s):
-        if s < 0:
-            self.__s = 0
-        elif s > 1:
-            self.__s = 1
-        else:
-            self.__s = s
-
-    def get_r(self):
-        return self.__r
-
-    def set_r(self, r):
-        if r < 0:
-            self.__r = 0
-        else:
-            self.__r = r
-
-        self._release = self.__ramp(self.__r)[::-1] * self.get_s()
-
-    def get_alpha(self):
-        return self.__alpha
-
-    def set_alpha(self, alpha):
-        if alpha < 0:
-            self.__alpha = 0
-        else:
-            self.__alpha = alpha
-
-    def get_sustain_for(self):
-        return self.__sustain_for
-
-    def set_sustain_for(self, val):
-        if val < 0:
-            self.__sustain_for = 0
-        else:
-            self.__sustain_for = val
-
-    def __ramp(self, value):
-        t = np.linspace(0, value, int(value*CONTROL_RATE), endpoint=False)
-        return (t/value)**self.__alpha
-
+    @property
     def note_on(self):
-        return np.append(self._attack, self._decay)
+        return np.append(self.attack, self.decay)
 
+    @property
     def note_off(self):
-        return self._release
+        return self.release
 
-    def play(self):
-        return np.concatenate((self.note_on(),
-                               np.full(int(self.get_sustain_for()*CONTROL_RATE), self.get_s()),
-                               self.note_off()))
+    def _ramp(self, duration: float):
+        """
+        Create a ramp function for a certain duration in seconds,
+        applying the envelope curve and returning it in control rate.
+        """
+        t = np.linspace(
+            0, duration, int(round(duration * self.control_rate)), endpoint=False
+        )
+        return (t / duration) ** self.alpha
+
+    def __str__(self):
+        return (
+            f"ADRS(a={self.a}, d={self.d}, s={self.s}, r={self.r}, alpha={self.alpha})"
+        )
 
 
 class VCO(SynthModule):
@@ -167,21 +158,17 @@ class VCO(SynthModule):
 
     TODO: more than just cosine.
 
-    Parameters
-    ---------
-
-    None.
-
     Examples
     --------
 
     >>> myVCO = VCO()
     >>> two_8ve_chirp = myVCO(np.linspace(440, 1760, 1000))
-
     """
 
-    def __init__(self):
-        SynthModule.__init__(self)
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.__f0 = []
         self.__phase = 0
 
@@ -210,18 +197,18 @@ class VCO(SynthModule):
         return np.cos(arg)
 
     def to_arg(self, f0):
-        up_sampled = self.to_sample_rate(f0)
+        up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
-
 
 class VCA(SynthModule):
     """
     Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
-
     """
 
-    def __init__(self):
-        SynthModule.__init__(self)
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.__envelope = np.array([])
         self.__audio = np.array([])
 
@@ -245,7 +232,7 @@ class VCA(SynthModule):
         self.__audio = audio
 
     def play(self):
-        amp = self.to_sample_rate(self.get_envelope())
+        amp = self.control_to_sample_rate(self.get_envelope())
         signal = self.fix_length(self.get_audio(), len(amp))
         return amp * signal
 

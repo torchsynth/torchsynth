@@ -131,7 +131,16 @@ dmypy.json
 # PyCharm
 .idea/
 
+<<<<<<< HEAD
 # Audio demos stay local
 /tests/audio_out/
 
+# Please don't check large assets into the git repo without
+# discussing it first.
+*.wav
+*.mp3
+*.ogg
+
+# Please use Jupytext to auto-convert jupyter notebooks to
+# python.
 *.ipynb
