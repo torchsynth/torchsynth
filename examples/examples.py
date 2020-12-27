@@ -9,14 +9,16 @@
 # %autoreload 2
 # %matplotlib inline
 
-import numpy as np
-import matplotlib.pyplot as plt
 import os
-from ddspdrum.module import ADSR, VCO, VCA
-from scipy.signal import stft as stft
-from scipy.io import wavfile as wavfile
-import librosa.display
+
 import IPython.display as ipd
+import librosa.display
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io import wavfile as wavfile
+from scipy.signal import stft as stft
+
+from ddspdrum.module import ADSR, VCA, VCO
 
 # -
 
