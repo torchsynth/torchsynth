@@ -19,7 +19,8 @@ or `audio` or whatever.
 
 * Classes should be written in functional ways, without side effects.
 
-* Please add type annotations when possible.
+* Please add type annotations when possible, so people know if something
+is `float` or `nd.array` or whatever.
 
 * Prefer module names that are singular (`util`) not plural (`utils`)
 
