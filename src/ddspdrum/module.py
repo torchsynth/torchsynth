@@ -182,7 +182,7 @@ class VCO(SynthModule):
 
         nyquist = self.sample_rate // 2
         # I'm still a bit concerned about using clamp,
-	    # because we lose the gradients from it, but let's worry
+        # because we lose the gradients from it, but let's worry
         # about that later.
         clampedf0control = np.clamp(f0control, 0, nyquist)
 
@@ -191,7 +191,7 @@ class VCO(SynthModule):
         # Why do we do a `set_phase` here at the end?
         # If this is really some sort of recurrent state then maybe
         # we return it and pass it back in?
-        #self.set_phase(arg[-1])
+        # self.set_phase(arg[-1])
         return np.cos(arg)
 
     def to_arg(self, f0control: np.array):
@@ -201,6 +201,7 @@ class VCO(SynthModule):
         # pitch over time?
         up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
+
 
 class VCA(SynthModule):
     """

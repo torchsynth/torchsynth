@@ -6,6 +6,8 @@ documentation.
 
 * `sample_rate` and `control_rate` should be parameters, not globals.
 
+* Enforce preconditions on parameter values.
+
 * `SynthModule` should have a `__call__` method. Parameters intrinsic
 to the module should be in `__init__`. Outputs from other modules
 should go in `__call__`.
