@@ -9,6 +9,8 @@
 # %autoreload 2
 # %matplotlib inline
 
+import os
+
 import IPython.display as ipd
 import librosa.display
 import matplotlib.pyplot as plt
