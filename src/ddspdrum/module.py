@@ -200,6 +200,7 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
+
 class VCA(SynthModule):
     """
     Voltage controlled amplifier. Shapes amplitude of audio rate signal with control rate level.
@@ -244,8 +245,14 @@ class SVF(SynthModule):
     parameter. Can self-oscillate to make a sine / cosine wave.
     """
 
-    def __init__(self, mode: str = 'LPF', cutoff: float = 1000, resonance: float = 0.707,
-                 self_oscillate: bool = False, sample_rate: int = SAMPLE_RATE):
+    def __init__(
+        self,
+        mode: str = "LPF",
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
         super().__init__()
         self.sample_rate = sample_rate
         self.mode = mode
@@ -253,8 +260,12 @@ class SVF(SynthModule):
         self.resonance = resonance
         self.self_oscillate = self_oscillate
 
-    def __call__(self, audio: np.ndarray, cutoff_mod: np.ndarray = None,
-                 cutoff_mod_amount: float = 0.0) -> np.ndarray:
+    def __call__(
+        self,
+        audio: np.ndarray,
+        cutoff_mod: np.ndarray = None,
+        cutoff_mod_amount: float = 0.0,
+    ) -> np.ndarray:
         """
         Process audio samples
         """
@@ -278,7 +289,9 @@ class SVF(SynthModule):
             # If there is a cutoff modulation envelope, update coefficients
             if apply_modulation:
                 cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                coeff0, coeff1, rho = self.calculate_coefficients(self.cutoff + cutoff_mod[i] * cutoff_mod_amount)
+                coeff0, coeff1, rho = self.calculate_coefficients(
+                    self.cutoff + cutoff_mod[i] * cutoff_mod_amount
+                )
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio[i] - rho * h[0] - h[1])
@@ -289,11 +302,11 @@ class SVF(SynthModule):
             h[0] = coeff1 * hpf + bpf
             h[1] = coeff1 * bpf + lpf
 
-            if self.mode == 'LPF':
+            if self.mode == "LPF":
                 y[i] = lpf
-            elif self.mode == 'BPF':
+            elif self.mode == "BPF":
                 y[i] = bpf
-            elif self.mode == 'BSF':
+            elif self.mode == "BSF":
                 y[i] = hpf + lpf
             else:
                 y[i] = hpf
@@ -319,7 +332,12 @@ class FIR(SynthModule):
     A Finite Impulse Response filter
     """
 
-    def __init__(self, cutoff: float = 1000, filter_length: int = 512, sample_rate: int = SAMPLE_RATE):
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        filter_length: int = 512,
+        sample_rate: int = SAMPLE_RATE,
+    ):
         super().__init__()
         self.sample_rate = sample_rate
         self.filter_length = filter_length
@@ -335,7 +353,6 @@ class FIR(SynthModule):
         y = np.convolve(audio, impulse)
         return y
 
-
     def windowed_sinc(self, cutoff: float, filter_length: float) -> np.ndarray:
         """
         Calculates the impulse response for FIR lowpass filter using the
@@ -346,13 +363,17 @@ class FIR(SynthModule):
         omega = 2 * np.pi * cutoff / self.sample_rate
 
         for i in range(filter_length + 1):
-            n = (i - filter_length / 2)
+            n = i - filter_length / 2
             if n != 0:
                 ir[i] = np.sin(n * omega) / n
             else:
                 ir[i] = omega
 
-            window = 0.42 - 0.5 * np.cos(2 * np.pi * i / filter_length) + 0.08 * np.cos(2 * np.pi * i / filter_length)
+            window = (
+                0.42
+                - 0.5 * np.cos(2 * np.pi * i / filter_length)
+                + 0.08 * np.cos(2 * np.pi * i / filter_length)
+            )
             ir[i] *= window
 
         ir /= omega

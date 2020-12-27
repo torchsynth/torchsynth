@@ -11,6 +11,7 @@ def amplitude_to_db(amplitude: float, amin: float = 1e-10):
     """
     return 20 * np.log10(np.maximum(amplitude, amin))
 
+
 def db_to_amplitude(db: float):
     """
     Convert decibel value to an amplitude between 0 and 1
@@ -27,4 +28,3 @@ def peak_gain_for_Q(Q: float):
         return 1.0
 
     return Q * Q / pow((Q * Q - 0.25), 0.5)
-

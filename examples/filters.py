@@ -15,20 +15,22 @@
 
 # # Filter Examples
 #
-# Example usage of three types of filters. Two finite impulse response (FIR) lowpasses and an infinite impulse response (IIR) state variable filter.
+# Example usage of three types of filters. Two finite impulse
+# response (FIR) lowpasses and an infinite impulse response (IIR)
+# state variable filter.
 
-import numpy as np
-import matplotlib.pyplot as plt
-from ddrum.drum_engine import SVF, FIR, MovingAverage
 import ddrum.dsp_utils as utils
 import IPython.display as ipd
+import matplotlib.pyplot as plt
+import numpy as np
+from ddrum.drum_engine import FIR, SVF, MovingAverage
 
 # Create some white noise to perform filtering on
 
 # +
 sample_rate = 44100
 duration = 2.0
-noise = np.random.rand(int(sample_rate * duration)) * 2 -1
+noise = np.random.rand(int(sample_rate * duration)) * 2 - 1
 ipd.display(ipd.Audio(noise, rate=sample_rate))
 
 # Spectrogram
@@ -91,7 +93,7 @@ plt.show()
 # State variable filter with the same cutoff -- the slope is much more relaxed with this filter
 
 # +
-svf = SVF(mode='LPF', cutoff=5000)
+svf = SVF(mode="LPF", cutoff=5000)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
@@ -103,7 +105,7 @@ plt.show()
 # With an SVF we can resonate at the cutoff frequency
 
 # +
-svf = SVF(mode='LPF', cutoff=5000, resonance=20.0)
+svf = SVF(mode="LPF", cutoff=5000, resonance=20.0)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
@@ -115,7 +117,7 @@ plt.show()
 # SVF as a high-pass filter
 
 # +
-svf = SVF(mode='HPF', cutoff=5000, resonance=20.0)
+svf = SVF(mode="HPF", cutoff=5000, resonance=20.0)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
@@ -127,7 +129,7 @@ plt.show()
 # SVF as a band-pass filter
 
 # +
-svf = SVF(mode='BPF', cutoff=5000, resonance=20.0)
+svf = SVF(mode="BPF", cutoff=5000, resonance=20.0)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
@@ -139,7 +141,7 @@ plt.show()
 # SVF as a band-stop filter (no resonance now)
 
 # +
-svf = SVF(mode='BSF', cutoff=5000)
+svf = SVF(mode="BSF", cutoff=5000)
 filtered_svf = svf(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
@@ -154,8 +156,8 @@ plt.show()
 
 duration = 1.0
 signal = np.zeros(int(sample_rate * duration))
-click = np.random.rand(int(sample_rate * 0.001)) * 2 -1
-signal[:len(click)] = click
+click = np.random.rand(int(sample_rate * 0.001)) * 2 - 1
+signal[: len(click)] = click
 plt.plot(signal)
 ipd.Audio(signal, rate=sample_rate)
 
@@ -164,7 +166,7 @@ cutoff_mod = np.linspace(1, 0, len(signal)) ** 12.0
 plt.plot(cutoff_mod)
 
 # Apply filter and listen to results
-svf = SVF(mode='LPF', cutoff=45, resonance=50)
+svf = SVF(mode="LPF", cutoff=45, resonance=50)
 kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
