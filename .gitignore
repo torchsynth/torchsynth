@@ -140,3 +140,6 @@ dmypy.json
 # Please use Jupytext to auto-convert jupyter notebooks to
 # python.
 *.ipynb
+
+# Vim files
+*.sw?
