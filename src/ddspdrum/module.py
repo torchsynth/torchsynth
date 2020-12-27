@@ -5,6 +5,8 @@ Synth modules.
                 - Convert operations to tensors, obvs.
 """
 
+import copy
+
 import numpy as np
 from scipy.signal import resample
 
@@ -173,31 +175,30 @@ class VCO(SynthModule):
         self.__f0 = []
         self.__phase = 0
 
-    def __call__(self, f0):
-        self.set_f0(f0)
-        return self.play()
+    def __call__(self, f0control: np.array, phase: float):
+        # TODO: Are there expected ranges on phase?
+        # Does it matter? Can we just assert preconditions here?
+        phase = phase % (2 * np.pi)
 
-    def get_f0(self):
-        return self.__f0
+        nyquist = self.sample_rate // 2
+        # I'm still a bit concerned about using clamp,
+	    # because we lose the gradients from it, but let's worry
+        # about that later.
+        clampedf0control = np.clamp(f0control, 0, nyquist)
 
-    def set_f0(self, val):
-        nyq = SAMPLE_RATE // 2
-        val[np.where(val < 0)] = 0
-        val[np.where(val > nyq)] = nyq
-        self.__f0 = val
-
-    def get_phase(self):
-        return self.__phase
-
-    def set_phase(self, val):
-        self.__phase = val % (2 * np.pi)
-
-    def play(self):
-        arg = self.to_arg(self.get_f0()) + self.get_phase()
-        self.set_phase(arg[-1])
+        # What is arg and can we give it a better name?
+        arg = self.to_arg(clampedf0signal) + phase
+        # Why do we do a `set_phase` here at the end?
+        # If this is really some sort of recurrent state then maybe
+        # we return it and pass it back in?
+        #self.set_phase(arg[-1])
         return np.cos(arg)
 
-    def to_arg(self, f0):
+    def to_arg(self, f0control: np.array):
+        # Can we describe what this does and give it a better name?
+        # I see that it upsamples from control to sample rate.
+        # Then it does a cumulative sum?? So it's to modulate the
+        # pitch over time?
         up_sampled = self.control_to_sample_rate(f0)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 

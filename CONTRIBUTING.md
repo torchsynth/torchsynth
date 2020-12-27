@@ -17,6 +17,8 @@ or `audio` or whatever.
 
 * Classes should be written in functional ways, without side effects.
 
+* Please add type annotations when possible.
+
 * Prefer module names that are singular (`util`) not plural (`utils`)
 
 * Avoid short cryptic names.

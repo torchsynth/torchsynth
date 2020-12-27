@@ -50,7 +50,7 @@ plt.show()
 # VCO test
 test_f0 = f0*(env + 1)
 vco = VCO()
-vco_out = vco(test_f0)
+vco_out = vco(test_f0, phase=0)
 
 # +
 X = librosa.stft(vco_out)
