@@ -181,13 +181,13 @@ class VCO(SynthModule):
         phase = phase % (2 * np.pi)
 
         nyquist = self.sample_rate // 2
-        # I'm still a bit concerned about using clamp,
+        # I'm still a bit concerned about using clip,
         # because we lose the gradients from it, but let's worry
         # about that later.
-        clampedf0control = np.clamp(f0control, 0, nyquist)
+        clampedf0control = np.clip(f0control, 0, nyquist)
 
         # What is arg and can we give it a better name?
-        arg = self.to_arg(clampedf0signal) + phase
+        arg = self.to_arg(clampedf0control) + phase
         # Why do we do a `set_phase` here at the end?
         # If this is really some sort of recurrent state then maybe
         # we return it and pass it back in?
@@ -199,7 +199,7 @@ class VCO(SynthModule):
         # I see that it upsamples from control to sample rate.
         # Then it does a cumulative sum?? So it's to modulate the
         # pitch over time?
-        up_sampled = self.control_to_sample_rate(f0)
+        up_sampled = self.control_to_sample_rate(f0control)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
 
