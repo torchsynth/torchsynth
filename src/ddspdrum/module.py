@@ -97,7 +97,7 @@ class ADSR(SynthModule):
         """
         Play, for some duration in seconds.
         """
-        assert duration >= 0
+        assert sustain_duration >= 0
         return np.concatenate(
             (
                 # Is this the DSP-way of thinking about it, (note on and note off)
