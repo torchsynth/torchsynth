@@ -210,29 +210,10 @@ class VCA(SynthModule):
         self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.__envelope = np.array([])
-        self.__audio = np.array([])
 
-    def __call__(self, envelope, audio):
-        self.set_envelope(envelope)
-        self.set_audio(audio)
-        return self.play()
-
-    def get_envelope(self):
-        return self.__envelope
-
-    def set_envelope(self, envelope):
-        envelope = np.clip(envelope, 0, 1)
-        self.__envelope = envelope
-
-    def get_audio(self):
-        return self.__audio
-
-    def set_audio(self, audio):
-        audio = np.clip(audio, -1, 1)
-        self.__audio = audio
-
-    def play(self):
-        amp = self.control_to_sample_rate(self.get_envelope())
-        signal = self.fix_length(self.get_audio(), len(amp))
+    def __call__(self, envelopecontrol: np.array, audiosample: np.array):
+        envelopecontrol = np.clip(envelopecontrol, 0, 1)
+        audiosample = np.clip(audiosample, -1, 1)
+        amp = self.control_to_sample_rate(envelopecontrol)
+        signal = self.fix_length(audiosample, len(amp))
         return amp * signal

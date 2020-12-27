@@ -81,10 +81,3 @@ plt.ylim(0, 2000)
 plt.show()
 
 ipd.Audio(vca_out, rate=vca.sample_rate)
-# -
-
-
-
-
-
-
