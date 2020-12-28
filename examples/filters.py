@@ -1,12 +1,12 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py
+#     formats: ipynb,py:light
 #     text_representation:
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.8.0
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -19,11 +19,11 @@
 # response (FIR) lowpasses and an infinite impulse response (IIR)
 # state variable filter.
 
-import ddrum.dsp_utils as utils
+import ddspdrum.util as utils
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import numpy as np
-from ddrum.drum_engine import FIR, SVF, MovingAverage
+from ddspdrum.module import FIR, SVF, MovingAverage
 
 # Create some white noise to perform filtering on
 
