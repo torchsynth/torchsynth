@@ -19,6 +19,8 @@ class SynthModule:
     def __init__(self):
         self.sample_rate = SAMPLE_RATE
         self.control_rate = CONTROL_RATE
+
+        # TODO: this doesn't need to be here.
         self.eps = EPSILON
 
     def control_to_sample_rate(self, control: np.array) -> np.array:
@@ -42,13 +44,16 @@ class SynthModule:
             num_samples = int(round(len(control) * self.sample_rate / self.control_rate))
             return resample(control, num_samples)
 
+    # TODO: move to "utils."
     def hz_to_midi(self, hz):
         return 12 * np.log2((hz + self.eps) / 440) + 69
 
+    # TODO: move to "utils."
     @staticmethod
     def midi_to_hz(midi):
         return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
 
+    # TODO: move to "utils."
     @staticmethod
     def fix_length(signal: np.array, length: int) -> np.array:
         # Right now it appears that all signals are 1d, but later
@@ -213,7 +218,7 @@ class VCO(SynthModule):
 
         self.phase = phase
 
-    def __call__(self, mod_signal: np.array, phase: float):
+    def __call__(self, mod_signal: np.array, phase: float) -> np.array:
         """ Generates audio signal from control-rate mod.
 
         There are three representations of the 'pitch' at play here: (1) midi, (2) instantaneous frequency, and
