@@ -9,14 +9,10 @@
 # %autoreload 2
 # %matplotlib inline
 
-import os
-
 import IPython.display as ipd
 import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.io import wavfile as wavfile
-from scipy.signal import stft as stft
 
 from ddspdrum.module import ADSR, VCA, VCO
 
@@ -28,32 +24,40 @@ d = 0.1
 s = 0.5
 r = 0.5
 alpha = 3
-sustain_for = 0.25
+sustain_duration = 0.25
 
-f0 = 440
+dur = a + d + r + sustain_duration
 
-# TODO: Why don't we add 's' here?
-dur = a + d + r + sustain_for
+# ## The Envelope
+# Our module is based on an ADSR envelope, standing for "attack, decay, sustain, release," which is specified by four
+# values:
+#
+# - a: the attack time, in seconds; the time it takes for the signal to ramp from 0 to 1.
+# - d: the decay time, in seconds; the time to 'decay' from a peak of 1 to a sustain level.
+# - s: the sustain level; a value between 0 and 1 that the envelope holds during a sustained note (**not a time value**).
+# - r: the release time, in seconds; the time it takes the signal to decay from the sustain value to 0.
+#
+# Envelopes are used to modulate a variety of signals; usually one of pitch, amplitude, or filter cutoff frequency. In
+# this notebook we will use the same envelope to modulate several different audio parameters.
 
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
-# TODO: Can you explain the envelope here?
-env = adsr(sustain_for)
+envelope = adsr(sustain_duration)
 
-# Let's avoid cryptic variables names when possible
+# Timelines for plots, in seconds based on control rate and sample rate, respectively.
 t_cr = np.linspace(0, dur, int(dur * adsr.control_rate), endpoint=False)
 t_sr = np.linspace(0, dur, int(dur * adsr.sample_rate), endpoint=False)
 
-plt.plot(t_cr, env)
+plt.plot(t_cr, envelope)
 plt.title(adsr)
 plt.xlabel("time (sec)")
 plt.ylabel("amplitude")
 plt.show()
 
 # VCO test
-test_f0 = f0 * (env + 1)
-vco = VCO()
-vco_out = vco(test_f0)
+midi_f0 = 69
+vco = VCO(midi_f0=midi_f0, mod_depth=12)
+vco_out = vco(envelope, phase=0)
 
 # +
 X = librosa.stft(vco_out)
@@ -68,7 +72,7 @@ ipd.Audio(vco_out, rate=vco.sample_rate)
 
 # VCA test
 vca = VCA()
-vca_out = vca(env, vco_out)
+vca_out = vca(envelope, vco_out)
 
 # +
 plt.plot(t_sr, vca_out)
@@ -84,4 +88,3 @@ plt.ylim(0, 2000)
 plt.show()
 
 ipd.Audio(vca_out, rate=vca.sample_rate)
-# -

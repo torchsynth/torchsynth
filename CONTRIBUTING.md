@@ -6,6 +6,8 @@ documentation.
 
 * `sample_rate` and `control_rate` should be parameters, not globals.
 
+* Enforce preconditions on parameter values.
+
 * `SynthModule` should have a `__call__` method. Parameters intrinsic
 to the module should be in `__init__`. Outputs from other modules
 should go in `__call__`.
@@ -16,6 +18,9 @@ or `audio` or whatever.
 ## Code Style
 
 * Classes should be written in functional ways, without side effects.
+
+* Please add type annotations when possible, so people know if something
+is `float` or `nd.array` or whatever.
 
 * Prefer module names that are singular (`util`) not plural (`utils`)
 

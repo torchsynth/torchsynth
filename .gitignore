@@ -140,3 +140,9 @@ dmypy.json
 # Please use Jupytext to auto-convert jupyter notebooks to
 # python.
 *.ipynb
+
+# Vim files
+*.sw?
+
+# Mac OS
+.DS_Store
