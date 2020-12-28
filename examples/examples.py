@@ -1,8 +1,8 @@
 # # ddsp-drum examples
 #
-# We walk through basic functionality of `ddsp-drum` in this Jupyter notebook.
+# We walk through basic functionality of `ddsp-drum` in this Jupyter notebook. Just note that all ipd.Audio play widgets normalize the audio.
 #
-# Just note that all ipd.Audio play widgets normalize the audio.
+# In this example, we'll build a very basic kick sound.
 
 # +
 # %load_ext autoreload
@@ -19,12 +19,12 @@ from ddspdrum.module import ADSR, VCA, VCO
 # -
 
 # Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.5
+a = 0.01
+d = 0.05
+s = 0.75
 r = 0.5
 alpha = 3
-sustain_duration = 0.25
+sustain_duration = 0
 
 dur = a + d + r + sustain_duration
 
@@ -55,8 +55,8 @@ plt.ylabel("amplitude")
 plt.show()
 
 # VCO test
-midi_f0 = 69
-vco = VCO(midi_f0=midi_f0, mod_depth=12)
+midi_f0 = 12
+vco = VCO(midi_f0=midi_f0, mod_depth=50)
 vco_out = vco(envelope, phase=0)
 
 # +
@@ -69,6 +69,8 @@ plt.show()
 
 ipd.Audio(vco_out, rate=vco.sample_rate)
 # -
+
+# Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
 # VCA test
 vca = VCA()
@@ -88,3 +90,8 @@ plt.ylim(0, 2000)
 plt.show()
 
 ipd.Audio(vca_out, rate=vca.sample_rate)
+# -
+
+
+
+
