@@ -252,6 +252,7 @@ class VCA(SynthModule):
 class Drum:
     """
     A package of modules that makes one drum hit. 
+    TODO:   - clicks when the envelopes don't match up.
     """
 
     def __init__(
