@@ -182,7 +182,7 @@ class VCO(SynthModule):
     """
 
     def __init__(
-        self, midi_f0: float = 69, mod_depth: float = 1, phase: float = 0
+        self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0
     ):
         super().__init__()
 
@@ -257,28 +257,17 @@ class Drum:
 
     def __init__(
         self,
-        pitch_a: float = 0.01,
-        pitch_d: float = 0.05,
-        pitch_s: float = 0.75,
-        pitch_r: float = 0.5,
-        pitch_alpha: float = 3,
-        pitch_dur: float = 0,
-        amp_a: float = 0.01,
-        amp_d: float = 0.05,
-        amp_s: float = 0.75,
-        amp_r: float = 0.5,
-        amp_alpha: float = 3,
-        amp_dur: float = 0,
-        osc_f0: float = 12,
-        osc_mod_depth: float = 50
-    ):
-        pitch_adsr = ADSR(pitch_a, pitch_d, pitch_s, pitch_r, pitch_alpha)
-        amp_adsr = ADSR(amp_a, amp_d, amp_s, amp_r, amp_alpha)
+        pitch_adsr: ADSR = ADSR(), 
+        amp_adsr: ADSR = ADSR(), 
+        vco: VCO = VCO(), 
+        vca: VCA = VCA(),
+        sustain_duration: float = 0,
+   ):
 
-        self.pitch_envelope = pitch_adsr(pitch_dur)
-        self.amp_envelope = amp_adsr(amp_dur)
-        self.vco = VCO(osc_f0, osc_mod_depth)
-        self.vca = VCA()
+        self.pitch_envelope = pitch_adsr(sustain_duration)
+        self.amp_envelope = amp_adsr(sustain_duration)
+        self.vco = vco
+        self.vca = vca
 
     def __call__(self):
         self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
