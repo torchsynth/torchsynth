@@ -14,7 +14,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, VCO
+from ddspdrum.module import ADSR, VCA, VCO, Drum
 
 # -
 
@@ -92,6 +92,21 @@ plt.show()
 ipd.Audio(vca_out, rate=vca.sample_rate)
 # -
 
+# Alternately, you can just use the Drum class that composes all these modules together automatically.
 
+# +
+my_drum = Drum()
+
+boom = my_drum()
+
+X = librosa.stft(boom)
+Xdb = librosa.amplitude_to_db(abs(X))
+plt.figure(figsize=(5, 5))
+librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
+plt.ylim(0, 2000)
+plt.show()
+
+ipd.Audio(boom, rate=vca.sample_rate)
+# -
 
 
