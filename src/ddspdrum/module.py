@@ -229,7 +229,7 @@ class VCO(SynthModule):
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
-        return np.cos(cosine_argument)
+        return self.oscillator(cosine_argument)
 
     def make_argument(self, control_as_frequency: np.array):
         """ 
@@ -239,6 +239,33 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(control_as_frequency)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
+    def oscillator(self, argument):
+        return np.cos(argument)
+
+
+class SquareSaw(VCO):
+    """
+    VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
+    """
+    def __init__(
+        self, 
+        shape: float = 0,
+        midi_f0: float = 10,
+        mod_depth: float = 50, 
+        phase: float = 0    
+    ):
+        super().__init__(midi_f0, mod_depth, phase)
+        assert 0 <= shape <= 1 
+        self.shape = shape
+
+    def oscillator(self, argument):
+        k = self.get_k()
+        square = np.tanh(np.pi * k * np.sin(argument)/2)
+        return (1 - self.shape/2) * square * (1 + self.shape * np.cos(argument))
+    
+    def get_k(self):
+        f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
+        return 12000 / (f0 * np.log10(f0))
 
 class VCA(SynthModule):
     """
