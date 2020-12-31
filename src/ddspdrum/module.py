@@ -244,9 +244,14 @@ class VCO(SynthModule):
 
 
 class SquareSaw(VCO):
+    """ VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
+
+        With apologies to:
+
+        Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for 
+            virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
     """
-    VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
-    """
+
     def __init__(
         self, 
         shape: float = 0,
