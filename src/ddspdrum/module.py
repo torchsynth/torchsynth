@@ -240,10 +240,30 @@ class VCO(SynthModule):
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
     def oscillator(self, argument):
+        """
+            Dummy method. Overridden by child class VCO's.
+        """
+        pass
+
+
+class SineVCO(VCO):
+    """ Simple VCO that generates a pitched sinudoid.
+
+        Built off the VCO base class, it simply implements a cosine function as oscillator.
+    """
+
+    def __init__(
+        self,
+        midi_f0: float = 10,
+        mod_depth: float = 50,
+        phase: float = 0
+    ):
+        super().__init__(midi_f0, mod_depth, phase)
+
+    def oscillator(self, argument):
         return np.cos(argument)
 
-
-class SquareSaw(VCO):
+class SquareSawVCO(VCO):
     """ VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
 
         With apologies to:

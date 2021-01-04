@@ -14,7 +14,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, VCO, SquareSaw, Drum
+from ddspdrum.module import ADSR, VCA, SineVCO, SquareSawVCO, Drum
 
 # -
 
@@ -54,49 +54,48 @@ plt.xlabel("time (sec)")
 plt.ylabel("amplitude")
 plt.show()
 
-# VCO test
+# SineVCO test
 midi_f0 = 12
-vco = VCO(midi_f0=midi_f0, mod_depth=50)
-vco_out = vco(envelope, phase=0)
+sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
+sine_out = sine_vco(envelope, phase=0)
 
 # +
-X = librosa.stft(vco_out)
+X = librosa.stft(sine_out)
 Xdb = librosa.amplitude_to_db(abs(X))
 plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vco.sample_rate, x_axis="time", y_axis="hz")
+librosa.display.specshow(Xdb, sr=sine_vco.sample_rate, x_axis="time", y_axis="hz")
 plt.ylim(0, 2000)
 plt.show()
 
-ipd.Audio(vco_out, rate=vco.sample_rate)
+ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 # -
 
 # Check this out, it's a square / saw oscillator. Use the shape parameter to interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
 # +
-# SquareSaw test: shape 0 --> square, 1 --> saw.
+# SquareSawVCO test: shape 0 --> square, 1 --> saw.
 
 shape = 0
-
 midi_f0 = 55
-sqs = SquareSaw(shape=shape, midi_f0=midi_f0, mod_depth=6)
+sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
 
 # +
 X = librosa.stft(sqs_out)
 Xdb = librosa.amplitude_to_db(abs(X))
 plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vco.sample_rate, x_axis="time", y_axis="hz")
+librosa.display.specshow(Xdb, sr=sqs.sample_rate, x_axis="time", y_axis="hz")
 plt.ylim(0, 5000)
 plt.show()
 
-ipd.Audio(sqs_out, rate=vco.sample_rate)
+ipd.Audio(sqs_out, rate=sqs.sample_rate)
 # -
 
 # Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
 # VCA test
 vca = VCA()
-vca_out = vca(envelope, vco_out)
+vca_out = vca(envelope, sqs_out)
 
 # +
 plt.plot(t_sr, vca_out)
@@ -120,7 +119,7 @@ ipd.Audio(vca_out, rate=vca.sample_rate)
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco=VCO(midi_f0=69, mod_depth=12),
+    vco=SineVCO(midi_f0=69, mod_depth=12),
     sustain_duration=1
     )
 
@@ -135,13 +134,13 @@ plt.show()
 
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
-# You can also use the **SquareSaw oscillator** in the drum module.
+# You can also use the **SquareSawVCO oscillator** in the drum module.
 
 # +
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco=SquareSaw(shape=0, midi_f0=24, mod_depth=12),
+    vco=SquareSawVCO(shape=0, midi_f0=24, mod_depth=12),
     sustain_duration=1
     )
 
