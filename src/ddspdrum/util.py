@@ -3,7 +3,9 @@ Utility functions for DSP related things
 """
 
 import numpy as np
-from ddspdrum.defaults import EPSILON
+import matplotlib.pyplot as plt
+import librosa
+from ddspdrum.defaults import EPSILON, CONTROL_RATE, SAMPLE_RATE
 
 
 def amplitude_to_db(amplitude: float, amin: float = 1e-10):
@@ -58,3 +60,16 @@ def fix_length(signal: np.array, length: int) -> np.array:
     assert signal.shape == (length,)
     return signal
 
+def time_plot(signal, sample_rate=SAMPLE_RATE):
+    t = np.linspace(0, len(signal)/sample_rate, len(signal), endpoint=False)
+    plt.plot(t, signal)
+    plt.xlabel("Time")
+    plt.ylabel("Amplitude")
+    plt.show()
+
+def stft_plot(signal, sample_rate=SAMPLE_RATE):
+    X = librosa.stft(signal)
+    Xdb = librosa.amplitude_to_db(abs(X))
+    plt.figure(figsize=(5, 5))
+    librosa.display.specshow(Xdb, sr=SAMPLE_RATE, x_axis="time", y_axis="log")
+    plt.show()

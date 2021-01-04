@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.module import ADSR, VCA, SineVCO, SquareSawVCO, Drum
-
+from ddspdrum.util import time_plot, stft_plot
 # -
 
 # Synthesis parameters.
@@ -43,16 +43,7 @@ dur = a + d + r + sustain_duration
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr(sustain_duration)
-
-# Timelines for plots, in seconds based on control rate and sample rate, respectively.
-t_cr = np.linspace(0, dur, int(dur * adsr.control_rate), endpoint=False)
-t_sr = np.linspace(0, dur, int(dur * adsr.sample_rate), endpoint=False)
-
-plt.plot(t_cr, envelope)
-plt.title(adsr)
-plt.xlabel("time (sec)")
-plt.ylabel("amplitude")
-plt.show()
+time_plot(envelope, adsr.control_rate)
 
 # SineVCO test
 midi_f0 = 12
@@ -60,13 +51,7 @@ sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
 sine_out = sine_vco(envelope, phase=0)
 
 # +
-X = librosa.stft(sine_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=sine_vco.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
-
+stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 # -
 
@@ -81,13 +66,7 @@ sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
 
 # +
-X = librosa.stft(sqs_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=sqs.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 5000)
-plt.show()
-
+stft_plot(sqs_out)
 ipd.Audio(sqs_out, rate=sqs.sample_rate)
 # -
 
@@ -98,18 +77,8 @@ vca = VCA()
 vca_out = vca(envelope, sqs_out)
 
 # +
-plt.plot(t_sr, vca_out)
-plt.xlabel("time (sec)")
-plt.ylabel("amplitude")
-plt.show()
-
-X = librosa.stft(vca_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
-
+time_plot(vca_out)
+stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
 # -
 
@@ -125,12 +94,7 @@ my_drum = Drum(
 
 drum_out = my_drum()
 
-X = librosa.stft(drum_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
+stft_plot(drum_out)
 
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
@@ -145,18 +109,6 @@ my_drum = Drum(
     )
 
 drum_out = my_drum()
-
-X = librosa.stft(drum_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 5000)
-plt.show()
-
+stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
-
-
-
-
-
