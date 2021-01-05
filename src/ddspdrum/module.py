@@ -182,7 +182,7 @@ class VCO(SynthModule):
     ----------
 
     midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
-    mod_depth (flt)     :       depth of the pitch modulation in semitones; 0 means none.
+    mod_depth (flt)     :       depth of the pitch modulation in semitones.
 
     TODO:   - more than just cosine.
 
@@ -421,7 +421,7 @@ class SVF(SynthModule):
             # If there is a cutoff modulation envelope, update coefficients
             if apply_modulation:
                 # BUG: Cutoff variable never used?
-                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
+                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount  # noqa: F841
                 coeff0, coeff1, rho = self.calculate_coefficients(
                     self.cutoff + cutoff_mod[i] * cutoff_mod_amount
                 )
