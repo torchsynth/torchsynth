@@ -5,6 +5,7 @@ Synth modules.
                 - Convert operations to tensors, obvs.
 """
 
+from abc import abstractmethod
 from typing import List
 
 import numpy as np
@@ -251,6 +252,7 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(control_as_frequency)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
+    @abstractmethod
     def oscillator(self, argument):
         """
         Dummy method. Overridden by child class VCO's.
