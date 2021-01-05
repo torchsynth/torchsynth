@@ -277,7 +277,7 @@ class SineVCO(VCO):
 class SquareSawVCO(VCO):
     """
     VCO that can be either a square or a sawtooth waveshape.
-    Tweak with the shape parameter.
+    Tweak with the shape parameter. (0 is square.)
 
     With apologies to:
 
@@ -293,7 +293,9 @@ class SquareSawVCO(VCO):
         phase: float = 0,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
-        assert 0 <= shape <= 1
+
+        # 0 is square. 1 is saw.
+        assert 0.0 <= shape <= 1.0
         self.shape = shape
 
     def oscillator(self, argument):
