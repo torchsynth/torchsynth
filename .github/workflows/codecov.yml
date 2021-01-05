@@ -16,15 +16,17 @@ jobs:
       uses: actions/setup-python@master
       with:
         python-version: 3.7
-    - name: sndfile
+    - name: apt-get
       run: |
         sudo apt-get install -y libsndfile-dev
-    - name: Generate coverage report
+    - name: pip install
       run: |
         pip install coverage
         # These are used in the examples notebook.
         pip install ipython librosa matplotlib
         pip install -e .
+    - name: Generate coverage report
+      run: |
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.
         coverage xml
