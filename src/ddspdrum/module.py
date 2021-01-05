@@ -362,7 +362,7 @@ class SVF(SynthModule):
         self.mode = mode
 
         self.cutoff = cutoff
-        assert 0 <= self.cutoff < self.sample_rate / 2.0
+        assert 0 < self.cutoff < self.sample_rate / 2.0
         self.resonance = resonance
         assert 0.5 <= self.resonance
         self.self_oscillate = self_oscillate
@@ -510,7 +510,16 @@ class BandRejectSVF(SVF):
 
 class FIR(SynthModule):
     """
-    A Finite Impulse Response filter
+    A finite impulse response low-pass filter. Uses convolution with a symmetric windowed sinc function.
+
+    Parameters
+    ----------
+
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and half the sampling rate.
+                            Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will result in a steeper
+                            filter cutoff. Should be greater than 4. Defaults to 512 samples.
+    sample_rate (int)   :   Sampling rate to run processing at.
     """
 
     def __init__(
@@ -522,22 +531,36 @@ class FIR(SynthModule):
         super().__init__()
         self.sample_rate = sample_rate
         self.filter_length = filter_length
+        assert self.filter_length > 4
         self.cutoff = cutoff
+        assert 0 < self.cutoff < self.sample_rate / 2
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         TODO: Cutoff frequency modulation, if there is an efficient way to do it
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)  :   audio samples to filter
         """
 
         impulse = self.windowed_sinc(self.cutoff, self.filter_length)
         y = np.convolve(audio, impulse)
         return y
 
-    def windowed_sinc(self, cutoff: float, filter_length: float) -> np.ndarray:
+    def windowed_sinc(self, cutoff: float, filter_length: int) -> np.ndarray:
         """
         Calculates the impulse response for FIR low-pass filter using the
         windowed sinc function method
+
+        Parameters
+        ----------
+
+        cutoff (float)      :   Low-pass cutoff frequency in Hz. Must be between 0 and half the sampling rate.
+        filter_length (int) :   Length of the filter impulse response to create. Creates a symmetric filter so
+                                if this is even then the filter returned will have a length of filter_length + 1.
         """
 
         # Normalized frequency
@@ -552,8 +575,8 @@ class FIR(SynthModule):
 
         # Window using blackman-harris
         n = np.arange(len(ir))
-        cos_a = np.cos(2 * np.pi * n / filter_length)
-        cos_b = np.cos(4 * np.pi * n / filter_length)
+        cos_a = np.cos(2 * np.pi * n / len(n))
+        cos_b = np.cos(4 * np.pi * n / len(n))
         window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
         ir *= window
 
@@ -563,6 +586,13 @@ class FIR(SynthModule):
 class MovingAverage(SynthModule):
     """
     A finite impulse response moving average filter.
+
+    Parameters
+    ----------
+
+    filter_length (int) :   Length of filter and number of samples to take average over. Must be greater than 0.
+                            Defaults to 32.
+    sample_rate (int)   :   Sampling rate to run processing at.
     """
 
     def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
@@ -573,6 +603,11 @@ class MovingAverage(SynthModule):
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)  :   audio samples to filter
         """
 
         impulse = np.ones(self.filter_length) / self.filter_length
