@@ -2,10 +2,11 @@
 Utility functions for DSP related things
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 import librosa
-from ddspdrum.defaults import EPSILON, CONTROL_RATE, SAMPLE_RATE
+import matplotlib.pyplot as plt
+import numpy as np
+
+from ddspdrum.defaults import CONTROL_RATE, EPSILON, SAMPLE_RATE
 
 
 def amplitude_to_db(amplitude: float, amin: float = 1e-10):
@@ -51,7 +52,7 @@ def fix_length(signal: np.array, length: int) -> np.array:
     """
     Pad or truncate array to specified length.
     """
-    
+
     assert signal.ndim == 1
     if len(signal) < length:
         signal = np.pad(signal, [0, length - len(signal)])
@@ -60,12 +61,14 @@ def fix_length(signal: np.array, length: int) -> np.array:
     assert signal.shape == (length,)
     return signal
 
+
 def time_plot(signal, sample_rate=SAMPLE_RATE):
-    t = np.linspace(0, len(signal)/sample_rate, len(signal), endpoint=False)
+    t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
     plt.plot(t, signal)
     plt.xlabel("Time")
     plt.ylabel("Amplitude")
     plt.show()
+
 
 def stft_plot(signal, sample_rate=SAMPLE_RATE):
     X = librosa.stft(signal)

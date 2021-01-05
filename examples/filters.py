@@ -19,10 +19,11 @@
 # response (FIR) lowpasses and an infinite impulse response (IIR)
 # state variable filter.
 
-import ddspdrum.util as utils
 import IPython.display as ipd
 import matplotlib.pyplot as plt
 import numpy as np
+
+import ddspdrum.util as utils
 from ddspdrum.module import FIR, SVF, MovingAverage
 
 # Create some white noise to perform filtering on

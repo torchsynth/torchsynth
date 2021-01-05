@@ -8,12 +8,13 @@ Synth modules.
 import numpy as np
 from scipy.signal import resample
 
-from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE 
-from ddspdrum.util import midi_to_hz, fix_length
+from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
+from ddspdrum.util import fix_length, midi_to_hz
+
 
 class SynthModule:
     """
-    Base class for synthesis modules. 
+    Base class for synthesis modules.
     """
 
     def __init__(self):
@@ -39,10 +40,9 @@ class SynthModule:
         else:
             assert control.ndim == 1
             num_samples = int(
-                    round(len(control) * self.sample_rate / self.control_rate)
-                )
+                round(len(control) * self.sample_rate / self.control_rate)
+            )
             return resample(control, num_samples)
-
 
 
 class ADSR(SynthModule):
@@ -67,7 +67,7 @@ class ADSR(SynthModule):
                                 ADSR that (confusingly, by convention) is not
                                 a time value.
         r                   :   release time (sec), >= 0
-        alpha               :   envelope curve, >= 0. 1 is linear, >1 is 
+        alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
 
@@ -88,10 +88,10 @@ class ADSR(SynthModule):
         self.r = r
 
     def __call__(self, sustain_duration: float = 0):
-        """ Generate an envelope that sustains for a given duration in seconds.
+        """Generate an envelope that sustains for a given duration in seconds.
 
-        Generates a control-rate envelope signal with given attack, decay and 
-        release times, sustained for `sustain_duration` in seconds. E.g., an 
+        Generates a control-rate envelope signal with given attack, decay and
+        release times, sustained for `sustain_duration` in seconds. E.g., an
         envelope with no attack or decay, a sustain duration of 1 and a 0.5
         release will last for 1.5 seconds.
 
@@ -107,11 +107,11 @@ class ADSR(SynthModule):
         )
 
     def _ramp(self, duration: float):
-        """ Makes a ramp of a given duration in seconds at control rate.
+        """Makes a ramp of a given duration in seconds at control rate.
 
-        This function is used for the piece-wise construction of the envelope 
-        signal. Its output monotonically increases from 0 to 1. As a result, 
-        each component of the envelope is a scaled and possibly reversed 
+        This function is used for the piece-wise construction of the envelope
+        signal. Its output monotonically increases from 0 to 1. As a result,
+        each component of the envelope is a scaled and possibly reversed
         version of this ramp:
 
         attack      -->     returns an `a`-length ramp, as is.
@@ -163,11 +163,11 @@ class ADSR(SynthModule):
 
 
 class VCO(SynthModule):
-    """ Voltage controlled oscillator. 
+    """Voltage controlled oscillator.
 
-    Think of this as a VCO on a modular synthesizer. It has a base pitch 
-    (specified here as a midi value), and a pitch modulation depth. Its call 
-    accepts a control-rate modulation signal between 0 - 1. An array of 0's 
+    Think of this as a VCO on a modular synthesizer. It has a base pitch
+    (specified here as a midi value), and a pitch modulation depth. Its call
+    accepts a control-rate modulation signal between 0 - 1. An array of 0's
     returns a stationary audio signal at its base pitch.
 
 
@@ -186,9 +186,7 @@ class VCO(SynthModule):
     >>> two_8ve_chirp = myVCO(np.linspace(0, 1, 1000, endpoint=False))
     """
 
-    def __init__(
-        self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0
-    ):
+    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
         super().__init__()
 
         assert 0 <= midi_f0 <= 127
@@ -200,24 +198,24 @@ class VCO(SynthModule):
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
-        """ Generates audio signal from control-rate mod.
+        """Generates audio signal from control-rate mod.
 
-        There are three representations of the 'pitch' at play here: (1) midi, 
+        There are three representations of the 'pitch' at play here: (1) midi,
         (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
 
-        (1) midi    This is an abuse of the standard midi convention, where 
-                    semitone pitches are mapped from 0 - 127. Here it's a 
-                    convenient way to represent pitch linearly. An A above 
+        (1) midi    This is an abuse of the standard midi convention, where
+                    semitone pitches are mapped from 0 - 127. Here it's a
+                    convenient way to represent pitch linearly. An A above
                     middle C is midi 69.
 
         (2) freq    Pitch scales logarithmically in frequency. A is 440Hz.
 
-        (3) phase   This is the argument of the cosine function that generates 
-                    sound. Frequency is the first derivative of phase; phase is 
+        (3) phase   This is the argument of the cosine function that generates
+                    sound. Frequency is the first derivative of phase; phase is
                     integrated frequency (~ish).
 
-        First we generate the 'pitch contour' of the signal in midi values (mod 
-        contour + base pitch). Then we convert to a phase argument (via 
+        First we generate the 'pitch contour' of the signal in midi values (mod
+        contour + base pitch). Then we convert to a phase argument (via
         frequency), then output sound.
 
         """
@@ -232,7 +230,7 @@ class VCO(SynthModule):
         return self.oscillator(cosine_argument)
 
     def make_argument(self, control_as_frequency: np.array):
-        """ 
+        """
         Generates the phase argument to feed a cosine function to make audio.
         """
 
@@ -241,60 +239,57 @@ class VCO(SynthModule):
 
     def oscillator(self, argument):
         """
-            Dummy method. Overridden by child class VCO's.
+        Dummy method. Overridden by child class VCO's.
         """
         pass
 
 
 class SineVCO(VCO):
-    """ Simple VCO that generates a pitched sinudoid.
+    """Simple VCO that generates a pitched sinudoid.
 
-        Built off the VCO base class, it simply implements a cosine function as oscillator.
+    Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
 
-    def __init__(
-        self,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
-        phase: float = 0
-    ):
+    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
         super().__init__(midi_f0, mod_depth, phase)
 
     def oscillator(self, argument):
         return np.cos(argument)
 
+
 class SquareSawVCO(VCO):
-    """ VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
+    """VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
 
-        With apologies to:
+    With apologies to:
 
-        Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for 
-            virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
+        virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
     """
 
     def __init__(
-        self, 
+        self,
         shape: float = 0,
         midi_f0: float = 10,
-        mod_depth: float = 50, 
-        phase: float = 0    
+        mod_depth: float = 50,
+        phase: float = 0,
     ):
         super().__init__(midi_f0, mod_depth, phase)
-        assert 0 <= shape <= 1 
+        assert 0 <= shape <= 1
         self.shape = shape
 
     def oscillator(self, argument):
         k = self.get_k()
-        square = np.tanh(np.pi * k * np.sin(argument)/2)
-        return (1 - self.shape/2) * square * (1 + self.shape * np.cos(argument))
-    
+        square = np.tanh(np.pi * k * np.sin(argument) / 2)
+        return (1 - self.shape / 2) * square * (1 + self.shape * np.cos(argument))
+
     def get_k(self):
         f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
         return 12000 / (f0 * np.log10(f0))
 
+
 class VCA(SynthModule):
     """
-    Voltage controlled amplifier. 
+    Voltage controlled amplifier.
     """
 
     def __init__(self):
@@ -312,17 +307,17 @@ class VCA(SynthModule):
 
 class Drum:
     """
-    A package of modules that makes one drum hit. 
+    A package of modules that makes one drum hit.
     """
 
     def __init__(
         self,
-        pitch_adsr: ADSR = ADSR(), 
-        amp_adsr: ADSR = ADSR(), 
-        vco: VCO = VCO(), 
+        pitch_adsr: ADSR = ADSR(),
+        amp_adsr: ADSR = ADSR(),
+        vco: VCO = VCO(),
         vca: VCA = VCA(),
         sustain_duration: float = 0,
-   ):
+    ):
 
         self.pitch_envelope = pitch_adsr(sustain_duration)
         self.amp_envelope = amp_adsr(sustain_duration)
@@ -337,8 +332,8 @@ class Drum:
 
 class SVF(SynthModule):
     """
-    A State Variable Filter that can do lowpass, highpass, bandpass, and 
-    bandreject filtering. Allows modulation of the cutoff frequency and an 
+    A State Variable Filter that can do lowpass, highpass, bandpass, and
+    bandreject filtering. Allows modulation of the cutoff frequency and an
     adjustable resonance parameter. Can self-oscillate to make a sinusoid.
     """
 

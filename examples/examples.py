@@ -14,8 +14,9 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, SineVCO, SquareSawVCO, Drum
-from ddspdrum.util import time_plot, stft_plot
+from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
+from ddspdrum.util import stft_plot, time_plot
+
 # -
 
 # Synthesis parameters.
@@ -89,8 +90,8 @@ my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
     vco=SineVCO(midi_f0=69, mod_depth=12),
-    sustain_duration=1
-    )
+    sustain_duration=1,
+)
 
 drum_out = my_drum()
 
@@ -105,8 +106,8 @@ my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
     vco=SquareSawVCO(shape=0, midi_f0=24, mod_depth=12),
-    sustain_duration=1
-    )
+    sustain_duration=1,
+)
 
 drum_out = my_drum()
 stft_plot(drum_out)
