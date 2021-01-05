@@ -304,21 +304,30 @@ class VCA(SynthModule):
         signal = fix_length(audiosample, len(amp))
         return amp * signal
 
+class ModularSynth:
+    """
+    An abstract class for a modulary synth, ensuring that all modules
+    have the same sample and control rate.
+    """
 
-class Drum:
+
+class Drum(ModularSynth):
     """
     A package of modules that makes one drum hit.
     """
 
     def __init__(
-        self,
-        pitch_adsr: ADSR = ADSR(),
-        amp_adsr: ADSR = ADSR(),
-        vco: VCO = VCO(),
-        vca: VCA = VCA(),
-        sustain_duration: float = 0,
+            self,
+            sustain_duration: float,
+            pitch_adsr: ADSR = ADSR(),
+            amp_adsr: ADSR = ADSR(),
+            vco: VCO = VCO(),
+            vca: VCA = VCA(),
     ):
+        # TODO: Should we make this strictly greater than 0.0?
+        assert sustain_duration >= 0
 
+        # TODO: Do we want the same sustain_duration for both ADSRs?
         self.pitch_envelope = pitch_adsr(sustain_duration)
         self.amp_envelope = amp_adsr(sustain_duration)
         self.vco = vco
