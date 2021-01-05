@@ -384,10 +384,12 @@ class SVF(SynthModule):
     mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
     cutoff (float)          :   cutoff frequency in Hz must be between 0 and half the
                                 sample rate. Defaults to 1000Hz
-    resonance (float)       :   filter resonance, or "Quality Factor". Higher values cause the filter to resonate more.
-                                Must be greater than 0.5. Defaults to 0.707.
-    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which turns this into a sine wave oscillator
-                                with the filter cutoff as the frequency. Defaults to False.
+    resonance (float)       :   filter resonance, or "Quality Factor". Higher values
+                                cause the filter to resonate more. Must be greater than
+                                0.5. Defaults to 0.707.
+    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which turns
+                                this into a sine wave oscillator with the filter cutoff
+                                as the frequency. Defaults to False.
     sample_rate (float)     :   Processing sample rate.
     """
 
@@ -423,9 +425,11 @@ class SVF(SynthModule):
         ----------
 
         audio (np.ndarray)          :   Audio samples to filter
-        cutoff_mod (np.ndarray)     :   Control signal used to modulate the filter cutoff. Values must be in range [0,1]
-        cutoff_mod_amount (float)   :   How much to apply the control signal to the filter cutoff in Hz. Can be positive
-                                        or negative. Defaults to 0.
+        cutoff_mod (np.ndarray)     :   Control signal used to modulate the filter
+                                        cutoff. Values must be in range [0,1]
+        cutoff_mod_amount (float)   :   How much to apply the control signal to the
+                                        filter cutoff in Hz. Can be positive or
+                                        negative. Defaults to 0.
         """
 
         h = np.zeros(2)
@@ -551,15 +555,17 @@ class BandRejectSVF(SVF):
 
 class FIR(SynthModule):
     """
-    A finite impulse response low-pass filter. Uses convolution with a symmetric windowed sinc function.
+    A finite impulse response low-pass filter. Uses convolution with a symmetric
+    windowed sinc function.
 
     Parameters
     ----------
 
-    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and half the sampling rate.
-                            Defaults to 1000Hz.
-    filter_length (int) :   The length of the filter in samples. A longer filter will result in a steeper
-                            filter cutoff. Should be greater than 4. Defaults to 512 samples.
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and
+                            half the sampling rate. Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will
+                            result in a steeper filter cutoff. Should be greater than 4.
+                            Defaults to 512 samples.
     sample_rate (int)   :   Sampling rate to run processing at.
     """
 
@@ -600,9 +606,11 @@ class FIR(SynthModule):
         Parameters
         ----------
 
-        cutoff (float)      :   Low-pass cutoff frequency in Hz. Must be between 0 and half the sampling rate.
-        filter_length (int) :   Length of the filter impulse response to create. Creates a symmetric filter so
-                                if this is even then the filter returned will have a length of filter_length + 1.
+        cutoff (float)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
+                                half the sampling rate.
+        filter_length (int) :   Length of the filter impulse response to create. Creates
+                                a symmetric filter so if this is even then the filter
+                                returned will have a length of filter_length + 1.
         """
 
         # Normalized frequency
@@ -632,8 +640,8 @@ class MovingAverage(SynthModule):
     Parameters
     ----------
 
-    filter_length (int) :   Length of filter and number of samples to take average over. Must be greater than 0.
-                            Defaults to 32.
+    filter_length (int) :   Length of filter and number of samples to take average over.
+                            Must be greater than 0. Defaults to 32.
     sample_rate (int)   :   Sampling rate to run processing at.
     """
 
