@@ -355,7 +355,8 @@ class Drum(Synth):
         super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
         assert sustain_duration >= 0
 
-        # TODO: Do we want the same sustain_duration for both ADSRs?
+        # The convention for triggering a note event is that it has
+        # the same sustain_duration for both ADSRs.
         self.pitch_envelope = pitch_adsr(sustain_duration)
         self.amp_envelope = amp_adsr(sustain_duration)
         self.vco = vco
