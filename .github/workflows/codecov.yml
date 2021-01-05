@@ -18,7 +18,7 @@ jobs:
         python-version: 3.7
     - name: sndfile
       run: |
-        apt-get install -y libsndfile-dev
+        sudo apt-get install -y libsndfile-dev
     - name: Generate coverage report
       run: |
         pip install coverage
