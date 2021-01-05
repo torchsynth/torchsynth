@@ -17,9 +17,9 @@ class SynthModule:
     Base class for synthesis modules.
     """
 
-    def __init__(self):
-        self.sample_rate = SAMPLE_RATE
-        self.control_rate = CONTROL_RATE
+    def __init__(self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE):
+        self.sample_rate = sample_rate
+        self.control_rate = control_rate
 
     def control_to_sample_rate(self, control: np.array) -> np.array:
         """
@@ -57,6 +57,7 @@ class ADSR(SynthModule):
         s: float = 0.5,
         r: float = 0.5,
         alpha: float = 3.0,
+        sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
         """
         Parameters
@@ -70,8 +71,8 @@ class ADSR(SynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
-        super().__init__()
         assert alpha >= 0
         self.alpha = alpha
 
@@ -186,8 +187,9 @@ class VCO(SynthModule):
     >>> two_8ve_chirp = myVCO(np.linspace(0, 1, 1000, endpoint=False))
     """
 
-    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
-        super().__init__()
+    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0,         sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         assert 0 <= midi_f0 <= 127
         self.midi_f0 = midi_f0
@@ -292,8 +294,10 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,         sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.__envelope = np.array([])
         self.__audio = np.array([])
 
@@ -352,10 +356,10 @@ class SVF(SynthModule):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
-        super().__init__()
-        self.sample_rate = sample_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.mode = mode
         self.cutoff = cutoff
         self.resonance = resonance
@@ -437,10 +441,10 @@ class FIR(SynthModule):
         self,
         cutoff: float = 1000,
         filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
-        super().__init__()
-        self.sample_rate = sample_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.filter_length = filter_length
         self.cutoff = cutoff
 
@@ -487,16 +491,16 @@ class MovingAverage(SynthModule):
     A finite impulse response moving average filter.
     """
 
-    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
-        super().__init__()
-        self.sample_rate = sample_rate
+    def __init__(self, filter_length: int = 32,         sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+                 ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.filter_length = filter_length
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         """
-
         impulse = np.ones(self.filter_length) / self.filter_length
         y = np.convolve(audio, impulse)
         return y

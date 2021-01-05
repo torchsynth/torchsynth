@@ -51,10 +51,8 @@ midi_f0 = 12
 sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
 sine_out = sine_vco(envelope, phase=0)
 
-# +
 stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
-# -
 
 # Check this out, it's a square / saw oscillator. Use the shape parameter to interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
@@ -65,11 +63,10 @@ shape = 0
 midi_f0 = 55
 sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
+# -
 
-# +
 stft_plot(sqs_out)
 ipd.Audio(sqs_out, rate=sqs.sample_rate)
-# -
 
 # Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
@@ -77,11 +74,9 @@ ipd.Audio(sqs_out, rate=sqs.sample_rate)
 vca = VCA()
 vca_out = vca(envelope, sqs_out)
 
-# +
 time_plot(vca_out)
 stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
-# -
 
 # Alternately, you can just use the Drum class that composes all these modules together automatically.
 
@@ -112,4 +107,3 @@ my_drum = Drum(
 drum_out = my_drum()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
-# -
