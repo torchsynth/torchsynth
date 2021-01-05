@@ -112,6 +112,22 @@ stft_plot(drum_out)
 
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
+# Use the `noise_ratio` parameter to add noise.
+
+# +
+my_drum = Drum(
+    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
+    vco=SineVCO(midi_f0=55, mod_depth=6),
+    sustain_duration=1,
+    noise_ratio=0.5
+)
+
+drum_out = my_drum()
+stft_plot(drum_out)
+ipd.Audio(drum_out, rate=vca.sample_rate)
+# -
+
 # You can also use the **SquareSawVCO oscillator** in the drum module.
 
 
@@ -121,6 +137,24 @@ my_drum = Drum(
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
     vco=SquareSawVCO(shape=0, midi_f0=24, mod_depth=12),
     sustain_duration=1,
+)
+
+drum_out = my_drum()
+stft_plot(drum_out)
+ipd.Audio(drum_out, rate=vca.sample_rate)
+# -
+
+# Additionally, the Drum class can take any number of oscillators.
+
+# +
+my_drum = Drum(
+    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
+    vco=[
+        SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
+        SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12)
+    ],
+    sustain_duration=1
 )
 
 drum_out = my_drum()

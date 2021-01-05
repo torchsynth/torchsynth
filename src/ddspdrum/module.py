@@ -6,7 +6,7 @@ Synth modules.
 """
 
 from abc import abstractmethod
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from scipy.signal import resample
@@ -319,15 +319,12 @@ class VCA(SynthModule):
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
-        self.__envelope = np.array([])
-        self.__audio = np.array([])
-
-    def __call__(self, envelopecontrol: np.array, audiosample: np.array):
-        envelopecontrol = np.clip(envelopecontrol, 0, 1)
-        audiosample = np.clip(audiosample, -1, 1)
-        amp = self.control_to_sample_rate(envelopecontrol)
-        signal = fix_length(audiosample, len(amp))
-        return amp * signal
+    def __call__(self, control_in: np.array, audio_in: np.array):
+        control_in = np.clip(control_in, 0, 1)
+        audio_in = np.clip(audio_in, -1, 1)
+        amp = self.control_to_sample_rate(control_in)
+        audio_in = fix_length(audio_in, len(amp))
+        return amp * audio_in
 
 
 class Synth:
@@ -353,10 +350,14 @@ class Drum(Synth):
         sustain_duration: float,
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
-        vco: VCO = VCO(),
+        vco: Union[VCO, List[VCO]] = VCO(),
         vca: VCA = VCA(),
+        noise_ratio: float = 0
     ):
-        super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
+        if type(vco) is not list:
+            vco = [vco]
+
+        super().__init__(modules=[pitch_adsr, amp_adsr, *vco, vca])
         assert sustain_duration >= 0
 
         # The convention for triggering a note event is that it has
@@ -365,11 +366,26 @@ class Drum(Synth):
         self.amp_envelope = amp_adsr(sustain_duration)
         self.vco = vco
         self.vca = vca
+        self.noise_ratio = noise_ratio
 
     def __call__(self):
         self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
-        vco_out = self.vco(self.pitch_envelope)
+
+        vco_out = self.play_vco_bank(self.vco, self.pitch_envelope)
+        vco_out = self.add_noise(vco_out, self.noise_ratio)
+
         return self.vca(self.amp_envelope, vco_out)
+
+    @staticmethod
+    def play_vco_bank(vco_bank, pitch_envelope):
+        audio_out = 0
+        for vco in vco_bank:
+            audio_out += vco(pitch_envelope)
+        return audio_out / len(vco_bank)
+
+    @staticmethod
+    def add_noise(audio_in, ratio):
+        return (1 - ratio) * audio_in + ratio * np.random.rand(len(audio_in))
 
 
 class SVF(SynthModule):
