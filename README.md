@@ -2,7 +2,7 @@
 
 A DDSP (differentiable) drum synthesizer
 
-[![codecov.io](https://codecov.io/gh/turian/ddsp-drum/branch/main/graphs/badge.svg)](https://codecov.io/github/turian/ddsp-drum?branch=master)]
+[![codecov.io](https://codecov.io/gh/turian/ddsp-drum/branch/main/graphs/badge.svg)](https://codecov.io/github/turian/ddsp-drum?branch=master)
 
 ## Development Installation
 
