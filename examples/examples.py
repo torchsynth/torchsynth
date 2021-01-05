@@ -105,9 +105,3 @@ drum_out = my_drum()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
-
-
-
-
-
-
