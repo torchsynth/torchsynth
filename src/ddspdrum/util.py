@@ -3,10 +3,11 @@ Utility functions for DSP related things
 """
 
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.defaults import CONTROL_RATE, EPSILON, SAMPLE_RATE
+from ddspdrum.defaults import EPSILON, SAMPLE_RATE
 
 
 def amplitude_to_db(amplitude: float, amin: float = 1e-10):
@@ -74,5 +75,5 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
     X = librosa.stft(signal)
     Xdb = librosa.amplitude_to_db(abs(X))
     plt.figure(figsize=(5, 5))
-    librosa.display.specshow(Xdb, sr=SAMPLE_RATE, x_axis="time", y_axis="log")
+    librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
     plt.show()

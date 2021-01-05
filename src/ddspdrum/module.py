@@ -5,6 +5,9 @@ Synth modules.
                 - Convert operations to tensors, obvs.
 """
 
+from abc import abstractmethod
+from typing import List
+
 import numpy as np
 from scipy.signal import resample
 
@@ -17,9 +20,11 @@ class SynthModule:
     Base class for synthesis modules.
     """
 
-    def __init__(self):
-        self.sample_rate = SAMPLE_RATE
-        self.control_rate = CONTROL_RATE
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
+        self.sample_rate = sample_rate
+        self.control_rate = control_rate
 
     def control_to_sample_rate(self, control: np.array) -> np.array:
         """
@@ -57,6 +62,8 @@ class ADSR(SynthModule):
         s: float = 0.5,
         r: float = 0.5,
         alpha: float = 3.0,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
     ):
         """
         Parameters
@@ -70,8 +77,8 @@ class ADSR(SynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
-        super().__init__()
         assert alpha >= 0
         self.alpha = alpha
 
@@ -163,7 +170,8 @@ class ADSR(SynthModule):
 
 
 class VCO(SynthModule):
-    """Voltage controlled oscillator.
+    """
+    Voltage controlled oscillator.
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
@@ -175,9 +183,7 @@ class VCO(SynthModule):
     ----------
 
     midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
-    mod_depth (flt)     :       depth of the pitch modulation; 0 means none.
-
-    TODO:   - more than just cosine.
+    mod_depth (flt)     :       depth of the pitch modulation in semitones.
 
     Examples
     --------
@@ -186,19 +192,28 @@ class VCO(SynthModule):
     >>> two_8ve_chirp = myVCO(np.linspace(0, 1, 1000, endpoint=False))
     """
 
-    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
-        super().__init__()
+    def __init__(
+        self,
+        midi_f0: float = 10,
+        mod_depth: float = 50,
+        phase: float = 0,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         assert 0 <= midi_f0 <= 127
         self.midi_f0 = midi_f0
 
         assert mod_depth >= 0
         self.mod_depth = mod_depth
+        assert 0 <= self.midi_f0 + self.mod_depth <= 127
 
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
-        """Generates audio signal from control-rate mod.
+        """
+        Generates audio signal from control-rate mod.
 
         There are three representations of the 'pitch' at play here: (1) midi,
         (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
@@ -237,6 +252,7 @@ class VCO(SynthModule):
         up_sampled = self.control_to_sample_rate(control_as_frequency)
         return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
 
+    @abstractmethod
     def oscillator(self, argument):
         """
         Dummy method. Overridden by child class VCO's.
@@ -245,20 +261,23 @@ class VCO(SynthModule):
 
 
 class SineVCO(VCO):
-    """Simple VCO that generates a pitched sinudoid.
+    """
+    Simple VCO that generates a pitched sinudoid.
 
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
 
     def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
-        super().__init__(midi_f0, mod_depth, phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
         return np.cos(argument)
 
 
 class SquareSawVCO(VCO):
-    """VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
+    """
+    VCO that can be either a square or a sawtooth waveshape.
+    Tweak with the shape parameter. (0 is square.)
 
     With apologies to:
 
@@ -273,16 +292,19 @@ class SquareSawVCO(VCO):
         mod_depth: float = 50,
         phase: float = 0,
     ):
-        super().__init__(midi_f0, mod_depth, phase)
-        assert 0 <= shape <= 1
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+
+        # 0 is square. 1 is saw.
+        assert 0.0 <= shape <= 1.0
         self.shape = shape
 
     def oscillator(self, argument):
-        k = self.get_k()
-        square = np.tanh(np.pi * k * np.sin(argument) / 2)
+        square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
         return (1 - self.shape / 2) * square * (1 + self.shape * np.cos(argument))
 
-    def get_k(self):
+    @property
+    def k(self):
+        # What does k mean here? Can we give it a better name?
         f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
         return 12000 / (f0 * np.log10(f0))
 
@@ -292,8 +314,11 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.__envelope = np.array([])
         self.__audio = np.array([])
 
@@ -305,20 +330,37 @@ class VCA(SynthModule):
         return amp * signal
 
 
-class Drum:
+class Synth:
+    """
+    An abstract class for a modular synth, ensuring that all modules
+    have the same sample and control rate.
+    """
+
+    def __init__(self, modules: List[SynthModule]):
+        # Check that we are not mixing different control rates or sample rates
+        for m in modules[:1]:
+            assert m.sample_rate == modules[0].sample_rate
+            assert m.control_rate == modules[0].control_rate
+
+
+class Drum(Synth):
     """
     A package of modules that makes one drum hit.
     """
 
     def __init__(
         self,
+        sustain_duration: float,
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
         vco: VCO = VCO(),
         vca: VCA = VCA(),
-        sustain_duration: float = 0,
     ):
+        super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
+        assert sustain_duration >= 0
 
+        # The convention for triggering a note event is that it has
+        # the same sustain_duration for both ADSRs.
         self.pitch_envelope = pitch_adsr(sustain_duration)
         self.amp_envelope = amp_adsr(sustain_duration)
         self.vco = vco
@@ -344,9 +386,10 @@ class SVF(SynthModule):
         resonance: float = 0.707,
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
     ):
-        super().__init__()
-        self.sample_rate = sample_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.mode = mode
         self.cutoff = cutoff
         self.resonance = resonance
@@ -380,7 +423,8 @@ class SVF(SynthModule):
 
             # If there is a cutoff modulation envelope, update coefficients
             if apply_modulation:
-                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
+                # BUG: Cutoff variable never used?
+                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount  # noqa: F841
                 coeff0, coeff1, rho = self.calculate_coefficients(
                     self.cutoff + cutoff_mod[i] * cutoff_mod_amount
                 )
@@ -429,9 +473,10 @@ class FIR(SynthModule):
         cutoff: float = 1000,
         filter_length: int = 512,
         sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
     ):
-        super().__init__()
-        self.sample_rate = sample_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.filter_length = filter_length
         self.cutoff = cutoff
 
@@ -478,16 +523,20 @@ class MovingAverage(SynthModule):
     A finite impulse response moving average filter.
     """
 
-    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
-        super().__init__()
-        self.sample_rate = sample_rate
+    def __init__(
+        self,
+        filter_length: int = 32,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
         self.filter_length = filter_length
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         """
-
         impulse = np.ones(self.filter_length) / self.filter_length
         y = np.convolve(audio, impulse)
         return y
