@@ -355,7 +355,6 @@ class Drum(Synth):
         vca: VCA = VCA(),
     ):
         super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
-        # TODO: Should we make this strictly greater than 0.0?
         assert sustain_duration >= 0
 
         # TODO: Do we want the same sustain_duration for both ADSRs?
