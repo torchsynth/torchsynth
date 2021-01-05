@@ -18,6 +18,7 @@ jobs:
     - name: Generate coverage report
       run: |
         pip install coverage
+        pip install ipython
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.
         coverage xml
