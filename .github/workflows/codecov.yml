@@ -19,6 +19,7 @@ jobs:
       run: |
         pip install coverage
         pip install ipython
+        pip install -e .
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.
         coverage xml
