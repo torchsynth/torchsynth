@@ -182,7 +182,7 @@ class VCO(SynthModule):
     ----------
 
     midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
-    mod_depth (flt)     :       depth of the pitch modulation; 0 means none.
+    mod_depth (flt)     :       depth of the pitch modulation in semitones; 0 means none.
 
     TODO:   - more than just cosine.
 
@@ -208,6 +208,7 @@ class VCO(SynthModule):
 
         assert mod_depth >= 0
         self.mod_depth = mod_depth
+        assert 0 <= self.midi_f0 + self.mod_depth <= 127
 
         self.phase = phase
 
