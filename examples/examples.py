@@ -13,6 +13,7 @@ import IPython.display as ipd
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
+import numpy as np
 
 from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
 from ddspdrum.defaults import SAMPLE_RATE
