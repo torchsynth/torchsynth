@@ -19,7 +19,7 @@ jobs:
       run: |
         pip install coverage
         # These are used in the examples notebook.
-        pip install ipython librosa
+        pip install ipython librosa matplotlib
         pip install -e .
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.

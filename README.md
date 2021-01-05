@@ -19,3 +19,8 @@ installed. It's a little fiddly to install, and those instructions
 are the best. jupytext makes it easy to put demo notebooks into
 the repo as Python files. (Larger assets like ipynb files we should
 avoid.)
+
+To run examples, you should also do:
+```
+pip install ipython librosa matplotlib
+```
