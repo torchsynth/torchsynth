@@ -536,28 +536,26 @@ class FIR(SynthModule):
 
     def windowed_sinc(self, cutoff: float, filter_length: float) -> np.ndarray:
         """
-        Calculates the impulse response for FIR lowpass filter using the
+        Calculates the impulse response for FIR low-pass filter using the
         windowed sinc function method
         """
 
-        ir = np.zeros(filter_length + 1)
+        # Normalized frequency
         omega = 2 * np.pi * cutoff / self.sample_rate
 
-        for i in range(filter_length + 1):
-            n = i - filter_length / 2
-            if n != 0:
-                ir[i] = np.sin(n * omega) / n
-            else:
-                ir[i] = omega
+        # Create a symmetric sinc function
+        half_length = int(filter_length / 2)
+        t = np.arange(0 - half_length, half_length + 1)
+        ir = np.sin(t * omega)
+        ir[half_length] = omega
+        ir = np.divide(ir, t, out=ir, where=t != 0)
 
-            window = (
-                0.42
-                - 0.5 * np.cos(2 * np.pi * i / filter_length)
-                + 0.08 * np.cos(2 * np.pi * i / filter_length)
-            )
-            ir[i] *= window
-
-        ir /= omega
+        # Window using blackman-harris
+        n = np.arange(len(ir))
+        cos_a = np.cos(2 * np.pi * n / filter_length)
+        cos_b = np.cos(4 * np.pi * n / filter_length)
+        window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
+        ir *= window
 
         return ir
 
