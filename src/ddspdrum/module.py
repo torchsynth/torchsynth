@@ -293,14 +293,16 @@ class SquareSawVCO(VCO):
     ):
         super().__init__(midi_f0, mod_depth, phase)
         assert 0 <= shape <= 1
+        # TODO: What is the range for midi_f0 and mod_depth?
         self.shape = shape
 
     def oscillator(self, argument):
-        k = self.get_k()
-        square = np.tanh(np.pi * k * np.sin(argument) / 2)
+        square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
         return (1 - self.shape / 2) * square * (1 + self.shape * np.cos(argument))
 
-    def get_k(self):
+    @property
+    def k(self):
+        # What does k mean here? Can we give it a better name?
         f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
         return 12000 / (f0 * np.log10(f0))
 
