@@ -10,9 +10,6 @@
 # %matplotlib inline
 
 import IPython.display as ipd
-import librosa.display
-import matplotlib.pyplot as plt
-import numpy as np
 
 from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
 from ddspdrum.util import stft_plot, time_plot

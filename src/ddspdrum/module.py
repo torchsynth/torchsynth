@@ -167,7 +167,8 @@ class ADSR(SynthModule):
 
 
 class VCO(SynthModule):
-    """Voltage controlled oscillator.
+    """
+    Voltage controlled oscillator.
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
@@ -209,7 +210,8 @@ class VCO(SynthModule):
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
-        """Generates audio signal from control-rate mod.
+        """
+        Generates audio signal from control-rate mod.
 
         There are three representations of the 'pitch' at play here: (1) midi,
         (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
@@ -256,7 +258,8 @@ class VCO(SynthModule):
 
 
 class SineVCO(VCO):
-    """Simple VCO that generates a pitched sinudoid.
+    """
+    Simple VCO that generates a pitched sinudoid.
 
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
@@ -269,7 +272,9 @@ class SineVCO(VCO):
 
 
 class SquareSawVCO(VCO):
-    """VCO that can be either a square or a sawtooth waveshape. Tweak with the shape parameter.
+    """
+    VCO that can be either a square or a sawtooth waveshape.
+    Tweak with the shape parameter.
 
     With apologies to:
 
@@ -319,14 +324,20 @@ class VCA(SynthModule):
         return amp * signal
 
 
-class ModularSynth:
+class Synth:
     """
-    An abstract class for a modulary synth, ensuring that all modules
+    An abstract class for a modular synth, ensuring that all modules
     have the same sample and control rate.
     """
 
+    def __init__(self, modules: list[SynthModule]):
+        # Check that we are not mixing different control rates or sample rates
+        for m in modules[:1]:
+            assert m.sample_rate == modules[0].sample_rate
+            assert m.control_rate == modules[0].control_rate
 
-class Drum(ModularSynth):
+
+class Drum(Synth):
     """
     A package of modules that makes one drum hit.
     """
@@ -339,6 +350,7 @@ class Drum(ModularSynth):
         vco: VCO = VCO(),
         vca: VCA = VCA(),
     ):
+        super().__init__(self, [pitch_adsr, amp_adsr, vco, vca])
         # TODO: Should we make this strictly greater than 0.0?
         assert sustain_duration >= 0
 
@@ -405,6 +417,7 @@ class SVF(SynthModule):
 
             # If there is a cutoff modulation envelope, update coefficients
             if apply_modulation:
+                # BUG: Cutoff variable never used?
                 cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
                 coeff0, coeff1, rho = self.calculate_coefficients(
                     self.cutoff + cutoff_mod[i] * cutoff_mod_amount
