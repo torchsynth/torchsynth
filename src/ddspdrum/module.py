@@ -184,8 +184,6 @@ class VCO(SynthModule):
     midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
     mod_depth (flt)     :       depth of the pitch modulation in semitones.
 
-    TODO:   - more than just cosine.
-
     Examples
     --------
 
