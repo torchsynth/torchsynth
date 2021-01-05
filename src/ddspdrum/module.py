@@ -5,6 +5,8 @@ Synth modules.
                 - Convert operations to tensors, obvs.
 """
 
+from typing import List
+
 import numpy as np
 from scipy.signal import resample
 
@@ -330,7 +332,7 @@ class Synth:
     have the same sample and control rate.
     """
 
-    def __init__(self, modules: list[SynthModule]):
+    def __init__(self, modules: List[SynthModule]):
         # Check that we are not mixing different control rates or sample rates
         for m in modules[:1]:
             assert m.sample_rate == modules[0].sample_rate
@@ -350,7 +352,7 @@ class Drum(Synth):
         vco: VCO = VCO(),
         vca: VCA = VCA(),
     ):
-        super().__init__(self, [pitch_adsr, amp_adsr, vco, vca])
+        super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
         # TODO: Should we make this strictly greater than 0.0?
         assert sustain_duration >= 0
 
