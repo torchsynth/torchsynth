@@ -374,14 +374,28 @@ class Drum(Synth):
 
 class SVF(SynthModule):
     """
-    A State Variable Filter that can do lowpass, highpass, bandpass, and
-    bandreject filtering. Allows modulation of the cutoff frequency and an
-    adjustable resonance parameter. Can self-oscillate to make a sinusoid.
+    A State Variable Filter that can do low-pass, high-pass, band-pass, and
+    band-reject filtering. Allows modulation of the cutoff frequency and an
+    adjustable resonance parameter. Can self-oscillate to make a sinusoid oscillator.
+
+    Parameters
+    ----------
+
+    mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
+    cutoff (float)          :   cutoff frequency in Hz must be between 0 and half the
+                                sample rate. Defaults to 1000Hz
+    resonance (float)       :   filter resonance, or "Quality Factor". Higher values
+                                cause the filter to resonate more. Must be greater than
+                                0.5. Defaults to 0.707.
+    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which turns
+                                this into a sine wave oscillator with the filter cutoff
+                                as the frequency. Defaults to False.
+    sample_rate (float)     :   Processing sample rate.
     """
 
     def __init__(
         self,
-        mode: str = "LPF",
+        mode: str,
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
@@ -391,8 +405,11 @@ class SVF(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         self.mode = mode
+
         self.cutoff = cutoff
+        assert 0 < self.cutoff < self.sample_rate / 2.0
         self.resonance = resonance
+        assert 0.5 <= self.resonance
         self.self_oscillate = self_oscillate
 
     def __call__(
@@ -402,7 +419,17 @@ class SVF(SynthModule):
         cutoff_mod_amount: float = 0.0,
     ) -> np.ndarray:
         """
-        Process audio samples
+        Process audio samples and return filtered results.
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)          :   Audio samples to filter
+        cutoff_mod (np.ndarray)     :   Control signal used to modulate the filter
+                                        cutoff. Values must be in range [0,1]
+        cutoff_mod_amount (float)   :   How much to apply the control signal to the
+                                        filter cutoff in Hz. Can be positive or
+                                        negative. Defaults to 0.
         """
 
         h = np.zeros(2)
@@ -412,22 +439,17 @@ class SVF(SynthModule):
         coeff0, coeff1, rho = self.calculate_coefficients(self.cutoff)
 
         # Check if there is a filter cutoff envelope to apply
-        apply_modulation = False
-        if cutoff_mod is not None and cutoff_mod_amount != 0.0:
+        if cutoff_mod_amount != 0.0:
             # Cutoff modulation must be same length as audio input
             assert len(cutoff_mod) == len(audio)
-            apply_modulation = True
 
         # Processing loop
         for i in range(len(audio)):
 
             # If there is a cutoff modulation envelope, update coefficients
-            if apply_modulation:
-                # BUG: Cutoff variable never used?
-                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount  # noqa: F841
-                coeff0, coeff1, rho = self.calculate_coefficients(
-                    self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                )
+            if cutoff_mod_amount != 0.0:
+                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
+                coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio[i] - rho * h[0] - h[1])
@@ -451,7 +473,11 @@ class SVF(SynthModule):
 
     def calculate_coefficients(self, cutoff: float) -> (float, float, float):
         """
-        Calculates the filter coefficients for SVF given a cutoff frequency
+        Calculates the filter coefficients for SVF.
+
+        Parameters
+        ----------
+        cutoff (float)  :   Filter cutoff frequency in Hz.
         """
 
         g = np.tan(np.pi * cutoff / self.sample_rate)
@@ -463,9 +489,84 @@ class SVF(SynthModule):
         return coeff0, coeff1, rho
 
 
+class LowPassSVF(SVF):
+    """
+    Low-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="LPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class HighPassSVF(SVF):
+    """
+    High-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="HPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class BandPassSVF(SVF):
+    """
+    Band-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="BPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class BandRejectSVF(SVF):
+    """
+    Band-reject / band-stop filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="BSF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
 class FIR(SynthModule):
     """
-    A Finite Impulse Response filter
+    A finite impulse response low-pass filter. Uses convolution with a symmetric
+    windowed sinc function.
+
+    Parameters
+    ----------
+
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and
+                            half the sampling rate. Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will
+                            result in a steeper filter cutoff. Should be greater than 4.
+                            Defaults to 512 samples.
+    sample_rate (int)   :   Sampling rate to run processing at.
     """
 
     def __init__(
@@ -478,42 +579,56 @@ class FIR(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         self.filter_length = filter_length
+        assert self.filter_length > 4
         self.cutoff = cutoff
+        assert 0 < self.cutoff < self.sample_rate / 2
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         TODO: Cutoff frequency modulation, if there is an efficient way to do it
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)  :   audio samples to filter
         """
 
         impulse = self.windowed_sinc(self.cutoff, self.filter_length)
         y = np.convolve(audio, impulse)
         return y
 
-    def windowed_sinc(self, cutoff: float, filter_length: float) -> np.ndarray:
+    def windowed_sinc(self, cutoff: float, filter_length: int) -> np.ndarray:
         """
-        Calculates the impulse response for FIR lowpass filter using the
+        Calculates the impulse response for FIR low-pass filter using the
         windowed sinc function method
+
+        Parameters
+        ----------
+
+        cutoff (float)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
+                                half the sampling rate.
+        filter_length (int) :   Length of the filter impulse response to create. Creates
+                                a symmetric filter so if this is even then the filter
+                                returned will have a length of filter_length + 1.
         """
 
-        ir = np.zeros(filter_length + 1)
+        # Normalized frequency
         omega = 2 * np.pi * cutoff / self.sample_rate
 
-        for i in range(filter_length + 1):
-            n = i - filter_length / 2
-            if n != 0:
-                ir[i] = np.sin(n * omega) / n
-            else:
-                ir[i] = omega
+        # Create a symmetric sinc function
+        half_length = int(filter_length / 2)
+        t = np.arange(0 - half_length, half_length + 1)
+        ir = np.sin(t * omega)
+        ir[half_length] = omega
+        ir = np.divide(ir, t, out=ir, where=t != 0)
 
-            window = (
-                0.42
-                - 0.5 * np.cos(2 * np.pi * i / filter_length)
-                + 0.08 * np.cos(2 * np.pi * i / filter_length)
-            )
-            ir[i] *= window
-
-        ir /= omega
+        # Window using blackman-harris
+        n = np.arange(len(ir))
+        cos_a = np.cos(2 * np.pi * n / len(n))
+        cos_b = np.cos(4 * np.pi * n / len(n))
+        window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
+        ir *= window
 
         return ir
 
@@ -521,6 +636,13 @@ class FIR(SynthModule):
 class MovingAverage(SynthModule):
     """
     A finite impulse response moving average filter.
+
+    Parameters
+    ----------
+
+    filter_length (int) :   Length of filter and number of samples to take average over.
+                            Must be greater than 0. Defaults to 32.
+    sample_rate (int)   :   Sampling rate to run processing at.
     """
 
     def __init__(
@@ -532,10 +654,16 @@ class MovingAverage(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         self.filter_length = filter_length
+        assert self.filter_length > 0
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)  :   audio samples to filter
         """
         impulse = np.ones(self.filter_length) / self.filter_length
         y = np.convolve(audio, impulse)
