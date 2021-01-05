@@ -267,7 +267,7 @@ class SineVCO(VCO):
     """
 
     def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
-        super().__init__(midi_f0, mod_depth, phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
         return np.cos(argument)
@@ -291,9 +291,8 @@ class SquareSawVCO(VCO):
         mod_depth: float = 50,
         phase: float = 0,
     ):
-        super().__init__(midi_f0, mod_depth, phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         assert 0 <= shape <= 1
-        # TODO: What is the range for midi_f0 and mod_depth?
         self.shape = shape
 
     def oscillator(self, argument):
