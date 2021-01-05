@@ -14,7 +14,8 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, VCO, Drum
+from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
+from ddspdrum.util import stft_plot, time_plot
 
 # -
 
@@ -43,70 +44,72 @@ dur = a + d + r + sustain_duration
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr(sustain_duration)
+time_plot(envelope, adsr.control_rate)
 
-# Timelines for plots, in seconds based on control rate and sample rate, respectively.
-t_cr = np.linspace(0, dur, int(dur * adsr.control_rate), endpoint=False)
-t_sr = np.linspace(0, dur, int(dur * adsr.sample_rate), endpoint=False)
-
-plt.plot(t_cr, envelope)
-plt.title(adsr)
-plt.xlabel("time (sec)")
-plt.ylabel("amplitude")
-plt.show()
-
-# VCO test
+# SineVCO test
 midi_f0 = 12
-vco = VCO(midi_f0=midi_f0, mod_depth=50)
-vco_out = vco(envelope, phase=0)
+sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
+sine_out = sine_vco(envelope, phase=0)
 
 # +
-X = librosa.stft(vco_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vco.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
+stft_plot(sine_out)
+ipd.Audio(sine_out, rate=sine_vco.sample_rate)
+# -
 
-ipd.Audio(vco_out, rate=vco.sample_rate)
+# Check this out, it's a square / saw oscillator. Use the shape parameter to interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
+
+# +
+# SquareSawVCO test: shape 0 --> square, 1 --> saw.
+
+shape = 0
+midi_f0 = 55
+sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
+sqs_out = sqs(envelope, phase=0)
+
+# +
+stft_plot(sqs_out)
+ipd.Audio(sqs_out, rate=sqs.sample_rate)
 # -
 
 # Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
 # VCA test
 vca = VCA()
-vca_out = vca(envelope, vco_out)
+vca_out = vca(envelope, sqs_out)
 
 # +
-plt.plot(t_sr, vca_out)
-plt.xlabel("time (sec)")
-plt.ylabel("amplitude")
-plt.show()
-
-X = librosa.stft(vca_out)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
-
+time_plot(vca_out)
+stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
 # -
 
 # Alternately, you can just use the Drum class that composes all these modules together automatically.
 
 # +
-my_drum = Drum()
+my_drum = Drum(
+    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
+    vco=SineVCO(midi_f0=69, mod_depth=12),
+    sustain_duration=1,
+)
 
-boom = my_drum()
+drum_out = my_drum()
 
-X = librosa.stft(boom)
-Xdb = librosa.amplitude_to_db(abs(X))
-plt.figure(figsize=(5, 5))
-librosa.display.specshow(Xdb, sr=vca.sample_rate, x_axis="time", y_axis="hz")
-plt.ylim(0, 2000)
-plt.show()
+stft_plot(drum_out)
 
-ipd.Audio(boom, rate=vca.sample_rate)
+ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
+# You can also use the **SquareSawVCO oscillator** in the drum module.
 
+# +
+my_drum = Drum(
+    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
+    vco=SquareSawVCO(shape=0, midi_f0=24, mod_depth=12),
+    sustain_duration=1,
+)
 
+drum_out = my_drum()
+stft_plot(drum_out)
+ipd.Audio(drum_out, rate=vca.sample_rate)
+# -
