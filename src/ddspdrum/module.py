@@ -339,7 +339,7 @@ class SVF(SynthModule):
 
     def __init__(
         self,
-        mode: str = "LPF",
+        mode: str,
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
@@ -369,17 +369,15 @@ class SVF(SynthModule):
         coeff0, coeff1, rho = self.calculate_coefficients(self.cutoff)
 
         # Check if there is a filter cutoff envelope to apply
-        apply_modulation = False
-        if cutoff_mod is not None and cutoff_mod_amount != 0.0:
+        if cutoff_mod_amount != 0.0:
             # Cutoff modulation must be same length as audio input
             assert len(cutoff_mod) == len(audio)
-            apply_modulation = True
 
         # Processing loop
         for i in range(len(audio)):
 
             # If there is a cutoff modulation envelope, update coefficients
-            if apply_modulation:
+            if cutoff_mod_amount != 0.0:
                 cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
                 coeff0, coeff1, rho = self.calculate_coefficients(
                     self.cutoff + cutoff_mod[i] * cutoff_mod_amount
@@ -417,6 +415,70 @@ class SVF(SynthModule):
         rho = 2.0 * R + g
 
         return coeff0, coeff1, rho
+
+
+class LowPassSVF(SVF):
+    """
+    Low-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="LPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class HighPassSVF(SVF):
+    """
+    High-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="HPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class BandPassSVF(SVF):
+    """
+    Band-pass filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="BPF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+
+
+class BandRejectSVF(SVF):
+    """
+    Band-reject / band-stop filter using SVF architecture
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000,
+        resonance: float = 0.707,
+        self_oscillate: bool = False,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(mode="BSF", cutoff=cutoff, resonance=resonance,
+                         self_oscillate=self_oscillate, sample_rate=sample_rate)
 
 
 class FIR(SynthModule):
