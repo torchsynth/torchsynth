@@ -402,9 +402,7 @@ class SVF(SynthModule):
             # If there is a cutoff modulation envelope, update coefficients
             if cutoff_mod_amount != 0.0:
                 cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                coeff0, coeff1, rho = self.calculate_coefficients(
-                    self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                )
+                coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio[i] - rho * h[0] - h[1])
