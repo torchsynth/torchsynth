@@ -599,6 +599,7 @@ class MovingAverage(SynthModule):
         super().__init__()
         self.sample_rate = sample_rate
         self.filter_length = filter_length
+        assert self.filter_length > 0
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
