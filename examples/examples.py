@@ -15,7 +15,6 @@ import librosa.display
 import matplotlib.pyplot as plt
 
 from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
-from ddspdrum.util import stft_plot, time_plot
 from ddspdrum.defaults import SAMPLE_RATE
 
 # -
