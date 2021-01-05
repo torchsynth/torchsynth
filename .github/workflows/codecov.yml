@@ -18,7 +18,8 @@ jobs:
     - name: Generate coverage report
       run: |
         pip install coverage
-        pip install ipython
+        # These are used in the examples notebook.
+        pip install ipython librosa
         pip install -e .
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.

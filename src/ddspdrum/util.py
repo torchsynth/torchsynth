@@ -2,14 +2,13 @@
 Utility functions for DSP related things
 """
 
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.defaults import EPSILON, SAMPLE_RATE
+from ddspdrum.defaults import EPSILON
 
 
+# What is amin here? And maybe we should convert it to a value in defaults?
+# What is the range of amplitude?
 def amplitude_to_db(amplitude: float, amin: float = 1e-10):
     """
     Convert an amplitude value to decibels
@@ -61,19 +60,3 @@ def fix_length(signal: np.array, length: int) -> np.array:
         signal = signal[:length]
     assert signal.shape == (length,)
     return signal
-
-
-def time_plot(signal, sample_rate=SAMPLE_RATE):
-    t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
-    plt.plot(t, signal)
-    plt.xlabel("Time")
-    plt.ylabel("Amplitude")
-    plt.show()
-
-
-def stft_plot(signal, sample_rate=SAMPLE_RATE):
-    X = librosa.stft(signal)
-    Xdb = librosa.amplitude_to_db(abs(X))
-    plt.figure(figsize=(5, 5))
-    librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
-    plt.show()

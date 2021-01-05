@@ -10,11 +10,32 @@
 # %matplotlib inline
 
 import IPython.display as ipd
+import librosa
+import librosa.display
+import matplotlib.pyplot as plt
 
 from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
 from ddspdrum.util import stft_plot, time_plot
+from ddspdrum.defaults import SAMPLE_RATE
 
 # -
+
+
+def time_plot(signal, sample_rate=SAMPLE_RATE):
+    t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
+    plt.plot(t, signal)
+    plt.xlabel("Time")
+    plt.ylabel("Amplitude")
+    plt.show()
+
+
+def stft_plot(signal, sample_rate=SAMPLE_RATE):
+    X = librosa.stft(signal)
+    Xdb = librosa.amplitude_to_db(abs(X))
+    plt.figure(figsize=(5, 5))
+    librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
+    plt.show()
+
 
 # Synthesis parameters.
 a = 0.01
