@@ -332,9 +332,21 @@ class Drum:
 
 class SVF(SynthModule):
     """
-    A State Variable Filter that can do lowpass, highpass, bandpass, and
-    bandreject filtering. Allows modulation of the cutoff frequency and an
-    adjustable resonance parameter. Can self-oscillate to make a sinusoid.
+    A State Variable Filter that can do low-pass, high-pass, band-pass, and
+    band-reject filtering. Allows modulation of the cutoff frequency and an
+    adjustable resonance parameter. Can self-oscillate to make a sinusoid oscillator.
+
+    Parameters
+    ----------
+
+    mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
+    cutoff (float)          :   cutoff frequency in Hz must be between 0 and half the
+                                sample rate. Defaults to 1000Hz
+    resonance (float)       :   filter resonance, or "Quality Factor". Higher values cause the filter to resonate more.
+                                Must be greater than 0.5. Defaults to 0.707.
+    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which turns this into a sine wave oscillator
+                                with the filter cutoff as the frequency. Defaults to False.
+    sample_rate (float)     :   Processing sample rate.
     """
 
     def __init__(
@@ -348,8 +360,11 @@ class SVF(SynthModule):
         super().__init__()
         self.sample_rate = sample_rate
         self.mode = mode
+
         self.cutoff = cutoff
+        assert 0 <= self.cutoff < self.sample_rate / 2.0
         self.resonance = resonance
+        assert 0.5 <= self.resonance
         self.self_oscillate = self_oscillate
 
     def __call__(
@@ -359,7 +374,15 @@ class SVF(SynthModule):
         cutoff_mod_amount: float = 0.0,
     ) -> np.ndarray:
         """
-        Process audio samples
+        Process audio samples and return filtered results.
+
+        Parameters
+        ----------
+
+        audio (np.ndarray)          :   Audio samples to filter
+        cutoff_mod (np.ndarray)     :   Control signal used to modulate the filter cutoff. Values must be in range [0,1]
+        cutoff_mod_amount (float)   :   How much to apply the control signal to the filter cutoff in Hz. Can be positive
+                                        or negative. Defaults to 0.
         """
 
         h = np.zeros(2)
@@ -405,7 +428,11 @@ class SVF(SynthModule):
 
     def calculate_coefficients(self, cutoff: float) -> (float, float, float):
         """
-        Calculates the filter coefficients for SVF given a cutoff frequency
+        Calculates the filter coefficients for SVF.
+
+        Parameters
+        ----------
+        cutoff (float)  :   Filter cutoff frequency in Hz.
         """
 
         g = np.tan(np.pi * cutoff / self.sample_rate)
