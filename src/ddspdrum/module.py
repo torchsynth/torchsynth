@@ -13,6 +13,7 @@ from scipy.signal import resample
 
 from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
 from ddspdrum.util import fix_length, midi_to_hz
+from ddspdrum.parameter import Parameter
 
 
 class SynthModule:
@@ -25,6 +26,7 @@ class SynthModule:
     ):
         self.sample_rate = sample_rate
         self.control_rate = control_rate
+        self.parameters = {}
 
     def control_to_sample_rate(self, control: np.array) -> np.array:
         """
@@ -48,6 +50,57 @@ class SynthModule:
                 round(len(control) * self.sample_rate / self.control_rate)
             )
             return resample(control, num_samples)
+
+    def _add_parameter(self, parameter_id: str, value: float, minimum: float,
+                       maximum: float, scale: float = 1):
+        """
+        Add a new parameter to this module.
+
+        Parameters
+        ----------
+        parameter_id (str)  :   id to save this parameter as
+        value (float)       :   initial value for this parameter
+        minimum (float)     :   minimum value that this parameter can take
+        maximum (float)     :   maximum value that this parameter can take
+        scale (float)       :   scaling when converting between [0,1] range
+        """
+        if parameter_id in self.parameters:
+            raise ValueError("parameter_id: {} already used".format(parameter_id))
+
+        self.parameters[parameter_id] = Parameter(value, minimum, maximum,
+                                                  scale, parameter_id)
+
+    def get_parameter(self, parameter_id: str) -> Parameter:
+        """
+        Get a single parameter for this module
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return
+        """
+        return self.parameters[parameter_id]
+
+    def set_parameter(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter value, ensuring that it is within a specified range
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value(value)
+
+    def set_parameter_0to1(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter with a value in the range [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value_0to1(value)
 
 
 class ADSR(SynthModule):
