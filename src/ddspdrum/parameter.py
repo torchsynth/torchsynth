@@ -34,8 +34,14 @@ class Parameter:
         self.name = name
 
     def __str__(self):
-        name = "{} - ".format(self.name) if self.name else ""
-        return "Parameter: {}{}".format(name, self.value)
+        name = "{}, ".format(self.name) if self.name else ""
+        return "Parameter: {}Value: {}, Min: {}, Max: {}, Scale: {}".format(
+            name,
+            self.value,
+            self.minimum,
+            self.maximum,
+            self.scale
+        )
 
     def set_value(self, new_value):
         """

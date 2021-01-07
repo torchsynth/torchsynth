@@ -252,7 +252,7 @@ class VCO(SynthModule):
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.add_parameter("pitch", midi_f0, 0, 127)
-        self.add_parameter("mod_depth", mod_depth, -127, 127)
+        self.add_parameter("mod_depth", mod_depth, 0, 127)
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
@@ -382,9 +382,88 @@ class Synth:
 
     def __init__(self, modules: List[SynthModule]):
         # Check that we are not mixing different control rates or sample rates
+        self.parameters = {}
         for m in modules[:1]:
             assert m.sample_rate == modules[0].sample_rate
             assert m.control_rate == modules[0].control_rate
+
+    def add_parameter(self, parameter_id: str, value: float, minimum: float,
+                      maximum: float, scale: float = 1):
+        """
+        Add a new parameter to this module.
+
+        Parameters
+        ----------
+        parameter_id (str)  :   id to save this parameter as
+        value (float)       :   initial value for this parameter
+        minimum (float)     :   minimum value that this parameter can take
+        maximum (float)     :   maximum value that this parameter can take
+        scale (float)       :   scaling when converting between [0,1] range
+        """
+        if parameter_id in self.parameters:
+            raise ValueError("parameter_id: {} already used".format(parameter_id))
+
+        self.parameters[parameter_id] = Parameter(value, minimum, maximum,
+                                                  scale, parameter_id)
+
+    def connect_parameter(self, parameter_id: str, module: SynthModule,
+                          module_parameter_id: str):
+        """
+        Create a named parameter for this synthesizer that is connected to a parameter
+        in an underlying synth module
+
+        Parameters
+        ----------
+        parameter_id (str)          : name of the new parameter
+        module (SynthModule)        : the SynthModule to connect to this parameter
+        module_parameter_id (str)   : parameter_id in SynthModule to target
+        """
+        if parameter_id in self.parameters:
+            raise ValueError("parameter_id: {} already used".format(parameter_id))
+
+        if module_parameter_id not in module.parameters:
+            raise KeyError("parameter_id: {} not a parameter in {}".format(
+                module_parameter_id, module))
+
+        self.parameters[parameter_id] = module.get_parameter(module_parameter_id)
+
+    def get_parameter(self, parameter_id: str) -> Parameter:
+        """
+        Get a single parameter for this module
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return
+        """
+        return self.parameters[parameter_id]
+
+    def set_parameter(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter value, ensuring that it is within a specified range
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value(value)
+
+    def set_parameter_0to1(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter with a value in the range [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value_0to1(value)
+
+    def list_parameters(self):
+        """
+        Return a dictionary of the parameters as strings
+        """
+        return {key: str(self.parameters[key]) for key in self.parameters}
 
 
 class Drum(Synth):
@@ -405,15 +484,40 @@ class Drum(Synth):
 
         # The convention for triggering a note event is that it has
         # the same sustain_duration for both ADSRs.
-        self.pitch_envelope = pitch_adsr(sustain_duration)
-        self.amp_envelope = amp_adsr(sustain_duration)
+        self.pitch_adsr = pitch_adsr
+        self.amp_adsr = amp_adsr
         self.vco = vco
         self.vca = vca
 
+        # Setup parameters for this drum synth
+        self.add_parameter("sustain_duration", sustain_duration, 0, 60, scale=0.5)
+
+        # Pitch Envelope
+        self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
+        self.connect_parameter("pitch_decay", self.pitch_adsr, "decay")
+        self.connect_parameter("pitch_sustain", self.pitch_adsr, "sustain")
+        self.connect_parameter("pitch_release", self.pitch_adsr, "release")
+        self.connect_parameter("pitch_alpha", self.pitch_adsr, "alpha")
+
+        # Amplitude Envelope
+        self.connect_parameter("amp_attack", self.amp_adsr, "attack")
+        self.connect_parameter("amp_decay", self.amp_adsr, "decay")
+        self.connect_parameter("amp_sustain", self.amp_adsr, "sustain")
+        self.connect_parameter("amp_release", self.amp_adsr, "release")
+        self.connect_parameter("amp_alpha", self.amp_adsr, "alpha")
+
+        # VCO
+        self.connect_parameter("vco_pitch", self.vco, "pitch")
+        self.connect_parameter("vco_mod_depth", self.vco, "mod_depth")
+        if "shape" in self.vco.parameters:
+            self.connect_parameter("vco_shape", self.vco, "shape")
+
     def __call__(self):
-        self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
-        vco_out = self.vco(self.pitch_envelope)
-        return self.vca(self.amp_envelope, vco_out)
+        pitch_envelope = self.pitch_adsr(self.parameters['sustain_duration'].value)
+        amp_envelope = self.amp_adsr(self.parameters['sustain_duration'].value)
+        pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
+        vco_out = self.vco(pitch_envelope)
+        return self.vca(amp_envelope, vco_out)
 
 
 class SVF(SynthModule):
