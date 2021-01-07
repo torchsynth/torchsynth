@@ -18,11 +18,17 @@ from ddspdrum.util import fix_length, midi_to_hz, crossfade
 class SynthModule:
     """
     Base class for synthesis modules.
+
+    WARNING: For now, SynthModules should be atomic and not contain other SynthModules.
     """
 
     def __init__(
         self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
+        """
+        NOTE: __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because the can change when the parameters change.
+        """
         self.sample_rate = sample_rate
         self.control_rate = control_rate
 
@@ -326,42 +332,6 @@ class VCA(SynthModule):
         audio_in = fix_length(audio_in, len(amp))
         return amp * audio_in
 
-
-class Synth:
-    """
-    An abstract class for a modular synth, ensuring that all modules
-    have the same sample and control rate.
-    """
-
-    def __init__(self, modules: List[SynthModule]):
-        # Check that we are not mixing different control rates or sample rates
-        for m in modules[:1]:
-            assert m.sample_rate == modules[0].sample_rate
-            assert m.control_rate == modules[0].control_rate
-
-
-class Mixer(SynthModule):
-    """
-    Combines two inputs with optional noise.
-    """
-    def __init__(
-        self,
-        ratio: float = 0,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE
-    ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert 0 <= ratio <= 1
-        self.ratio = ratio
-
-    def __call__(self, vco_1: VCO, vco_2: VCO, pitch_envelope: np.ndarray):
-        vco_1_out = vco_1(pitch_envelope)
-        vco_2_out = vco_2(pitch_envelope)
-
-        return crossfade(vco_1_out, vco_2_out, self.ratio)
-
-
 class NoiseModule(SynthModule):
     """
     Adds noise.
@@ -386,6 +356,24 @@ class NoiseModule(SynthModule):
         return np.random.rand(len(audio_in))
 
 
+class Synth:
+    """
+    An abstract class for a modular synth, ensuring that all modules
+    have the same sample and control rate.
+    """
+
+    def __init__(self, modules: List[SynthModule]):
+        """
+        NOTE: __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because the can change when the parameters change.
+        """
+        # Check that we are not mixing different control rates or sample rates
+        for m in modules[:1]:
+            assert m.sample_rate == modules[0].sample_rate
+            assert m.control_rate == modules[0].control_rate
+
+
+
 class Drum(Synth):
     """
     A package of modules that makes one drum hit.
@@ -398,7 +386,7 @@ class Drum(Synth):
         amp_adsr: ADSR = ADSR(),
         vco_1: VCO = SineVCO(),
         vco_2: VCO = SquareSawVCO(),
-        mixer: Mixer = Mixer(),
+        vco_1_ratio: float = 0.5,
         noise_module: NoiseModule = NoiseModule(),
         vca: VCA = VCA(),
     ):
@@ -413,21 +401,26 @@ class Drum(Synth):
             ]
         )
         assert sustain_duration >= 0
+        assert 0 <= vco_1_ratio <= 1.0
 
-        # The convention for triggering a note event is that it has
-        # the same sustain_duration for both ADSRs.
-        self.pitch_envelope = pitch_adsr(sustain_duration)
-        self.amp_envelope = amp_adsr(sustain_duration)
         self.vco_1 = vco_1
         self.vco_2 = vco_2
-        self.mixer = mixer
+        self.vco_1_ratio = vco_1_ratio
         self.noise_module = noise_module
         self.vca = vca
 
     def __call__(self):
-        self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
+        # The convention for triggering a note event is that it has
+        # the same sustain_duration for both ADSRs.
+        pitch_envelope = pitch_adsr(sustain_duration)
+        amp_envelope = amp_adsr(sustain_duration)
+        pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
-        audio_out = self.mixer(self.vco_1, self.vco_2, self.pitch_envelope)
+        vco_1_out = vco_1(pitch_envelope)
+        vco_2_out = vco_2(pitch_envelope)
+
+        audio_out = crossfade(vco_1_out, vco_2_out, self.vco_1_ratio)
+
         audio_out = self.noise_module(audio_out)
 
         return self.vca(self.amp_envelope, audio_out)
