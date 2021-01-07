@@ -27,3 +27,11 @@ To run examples, you should also do:
 ```
 pip install ipython librosa matplotlib
 ```
+
+Unfortunately, Python 3.9 (e.g. OSX Big Sur) won't work, because
+librosa repends upon numba which isn't packaged for 3.9 yet. In
+which case you'll have to create a Python 3.7 conda environment.
+(You might also need to downgrade LLVM to 10 or 9.):
+```
+conda install -c conda-forge ipython librosa matplotlib numpy matplotlib scipy jupytext
+```

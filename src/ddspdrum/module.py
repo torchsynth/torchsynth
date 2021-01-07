@@ -6,23 +6,32 @@ Synth modules.
 """
 
 from abc import abstractmethod
-from typing import List
+from typing import Tuple
 
 import numpy as np
 from scipy.signal import resample
 
 from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
-from ddspdrum.util import fix_length, midi_to_hz
+from ddspdrum.util import crossfade, fix_length, midi_to_hz
 
 
 class SynthModule:
     """
     Base class for synthesis modules.
+
+    WARNING: For now, SynthModules should be atomic and not contain other SynthModules.
     """
 
     def __init__(
         self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
+        """
+        NOTE:
+        __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
+        Instead, consider @property getters that use the instance's parameters.
+        """
         self.sample_rate = sample_rate
         self.control_rate = control_rate
 
@@ -319,15 +328,37 @@ class VCA(SynthModule):
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
-        self.__envelope = np.array([])
-        self.__audio = np.array([])
+    def __call__(self, control_in: np.array, audio_in: np.array):
+        control_in = np.clip(control_in, 0, 1)
+        audio_in = np.clip(audio_in, -1, 1)
+        amp = self.control_to_sample_rate(control_in)
+        audio_in = fix_length(audio_in, len(amp))
+        return amp * audio_in
 
-    def __call__(self, envelopecontrol: np.array, audiosample: np.array):
-        envelopecontrol = np.clip(envelopecontrol, 0, 1)
-        audiosample = np.clip(audiosample, -1, 1)
-        amp = self.control_to_sample_rate(envelopecontrol)
-        signal = fix_length(audiosample, len(amp))
-        return amp * signal
+
+class NoiseModule(SynthModule):
+    """
+    Adds noise.
+    """
+
+    def __init__(
+        self,
+        ratio: float = 0.25,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
+        assert 0 <= ratio <= 1
+        self.ratio = ratio
+
+    def __call__(self, audio_in: np.ndarray):
+        noise = self.noise_of_length(audio_in)
+        return crossfade(audio_in, noise, self.ratio)
+
+    @staticmethod
+    def noise_of_length(audio_in: np.ndarray):
+        return np.random.rand(len(audio_in))
 
 
 class Synth:
@@ -336,7 +367,13 @@ class Synth:
     have the same sample and control rate.
     """
 
-    def __init__(self, modules: List[SynthModule]):
+    def __init__(self, modules: Tuple[SynthModule]):
+        """
+        NOTE: __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
+        Instead, consider @property getters that use the instance's parameters.
+        """
         # Check that we are not mixing different control rates or sample rates
         for m in modules[:1]:
             assert m.sample_rate == modules[0].sample_rate
@@ -353,23 +390,42 @@ class Drum(Synth):
         sustain_duration: float,
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
-        vco: VCO = VCO(),
+        vco_1: VCO = SineVCO(),
+        vco_2: VCO = SquareSawVCO(),
+        vco_1_ratio: float = 0.5,
+        noise_module: NoiseModule = NoiseModule(),
         vca: VCA = VCA(),
     ):
-        super().__init__(modules=[pitch_adsr, amp_adsr, vco, vca])
+        super().__init__(
+            modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
+        )
         assert sustain_duration >= 0
+        assert 0 <= vco_1_ratio <= 1.0
 
-        # The convention for triggering a note event is that it has
-        # the same sustain_duration for both ADSRs.
-        self.pitch_envelope = pitch_adsr(sustain_duration)
-        self.amp_envelope = amp_adsr(sustain_duration)
-        self.vco = vco
+        self.sustain_duration = sustain_duration
+        self.pitch_adsr = pitch_adsr
+        self.amp_adsr = amp_adsr
+        self.vco_1 = vco_1
+        self.vco_2 = vco_2
+        self.vco_1_ratio = vco_1_ratio
+        self.noise_module = noise_module
         self.vca = vca
 
     def __call__(self):
-        self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
-        vco_out = self.vco(self.pitch_envelope)
-        return self.vca(self.amp_envelope, vco_out)
+        # The convention for triggering a note event is that it has
+        # the same sustain_duration for both ADSRs.
+        pitch_envelope = self.pitch_adsr(self.sustain_duration)
+        amp_envelope = self.amp_adsr(self.sustain_duration)
+        pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
+
+        vco_1_out = self.vco_1(pitch_envelope)
+        vco_2_out = self.vco_2(pitch_envelope)
+
+        audio_out = crossfade(vco_1_out, vco_2_out, self.vco_1_ratio)
+
+        audio_out = self.noise_module(audio_out)
+
+        return self.vca(amp_envelope, audio_out)
 
 
 class SVF(SynthModule):
@@ -501,8 +557,13 @@ class LowPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="LPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="LPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class HighPassSVF(SVF):
@@ -517,8 +578,13 @@ class HighPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="HPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="HPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class BandPassSVF(SVF):
@@ -533,8 +599,13 @@ class BandPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="BPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="BPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class BandRejectSVF(SVF):
@@ -549,8 +620,13 @@ class BandRejectSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="BSF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="BSF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class FIR(SynthModule):

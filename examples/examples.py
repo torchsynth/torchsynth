@@ -15,8 +15,8 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO
 from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
 
 # -
 
@@ -86,11 +86,24 @@ sqs_out = sqs(envelope, phase=0)
 stft_plot(sqs_out)
 ipd.Audio(sqs_out, rate=sqs.sample_rate)
 
+# Add noise with the NoiseModule class.
+
+# +
+# NoiseModule test.
+
+noiser = NoiseModule(ratio=0.5)
+noisey_out = noiser(sqs_out)
+# -
+
+time_plot(noisey_out)
+stft_plot(noisey_out)
+ipd.Audio(noisey_out, rate=sqs.sample_rate)
+
 # Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
 # VCA test
 vca = VCA()
-vca_out = vca(envelope, sqs_out)
+vca_out = vca(envelope, noisey_out)
 
 time_plot(vca_out)
 stft_plot(vca_out)
@@ -102,7 +115,8 @@ ipd.Audio(vca_out, rate=vca.sample_rate)
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco=SineVCO(midi_f0=69, mod_depth=12),
+    vco_1=SineVCO(midi_f0=69, mod_depth=12),
+    noise_module=NoiseModule(ratio=0.5),
     sustain_duration=1,
 )
 
@@ -112,14 +126,16 @@ stft_plot(drum_out)
 
 ipd.Audio(drum_out, rate=vca.sample_rate)
 # -
-# You can also use the **SquareSawVCO oscillator** in the drum module.
-
+# Additionally, the Drum class can take two oscillators.
 
 # +
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco=SquareSawVCO(shape=0, midi_f0=24, mod_depth=12),
+    vco_1=SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
+    vco_2=SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
+    vco_1_ratio=0.5,
+    noise_module=NoiseModule(ratio=0.1),
     sustain_duration=1,
 )
 
@@ -134,7 +150,14 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # response (FIR) lowpasses and an infinite impulse response (IIR)
 # state variable filter.
 
-from ddspdrum.module import FIR, MovingAverage, LowPassSVF, HighPassSVF, BandPassSVF, BandRejectSVF
+from ddspdrum.module import (
+    FIR,
+    BandPassSVF,
+    BandRejectSVF,
+    HighPassSVF,
+    LowPassSVF,
+    MovingAverage,
+)
 
 # Create some white noise to perform filtering on -- **Watch out it is loud!**
 
