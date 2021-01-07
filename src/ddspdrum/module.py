@@ -12,7 +12,7 @@ import numpy as np
 from scipy.signal import resample
 
 from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
-from ddspdrum.util import fix_length, midi_to_hz, crossfade
+from ddspdrum.util import crossfade, fix_length, midi_to_hz
 
 
 class SynthModule:

@@ -15,8 +15,8 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ddspdrum.module import ADSR, VCA, Drum, SineVCO, SquareSawVCO, NoiseModule
 from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
 
 # -
 
@@ -132,11 +132,11 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco_1 = SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
-    vco_2 = SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
-    vco_1_ratio = 0.5,
-    noise_module = NoiseModule(ratio=0.1),
-    sustain_duration=1
+    vco_1=SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
+    vco_2=SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
+    vco_1_ratio=0.5,
+    noise_module=NoiseModule(ratio=0.1),
+    sustain_duration=1,
 )
 
 drum_out = my_drum()
@@ -150,7 +150,14 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # response (FIR) lowpasses and an infinite impulse response (IIR)
 # state variable filter.
 
-from ddspdrum.module import FIR, MovingAverage, LowPassSVF, HighPassSVF, BandPassSVF, BandRejectSVF
+from ddspdrum.module import (
+    FIR,
+    BandPassSVF,
+    BandRejectSVF,
+    HighPassSVF,
+    LowPassSVF,
+    MovingAverage,
+)
 
 # Create some white noise to perform filtering on -- **Watch out it is loud!**
 
