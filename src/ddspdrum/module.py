@@ -6,13 +6,13 @@ Synth modules.
 """
 
 from abc import abstractmethod
-from typing import List, Union
+from typing import List, Tuple
 
 import numpy as np
 from scipy.signal import resample
 
 from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
-from ddspdrum.util import fix_length, midi_to_hz
+from ddspdrum.util import fix_length, midi_to_hz, crossfade
 
 
 class SynthModule:
@@ -340,6 +340,52 @@ class Synth:
             assert m.control_rate == modules[0].control_rate
 
 
+class Mixer(SynthModule):
+    """
+    Combines two inputs with optional noise.
+    """
+    def __init__(
+        self,
+        ratio: float = 0,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
+        assert 0 <= ratio <= 1
+        self.ratio = ratio
+
+    def __call__(self, vco_1: VCO, vco_2: VCO, pitch_envelope: np.ndarray):
+        vco_1_out = vco_1(pitch_envelope)
+        vco_2_out = vco_2(pitch_envelope)
+
+        return crossfade(vco_1_out, vco_2_out, self.ratio)
+
+
+class NoiseModule(SynthModule):
+    """
+    Adds noise.
+    """
+    def __init__(
+        self,
+        ratio: float = 0.25,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE
+    ):
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
+        assert 0 <= ratio <= 1
+        self.ratio = ratio
+
+    def __call__(self, audio_in: np.ndarray):
+        noise = self.noise_of_length(audio_in)
+        return crossfade(audio_in, noise, self.ratio)
+
+    @staticmethod
+    def noise_of_length(audio_in: np.ndarray):
+        return np.random.rand(len(audio_in))
+
+
 class Drum(Synth):
     """
     A package of modules that makes one drum hit.
@@ -350,42 +396,41 @@ class Drum(Synth):
         sustain_duration: float,
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
-        vco: Union[VCO, List[VCO]] = VCO(),
+        vco_1: VCO = SineVCO(),
+        vco_2: VCO = SquareSawVCO(),
+        mixer: Mixer = Mixer(),
+        noise_module: NoiseModule = NoiseModule(),
         vca: VCA = VCA(),
-        noise_ratio: float = 0
     ):
-        if type(vco) is not list:
-            vco = [vco]
-
-        super().__init__(modules=[pitch_adsr, amp_adsr, *vco, vca])
+        super().__init__(
+            modules=[
+                pitch_adsr,
+                amp_adsr,
+                vco_1,
+                vco_2,
+                noise_module,
+                vca
+            ]
+        )
         assert sustain_duration >= 0
 
         # The convention for triggering a note event is that it has
         # the same sustain_duration for both ADSRs.
         self.pitch_envelope = pitch_adsr(sustain_duration)
         self.amp_envelope = amp_adsr(sustain_duration)
-        self.vco = vco
+        self.vco_1 = vco_1
+        self.vco_2 = vco_2
+        self.mixer = mixer
+        self.noise_module = noise_module
         self.vca = vca
-        self.noise_ratio = noise_ratio
 
     def __call__(self):
         self.pitch_envelope = fix_length(self.pitch_envelope, len(self.amp_envelope))
 
-        vco_out = self.play_vco_bank(self.vco, self.pitch_envelope)
-        vco_out = self.add_noise(vco_out, self.noise_ratio)
+        audio_out = self.mixer(self.vco_1, self.vco_2, self.pitch_envelope)
+        audio_out = self.noise_module(audio_out)
 
-        return self.vca(self.amp_envelope, vco_out)
-
-    @staticmethod
-    def play_vco_bank(vco_bank, pitch_envelope):
-        audio_out = 0
-        for vco in vco_bank:
-            audio_out += vco(pitch_envelope)
-        return audio_out / len(vco_bank)
-
-    @staticmethod
-    def add_noise(audio_in, ratio):
-        return (1 - ratio) * audio_in + ratio * np.random.rand(len(audio_in))
+        return self.vca(self.amp_envelope, audio_out)
 
 
 class SVF(SynthModule):
