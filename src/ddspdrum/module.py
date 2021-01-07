@@ -426,7 +426,7 @@ class SVF(SynthModule):
     ----------
 
     mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
-    cutoff (float)          :   cutoff frequency in Hz must be between 0 and half the
+    cutoff (float)          :   cutoff frequency in Hz must be between 5 and half the
                                 sample rate. Defaults to 1000Hz
     resonance (float)       :   filter resonance, or "Quality Factor". Higher values
                                 cause the filter to resonate more. Must be greater than
@@ -447,14 +447,10 @@ class SVF(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
         self.mode = mode
-
-        self.cutoff = cutoff
-        assert 0 < self.cutoff < self.sample_rate / 2.0
-        self.resonance = resonance
-        assert 0.5 <= self.resonance
         self.self_oscillate = self_oscillate
+        self.add_parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, scale=0.5)
+        self.add_parameter("resonance", resonance, 0.5, 1000, scale=0.25)
 
     def __call__(
         self,
@@ -480,7 +476,8 @@ class SVF(SynthModule):
         y = np.zeros_like(audio)
 
         # Calculate initial coefficients
-        coeff0, coeff1, rho = self.calculate_coefficients(self.cutoff)
+        cutoff = self.parameters['cutoff'].value
+        coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
 
         # Check if there is a filter cutoff envelope to apply
         if cutoff_mod_amount != 0.0:
@@ -492,8 +489,8 @@ class SVF(SynthModule):
 
             # If there is a cutoff modulation envelope, update coefficients
             if cutoff_mod_amount != 0.0:
-                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
+                cutoff_val = cutoff + cutoff_mod[i] * cutoff_mod_amount
+                coeff0, coeff1, rho = self.calculate_coefficients(cutoff_val)
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio[i] - rho * h[0] - h[1])
@@ -525,7 +522,8 @@ class SVF(SynthModule):
         """
 
         g = np.tan(np.pi * cutoff / self.sample_rate)
-        R = 0.0 if self.self_oscillate else 1.0 / (2.0 * self.resonance)
+        resonance = self.parameters['resonance'].value
+        R = 0.0 if self.self_oscillate else 1.0 / (2.0 * resonance)
         coeff0 = 1.0 / (1.0 + 2.0 * R * g + g * g)
         coeff1 = g
         rho = 2.0 * R + g
@@ -605,7 +603,7 @@ class FIR(SynthModule):
     Parameters
     ----------
 
-    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
                             half the sampling rate. Defaults to 1000Hz.
     filter_length (int) :   The length of the filter in samples. A longer filter will
                             result in a steeper filter cutoff. Should be greater than 4.
@@ -621,11 +619,8 @@ class FIR(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        self.filter_length = filter_length
-        assert self.filter_length > 4
-        self.cutoff = cutoff
-        assert 0 < self.cutoff < self.sample_rate / 2
+        self.add_parameter("cutoff", cutoff, 5, sample_rate / 2.0, scale=0.5)
+        self.add_parameter("length", filter_length, 4, 4096)
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -638,7 +633,8 @@ class FIR(SynthModule):
         audio (np.ndarray)  :   audio samples to filter
         """
 
-        impulse = self.windowed_sinc(self.cutoff, self.filter_length)
+        impulse = self.windowed_sinc(self.parameters['cutoff'].value,
+                                     self.parameters['length'].value)
         y = np.convolve(audio, impulse)
         return y
 
@@ -696,9 +692,7 @@ class MovingAverage(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        self.filter_length = filter_length
-        assert self.filter_length > 0
+        self.add_parameter("length", filter_length, 1, 4096)
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -709,6 +703,7 @@ class MovingAverage(SynthModule):
 
         audio (np.ndarray)  :   audio samples to filter
         """
-        impulse = np.ones(self.filter_length) / self.filter_length
+        length = self.parameters['length'].value
+        impulse = np.ones(length) / length
         y = np.convolve(audio, impulse)
         return y
