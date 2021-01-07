@@ -30,6 +30,7 @@ class SynthModule:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because the
         can change when the parameters change.
+        Instead, consider @property getters that use the instance's parameters.
         """
         self.sample_rate = sample_rate
         self.control_rate = control_rate
