@@ -131,11 +131,11 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameter("alpha", alpha, 0, 10)
         self.add_parameter("attack", a, 0, 20, scale=0.5)
-        self.add_parameter("sustain", s, 0, 1)
         self.add_parameter("decay", d, 0, 20, scale=0.5)
+        self.add_parameter("sustain", s, 0, 1)
         self.add_parameter("release", r, 0, 20, scale=0.5)
+        self.add_parameter("alpha", alpha, 0, 10)
 
     def __call__(self, sustain_duration: float = 0):
         """Generate an envelope that sustains for a given duration in seconds.
@@ -179,28 +179,28 @@ class ADSR(SynthModule):
         t = np.linspace(
             0, duration, int(round(duration * self.control_rate)), endpoint=False
         )
-        return (t / duration) ** self.parameters["alpha"].value
+        return (t / duration) ** self.parameters['alpha'].value
 
     @property
     def attack(self):
-        return self._ramp(self.parameters["attack"].value)
+        return self._ramp(self.parameters['attack'].value)
 
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self.parameters["decay"].value
-        sustain = self.parameters["sustain"].value
+        decay = self.parameters['decay'].value
+        sustain = self.parameters['sustain'].value
         return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
     def sustain(self, duration):
         return np.full(round(int(duration * CONTROL_RATE)),
-                       fill_value=self.parameters["sustain"].value)
+                       fill_value=self.parameters['sustain'].value)
 
     @property
     def release(self):
         # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        sustain = self.parameters["sustain"].value
-        release = self.parameters["release"].value
+        sustain = self.parameters['sustain'].value
+        release = self.parameters['release'].value
         return self._ramp(release)[::-1] * sustain
 
     @property
@@ -251,14 +251,8 @@ class VCO(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert 0 <= midi_f0 <= 127
-        self.midi_f0 = midi_f0
-
-        assert mod_depth >= 0
-        self.mod_depth = mod_depth
-        assert 0 <= self.midi_f0 + self.mod_depth <= 127
-
+        self.add_parameter("pitch", midi_f0, 0, 127)
+        self.add_parameter("mod_depth", mod_depth, -127, 127)
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
@@ -287,7 +281,8 @@ class VCO(SynthModule):
 
         assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
 
-        control_as_midi = self.mod_depth * mod_signal + self.midi_f0
+        modulation = self.parameters['mod_depth'].value * mod_signal
+        control_as_midi = self.parameters['pitch'].value + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
@@ -343,19 +338,18 @@ class SquareSawVCO(VCO):
         phase: float = 0,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
-
-        # 0 is square. 1 is saw.
-        assert 0.0 <= shape <= 1.0
-        self.shape = shape
+        self.add_parameter("shape", shape, 0, 1)
 
     def oscillator(self, argument):
         square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
-        return (1 - self.shape / 2) * square * (1 + self.shape * np.cos(argument))
+        shape = self.parameters['shape'].value
+        return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
     def k(self):
         # What does k mean here? Can we give it a better name?
-        f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
+        pitch = self.parameters['pitch'].value + self.parameters['mod_depth'].value
+        f0 = midi_to_hz(pitch)
         return 12000 / (f0 * np.log10(f0))
 
 
