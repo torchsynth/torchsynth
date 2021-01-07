@@ -97,7 +97,7 @@ noisey_out = noiser(sqs_out)
 
 time_plot(noisey_out)
 stft_plot(noisey_out)
-ipd.Audio(noisey_out, rate=vca.sample_rate)
+ipd.Audio(noisey_out, rate=sqs.sample_rate)
 
 # Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
 
