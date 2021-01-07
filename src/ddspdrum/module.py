@@ -6,7 +6,7 @@ Synth modules.
 """
 
 from abc import abstractmethod
-from typing import List, Tuple
+from typing import Tuple
 
 import numpy as np
 from scipy.signal import resample
@@ -26,8 +26,10 @@ class SynthModule:
         self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
         """
-        NOTE: __init__ should only set parameters.
-        We shouldn't be doing computations in __init__ because the can change when the parameters change.
+        NOTE:
+        __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because the
+        can change when the parameters change.
         """
         self.sample_rate = sample_rate
         self.control_rate = control_rate
@@ -332,15 +334,17 @@ class VCA(SynthModule):
         audio_in = fix_length(audio_in, len(amp))
         return amp * audio_in
 
+
 class NoiseModule(SynthModule):
     """
     Adds noise.
     """
+
     def __init__(
         self,
         ratio: float = 0.25,
         sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE
+        control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
@@ -362,16 +366,16 @@ class Synth:
     have the same sample and control rate.
     """
 
-    def __init__(self, modules: List[SynthModule]):
+    def __init__(self, modules: Tuple[SynthModule]):
         """
         NOTE: __init__ should only set parameters.
-        We shouldn't be doing computations in __init__ because the can change when the parameters change.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
         """
         # Check that we are not mixing different control rates or sample rates
         for m in modules[:1]:
             assert m.sample_rate == modules[0].sample_rate
             assert m.control_rate == modules[0].control_rate
-
 
 
 class Drum(Synth):
@@ -391,18 +395,14 @@ class Drum(Synth):
         vca: VCA = VCA(),
     ):
         super().__init__(
-            modules=[
-                pitch_adsr,
-                amp_adsr,
-                vco_1,
-                vco_2,
-                noise_module,
-                vca
-            ]
+            modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
         )
         assert sustain_duration >= 0
         assert 0 <= vco_1_ratio <= 1.0
 
+        self.sustain_duration = sustain_duration
+        self.pitch_adsr = pitch_adsr
+        self.amp_adsr = amp_adsr
         self.vco_1 = vco_1
         self.vco_2 = vco_2
         self.vco_1_ratio = vco_1_ratio
@@ -412,18 +412,18 @@ class Drum(Synth):
     def __call__(self):
         # The convention for triggering a note event is that it has
         # the same sustain_duration for both ADSRs.
-        pitch_envelope = pitch_adsr(sustain_duration)
-        amp_envelope = amp_adsr(sustain_duration)
+        pitch_envelope = self.pitch_adsr(self.sustain_duration)
+        amp_envelope = self.amp_adsr(self.sustain_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
-        vco_1_out = vco_1(pitch_envelope)
-        vco_2_out = vco_2(pitch_envelope)
+        vco_1_out = self.vco_1(pitch_envelope)
+        vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = crossfade(vco_1_out, vco_2_out, self.vco_1_ratio)
 
         audio_out = self.noise_module(audio_out)
 
-        return self.vca(self.amp_envelope, audio_out)
+        return self.vca(amp_envelope, audio_out)
 
 
 class SVF(SynthModule):
@@ -555,8 +555,13 @@ class LowPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="LPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="LPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class HighPassSVF(SVF):
@@ -571,8 +576,13 @@ class HighPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="HPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="HPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class BandPassSVF(SVF):
@@ -587,8 +597,13 @@ class BandPassSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="BPF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="BPF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class BandRejectSVF(SVF):
@@ -603,8 +618,13 @@ class BandRejectSVF(SVF):
         self_oscillate: bool = False,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(mode="BSF", cutoff=cutoff, resonance=resonance,
-                         self_oscillate=self_oscillate, sample_rate=sample_rate)
+        super().__init__(
+            mode="BSF",
+            cutoff=cutoff,
+            resonance=resonance,
+            self_oscillate=self_oscillate,
+            sample_rate=sample_rate,
+        )
 
 
 class FIR(SynthModule):
