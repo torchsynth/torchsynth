@@ -28,8 +28,8 @@ class SynthModule:
         """
         NOTE:
         __init__ should only set parameters.
-        We shouldn't be doing computations in __init__ because the
-        can change when the parameters change.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
         Instead, consider @property getters that use the instance's parameters.
         """
         self.sample_rate = sample_rate
@@ -372,6 +372,7 @@ class Synth:
         NOTE: __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
         the computations will change when the parameters change.
+        Instead, consider @property getters that use the instance's parameters.
         """
         # Check that we are not mixing different control rates or sample rates
         for m in modules[:1]:
