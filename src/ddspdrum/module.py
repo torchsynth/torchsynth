@@ -51,8 +51,8 @@ class SynthModule:
             )
             return resample(control, num_samples)
 
-    def _add_parameter(self, parameter_id: str, value: float, minimum: float,
-                       maximum: float, scale: float = 1):
+    def add_parameter(self, parameter_id: str, value: float, minimum: float,
+                      maximum: float, scale: float = 1):
         """
         Add a new parameter to this module.
 
@@ -131,21 +131,11 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert alpha >= 0
-        self.alpha = alpha
-
-        assert s >= 0 and s <= 1
-        self.s = s
-
-        assert a >= 0
-        self.a = a
-
-        assert d >= 0
-        self.d = d
-
-        assert r >= 0
-        self.r = r
+        self.add_parameter("alpha", alpha, 0, 10)
+        self.add_parameter("attack", a, 0, 20, scale=0.5)
+        self.add_parameter("sustain", s, 0, 1)
+        self.add_parameter("decay", d, 0, 20, scale=0.5)
+        self.add_parameter("release", r, 0, 20, scale=0.5)
 
     def __call__(self, sustain_duration: float = 0):
         """Generate an envelope that sustains for a given duration in seconds.
@@ -189,24 +179,29 @@ class ADSR(SynthModule):
         t = np.linspace(
             0, duration, int(round(duration * self.control_rate)), endpoint=False
         )
-        return (t / duration) ** self.alpha
+        return (t / duration) ** self.parameters["alpha"].value
 
     @property
     def attack(self):
-        return self._ramp(self.a)
+        return self._ramp(self.parameters["attack"].value)
 
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        return self._ramp(self.d)[::-1] * (1 - self.s) + self.s
+        decay = self.parameters["decay"].value
+        sustain = self.parameters["sustain"].value
+        return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
     def sustain(self, duration):
-        return np.full(round(int(duration * CONTROL_RATE)), fill_value=self.s)
+        return np.full(round(int(duration * CONTROL_RATE)),
+                       fill_value=self.parameters["sustain"].value)
 
     @property
     def release(self):
         # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        return self._ramp(self.r)[::-1] * self.s
+        sustain = self.parameters["sustain"].value
+        release = self.parameters["release"].value
+        return self._ramp(release)[::-1] * sustain
 
     @property
     def note_on(self):
@@ -218,7 +213,9 @@ class ADSR(SynthModule):
 
     def __str__(self):
         return (
-            f"ADSR(a={self.a}, d={self.d}, s={self.s}, r={self.r}, alpha={self.alpha})"
+            f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
+                s={self.parameters['sustain']}, r={self.parameters['release']}, 
+                alpha={self.get_parameter('alpha')})"""
         )
 
 
