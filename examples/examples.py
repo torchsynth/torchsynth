@@ -77,7 +77,7 @@ ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 # +
 # SquareSawVCO test: shape 0 --> square, 1 --> saw.
 
-shape = 0.5
+shape = 0
 midi_f0 = 55
 sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
