@@ -261,7 +261,7 @@ class ADSR(SynthModule):
     def __str__(self):
         return (
             f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
-                s={self.parameters['sustain']}, r={self.parameters['release']}, 
+                s={self.parameters['sustain']}, r={self.parameters['release']},
                 alpha={self.get_parameter('alpha')})"""
         )
 
