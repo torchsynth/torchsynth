@@ -64,6 +64,8 @@ adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr(sustain_duration)
 time_plot(envelope, adsr.control_rate)
 
+adsr.parameters
+
 # SineVCO test
 midi_f0 = 12
 sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
@@ -77,7 +79,7 @@ ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 # +
 # SquareSawVCO test: shape 0 --> square, 1 --> saw.
 
-shape = 0
+shape = 0.5
 midi_f0 = 55
 sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
@@ -115,7 +117,6 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # You can also use the **SquareSawVCO oscillator** in the drum module.
 
 
-# +
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
@@ -126,7 +127,34 @@ my_drum = Drum(
 drum_out = my_drum()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
+
+# ### Parameters
+# All synth modules and synth classes have named parameters which can be quered and updated. Let's look at the parameters for the Drum we just created. Each of these parameters shows the current value, minimum, maximum, and scale. The min and max refer to the smallest and largest values that parameter can take on. The scale value controls conversion between a range of 0 and 1. Let's look at that more below.
+
+my_drum.list_parameters()
+
+# Setting a parameter with a range of [0,1]
+
+my_drum.set_parameter_0to1("pitch_attack", 0.25)
+print(my_drum.parameters['pitch_attack'])
+
+drum_out = my_drum()
+stft_plot(drum_out)
+ipd.Audio(drum_out, rate=vca.sample_rate)
+
+# Setting a parameter with regular range
+
+# +
+my_drum.set_parameter("amp_attack", 1.25)
+print(my_drum.parameters['amp_attack'])
+
+# Get the value in the range 0 to 1
+print("Value in 0 to 1 range: ", my_drum.get_parameter_0to1('amp_attack'))
 # -
+
+drum_out = my_drum()
+stft_plot(drum_out)
+ipd.Audio(drum_out, rate=vca.sample_rate)
 
 # # Filter Examples
 #
@@ -281,3 +309,5 @@ svf = LowPassSVF(cutoff=45, resonance=50)
 kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
+
+
