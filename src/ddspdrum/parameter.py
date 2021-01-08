@@ -25,8 +25,14 @@ class Parameter:
     name    (str)   :   Optional name to give to this parameter.
     """
 
-    def __init__(self, value: float, minimum: float, maximum: float,
-                 scale: float = 1, name: str = ""):
+    def __init__(
+            self,
+            value: float,
+            minimum: float,
+            maximum: float,
+            scale: float = 1,
+            name: str = ""
+    ):
         self.minimum = minimum
         self.maximum = maximum
         self.scale = scale

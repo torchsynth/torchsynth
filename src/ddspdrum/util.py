@@ -4,7 +4,7 @@ Utility functions for DSP related things
 
 import numpy as np
 
-from ddspdrum.defaults import EPSILON
+from ddspdrum.defaults import EPSILON, EQ_POW
 
 
 # What is amin here? And maybe we should convert it to a value in defaults?
@@ -60,3 +60,10 @@ def fix_length(signal: np.array, length: int) -> np.array:
         signal = signal[:length]
     assert signal.shape == (length,)
     return signal
+
+
+def crossfade(in_1, in_2, ratio):
+    """
+    Equal power cross-fade.
+    """
+    return EQ_POW * (np.sqrt(1 - ratio) * in_1 + np.sqrt(ratio) * in_2)
