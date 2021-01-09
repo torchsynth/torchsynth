@@ -13,7 +13,8 @@ class Parameter:
 
     Parameters
     ----------
-    value (float)   :   initial value of this parameter
+    name    (str)   :   Unique name to give to this parameter.
+    value   (float) :   initial value of this parameter
     minimum (float) :   minimum value that this parameter can take on
     maximum (float) :   maximum value that this parameter can take on
     scale   (float) :   scaling to apply when converting to and from a value with
@@ -22,26 +23,25 @@ class Parameter:
                         lower range of the parameter, whereas a scale value greater 1
                         is an exponential relationship that fills more of the higher
                         range of the parameter.
-    name    (str)   :   Optional name to give to this parameter.
     """
 
     def __init__(
         self,
+        name: str,
         value: float,
         minimum: float,
         maximum: float,
         scale: float = 1,
-        name: str = "",
     ):
+        self.name = name
+        self.value = np.clip(value, minimum, maximum)
         self.minimum = minimum
         self.maximum = maximum
         self.scale = scale
-        self.value = np.clip(value, minimum, maximum)
-        self.name = name
 
     def __str__(self):
         name = "{}, ".format(self.name) if self.name else ""
-        return "Parameter: {}Value: {}, Min: {}, Max: {}, Scale: {}".format(
+        return "Parameter: {}, Value: {}, Min: {}, Max: {}, Scale: {}".format(
             name, self.value, self.minimum, self.maximum, self.scale
         )
 
