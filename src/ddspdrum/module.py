@@ -494,15 +494,14 @@ class Synth:
         the computations will change when the parameters change.
         Instead, consider @property getters that use the instance's parameters.
         """
-        # Initialize with the sample rate and control rate from modules
-        sample_rate = modules[0].sample_rate
-        control_rate = modules[0].control_rate
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__()
 
         # Parameter list
         self.parameters = {}
 
         # Check that we are not mixing different control rates or sample rates
+        sample_rate = modules[0].sample_rate
+        control_rate = modules[0].control_rate
         for m in modules[:1]:
             assert m.sample_rate == sample_rate
             assert m.control_rate == control_rate
@@ -516,11 +515,18 @@ class Drum(Synth):
     def __init__(
         self,
         sustain_duration: float,
+        drum_params: DummyModule= DummyModule(
+            [
+            {"parameter_id": "vco_1_ratio",
+             "value": 0.5,
+             "minimum": 0.0,
+             "maximum": 1.0,
+            ]
+            ),
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
         vco_1: VCO = SineVCO(),
         vco_2: VCO = SquareSawVCO(),
-        vco_1_ratio: float = 0.5,
         noise_module: NoiseModule = NoiseModule(),
         vca: VCA = VCA(),
     ):
@@ -536,17 +542,15 @@ class Drum(Synth):
         # However, this is easily changed if desired.
         self.sustain_duration = sustain_duration
 
+        self.drum_params = drum_params
         self.pitch_adsr = pitch_adsr
         self.amp_adsr = amp_adsr
         self.vco_1 = vco_1
         self.vco_2 = vco_2
-        self.vco_1_ratio = vco_1_ratio
         self.noise_module = noise_module
         self.vca = vca
 
-        # Setup parameters for this drum synth
-        self.add_parameter("sustain_duration", sustain_duration, 0, 60, scale=0.5)
-        self.add_parameter("vco_1_ratio", vco_1_ratio, 0, 1)
+        self.connect_parameter("drum_params", self.drum_params, "vco_1_ratio")
 
         # Pitch Envelope
         self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
@@ -577,7 +581,7 @@ class Drum(Synth):
     def __call__(self):
         # The convention for triggering a note event is that it has
         # the same sustain_duration for both ADSRs.
-        sustain_duration = self.parameters["sustain_duration"].value
+        sustain_duration = self.sustain_duration
         pitch_envelope = self.pitch_adsr(sustain_duration)
         amp_envelope = self.amp_adsr(sustain_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
