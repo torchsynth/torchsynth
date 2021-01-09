@@ -49,7 +49,7 @@ class Parameter:
 
     def __str__(self):
         name = "{}, ".format(self.name) if self.name else ""
-        return "Parameter: {}Value: {}, Min: {}, Max: {}, Scale: {}".format(
+        return "Parameter: {}Value: {}, Min: {}, Max: {}, Curve: {}".format(
             name,
             self.value,
             self.minimum,
