@@ -389,16 +389,21 @@ class SquareSawVCO(VCO):
         self.add_parameter("shape", shape, 0, 1)
 
     def oscillator(self, argument):
-        square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
+        square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
         shape = self.parameters['shape'].value
         return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
-    def k(self):
-        # What does k mean here? Can we give it a better name?
-        pitch = self.parameters['pitch'].value + self.parameters['mod_depth'].value
-        f0 = midi_to_hz(pitch)
-        return 12000 / (f0 * np.log10(f0))
+    def partials_constant(self):
+        """
+        Constant value that controls the number of partials in the resulting square /
+        saw wave in order to keep aliasing at an acceptable level. Higher frequencies
+        require fewer partials whereas lower frequency sounds can safely have more
+        partials without causing audible aliasing.
+        """
+        max_pitch = self.parameters['pitch'].value + self.parameters['mod_depth'].value
+        max_f0 = midi_to_hz(max_pitch)
+        return 12000 / (max_f0 * np.log10(max_f0))
 
 
 class VCA(SynthModule):
