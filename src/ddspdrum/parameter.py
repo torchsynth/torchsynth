@@ -26,12 +26,12 @@ class Parameter:
     """
 
     def __init__(
-            self,
-            value: float,
-            minimum: float,
-            maximum: float,
-            scale: float = 1,
-            name: str = ""
+        self,
+        value: float,
+        minimum: float,
+        maximum: float,
+        scale: float = 1,
+        name: str = "",
     ):
         self.minimum = minimum
         self.maximum = maximum
@@ -42,11 +42,7 @@ class Parameter:
     def __str__(self):
         name = "{}, ".format(self.name) if self.name else ""
         return "Parameter: {}Value: {}, Min: {}, Max: {}, Scale: {}".format(
-            name,
-            self.value,
-            self.minimum,
-            self.maximum,
-            self.scale
+            name, self.value, self.minimum, self.maximum, self.scale
         )
 
     def set_value(self, new_value):
