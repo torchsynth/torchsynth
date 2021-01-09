@@ -26,9 +26,7 @@ class SynthModule:
     """
 
     def __init__(
-        self,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE
+        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
     ):
         """
         NOTE:
@@ -174,13 +172,15 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameters([
-        Parameter("attack", a, 0, 20, scale=0.5),
-        Parameter("decay", d, 0, 20, scale=0.5),
-        Parameter("sustain", s, 0, 1),
-        Parameter("release", r, 0, 20, scale=0.5),
-        Parameter("alpha", alpha, 0, 10),
-        ])
+        self.add_parameters(
+            [
+                Parameter("attack", a, 0, 20, scale=0.5),
+                Parameter("decay", d, 0, 20, scale=0.5),
+                Parameter("sustain", s, 0, 1),
+                Parameter("release", r, 0, 20, scale=0.5),
+                Parameter("alpha", alpha, 0, 10),
+            ]
+        )
 
     def __call__(self, sustain_duration: float = 0):
         """Generate an envelope that sustains for a given duration in seconds.
@@ -296,10 +296,12 @@ class VCO(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameters([
-        Parameter("pitch", midi_f0, 0, 127),
-        Parameter("mod_depth", mod_depth, 0, 127),
-        ])
+        self.add_parameters(
+            [
+                Parameter("pitch", midi_f0, 0, 127),
+                Parameter("mod_depth", mod_depth, 0, 127),
+            ]
+        )
         # TODO: Make this a parameter too?
         self.phase = phase
 
@@ -387,9 +389,11 @@ class SquareSawVCO(VCO):
         phase: float = 0,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
-        self.add_parameters([
-        Parameter("shape", shape, 0, 1),
-        ])
+        self.add_parameters(
+            [
+                Parameter("shape", shape, 0, 1),
+            ]
+        )
 
     def oscillator(self, argument):
         square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
@@ -434,9 +438,11 @@ class NoiseModule(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameters([
-        Parameter("ratio", ratio, 0, 1),
-        ])
+        self.add_parameters(
+            [
+                Parameter("ratio", ratio, 0, 1),
+            ]
+        )
 
     def __call__(self, audio_in: np.ndarray):
         noise = self.noise_of_length(audio_in)
@@ -513,10 +519,10 @@ class Drum(Synth):
         drum_params: DummyModule = DummyModule(
             parameters=[
                 Parameter(
-                    name= "vco_1_ratio",
-                    value= 0.5,
-                    minimum= 0.0,
-                    maximum= 1.0,
+                    name="vco_1_ratio",
+                    value=0.5,
+                    minimum=0.0,
+                    maximum=1.0,
                 )
             ]
         ),
@@ -627,10 +633,12 @@ class SVF(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.mode = mode
         self.self_oscillate = self_oscillate
-        self.add_parameters([
-        Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, scale=0.5),
-        Parameter("resonance", resonance, 0.5, 1000, scale=0.25),
-        ])
+        self.add_parameters(
+            [
+                Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, scale=0.5),
+                Parameter("resonance", resonance, 0.5, 1000, scale=0.25),
+            ]
+        )
 
     def __call__(
         self,
@@ -819,10 +827,12 @@ class FIR(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameters([
-        Parameter("cutoff", cutoff, 5, sample_rate / 2.0, scale=0.5),
-        Parameter("length", filter_length, 4, 4096),
-        ])
+        self.add_parameters(
+            [
+                Parameter("cutoff", cutoff, 5, sample_rate / 2.0, scale=0.5),
+                Parameter("length", filter_length, 4, 4096),
+            ]
+        )
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -895,9 +905,11 @@ class MovingAverage(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameters([
-        Parameter("length", filter_length, 1, 4096),
-        ])
+        self.add_parameters(
+            [
+                Parameter("length", filter_length, 1, 4096),
+            ]
+        )
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
