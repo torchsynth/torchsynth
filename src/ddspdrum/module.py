@@ -150,7 +150,6 @@ class SynthModule:
         """
         return {key: str(self.parameters[key]) for key in self.parameters}
 
-
 class ADSR(SynthModule):
     """
     Envelope class for building a control rate ADSR signal
@@ -442,7 +441,34 @@ class NoiseModule(SynthModule):
         return np.random.rand(len(audio_in))
 
 
-class Synth(SynthModule):
+class DummyModule(SynthModule):
+    """
+    A dummy module just encapsulates some parameters and don't create sound.
+    This is a temporary workaround that allows a Synth to contain parameters
+    without nesting SynthModules and without forcing Synth to be a SynthModule.
+    """
+
+    def __init__(
+        self,
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+        *params: List[Dict],
+    ):
+        """
+        Parameters
+        ----------
+        dict                :   List of parameter dictionaries, for
+                                `self.add_parameter`.
+                                TODO: Take this as a list of Parameters instead?
+        """
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        for param in params:
+            self.add_parameter(**param)
+
+    def __call__(self):
+        assert False
+
+class Synth:
     """
     A base class for a modular synth, ensuring that all modules
     have the same sample and control rate.
@@ -491,7 +517,12 @@ class Drum(Synth):
         assert sustain_duration >= 0
         assert 0 <= vco_1_ratio <= 1.0
 
+        # We assume that sustain duration is a hyper-parameter,
+        # with the mindset that if you are trying to learn to
+        # synthesize a sound, you won't be adjusting the sustain_duration.
+        # However, this is easily changed if desired.
         self.sustain_duration = sustain_duration
+
         self.pitch_adsr = pitch_adsr
         self.amp_adsr = amp_adsr
         self.vco_1 = vco_1
