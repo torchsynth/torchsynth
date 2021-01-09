@@ -63,7 +63,7 @@ class SynthModule:
             return resample(control, num_samples)
 
     def add_parameter(self, parameter_id: str, value: float, minimum: float,
-                      maximum: float, scale: float = 1):
+                      maximum: float, curve: str = "linear"):
         """
         Add a new parameter to this module.
 
@@ -73,13 +73,13 @@ class SynthModule:
         value (float)       :   initial value for this parameter
         minimum (float)     :   minimum value that this parameter can take
         maximum (float)     :   maximum value that this parameter can take
-        scale (float)       :   scaling when converting between [0,1] range
+        curve (float)       :   scaling when converting between [0,1] range
         """
         if parameter_id in self.parameters:
             raise ValueError("parameter_id: {} already used".format(parameter_id))
 
         self.parameters[parameter_id] = Parameter(value, minimum, maximum,
-                                                  scale, parameter_id)
+                                                  curve, parameter_id)
 
     def connect_parameter(self, parameter_id: str, module: SynthModule,
                           module_parameter_id: str):
@@ -179,10 +179,10 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameter("attack", a, 0, 20, scale=0.5)
-        self.add_parameter("decay", d, 0, 20, scale=0.5)
+        self.add_parameter("attack", a, 0, 20, curve="log")
+        self.add_parameter("decay", d, 0, 20, curve="log")
         self.add_parameter("sustain", s, 0, 1)
-        self.add_parameter("release", r, 0, 20, scale=0.5)
+        self.add_parameter("release", r, 0, 20, curve="log")
         self.add_parameter("alpha", alpha, 0, 10)
 
     def __call__(self, sustain_duration: float = 0):
@@ -501,7 +501,7 @@ class Drum(Synth):
         self.vca = vca
 
         # Setup parameters for this drum synth
-        self.add_parameter("sustain_duration", sustain_duration, 0, 60, scale=0.5)
+        self.add_parameter("sustain_duration", sustain_duration, 0, 60, curve="log")
         self.add_parameter("vco_1_ratio", vco_1_ratio, 0, 1)
 
         # Pitch Envelope
@@ -583,8 +583,8 @@ class SVF(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.mode = mode
         self.self_oscillate = self_oscillate
-        self.add_parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, scale=0.5)
-        self.add_parameter("resonance", resonance, 0.5, 1000, scale=0.25)
+        self.add_parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, curve="log")
+        self.add_parameter("resonance", resonance, 0.5, 1000, curve="log")
 
     def __call__(
         self,
@@ -773,7 +773,7 @@ class FIR(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-        self.add_parameter("cutoff", cutoff, 5, sample_rate / 2.0, scale=0.5)
+        self.add_parameter("cutoff", cutoff, 5, sample_rate / 2.0, curve="log")
         self.add_parameter("length", filter_length, 4, 4096)
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
