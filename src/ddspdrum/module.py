@@ -462,9 +462,9 @@ class DummyModule(SynthModule):
 
     def __init__(
         self,
+        params: List[Dict],
         sample_rate: int = SAMPLE_RATE,
         control_rate: int = CONTROL_RATE,
-        *params: List[Dict],
     ):
         """
         Parameters
@@ -481,7 +481,8 @@ class DummyModule(SynthModule):
         assert False
 
 
-class Synth:
+# TODO: Remove SynthModule
+class Synth(SynthModule):
     """
     A base class for a modular synth, ensuring that all modules
     have the same sample and control rate.
@@ -494,14 +495,14 @@ class Synth:
         the computations will change when the parameters change.
         Instead, consider @property getters that use the instance's parameters.
         """
-        super().__init__()
+        sample_rate = modules[0].sample_rate
+        control_rate = modules[0].control_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
 
         # Parameter list
         self.parameters = {}
 
         # Check that we are not mixing different control rates or sample rates
-        sample_rate = modules[0].sample_rate
-        control_rate = modules[0].control_rate
         for m in modules[:1]:
             assert m.sample_rate == sample_rate
             assert m.control_rate == control_rate
@@ -516,12 +517,12 @@ class Drum(Synth):
         self,
         sustain_duration: float,
         drum_params: DummyModule= DummyModule(
-            [
+            params=[
             {"parameter_id": "vco_1_ratio",
              "value": 0.5,
              "minimum": 0.0,
              "maximum": 1.0,
-            ]
+             }]
             ),
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
@@ -534,7 +535,6 @@ class Drum(Synth):
             modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
         )
         assert sustain_duration >= 0
-        assert 0 <= vco_1_ratio <= 1.0
 
         # We assume that sustain duration is a hyper-parameter,
         # with the mindset that if you are trying to learn to
@@ -550,7 +550,7 @@ class Drum(Synth):
         self.noise_module = noise_module
         self.vca = vca
 
-        self.connect_parameter("drum_params", self.drum_params, "vco_1_ratio")
+        self.connect_parameter("vco_1_ratio", self.drum_params, "vco_1_ratio")
 
         # Pitch Envelope
         self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")

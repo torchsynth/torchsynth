@@ -111,6 +111,18 @@ ipd.Audio(vca_out, rate=vca.sample_rate)
 
 # Alternately, you can just use the Drum class that composes all these modules together automatically.
 
+import ddspdrum.module
+from ddspdrum.module import DummyModule
+drum_params: DummyModule= DummyModule(
+            params=[
+            {"parameter_id": "vco_1_ratio",
+             "value": 0.5,
+             "minimum": 0.0,
+             "maximum": 1.0,
+             }]
+            )
+drum_params.list_parameters()
+
 # +
 my_drum = Drum(
     pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
@@ -133,7 +145,6 @@ my_drum = Drum(
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
     vco_1=SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
     vco_2=SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
-    vco_1_ratio=0.5,
     noise_module=NoiseModule(ratio=0.1),
     sustain_duration=1,
 )
@@ -330,3 +341,9 @@ svf = LowPassSVF(cutoff=45, resonance=50)
 kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
+
+
+
+
+
+
