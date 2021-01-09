@@ -32,10 +32,11 @@ class Parameter:
     ):
         self.minimum = minimum
         self.maximum = maximum
-        self.value = np.clip(value, minimum, maximum)
+        assert minimum <= value <= maximum
+        self.value = value
         self.name = name
-        self.curve_type = curve
 
+        self.curve_type = curve
         if curve == "linear":
             self.curve = 1
         elif curve == "log":
@@ -64,7 +65,7 @@ class Parameter:
         ---------
         new_value (float)   :   value to update parameter with
         """
-        self.value = np.clip(new_value, self.minimum, self.maximum)
+        self.value = new_value
 
     def set_value_0to1(self, new_value):
         """
@@ -74,8 +75,6 @@ class Parameter:
         ----------
         new_value (float)   :   value to update parameter with, in the range [0,1]
         """
-        new_value = np.clip(new_value, 0, 1)
-
         if new_value != 0 and self.curve != 1:
             new_value = np.exp2(np.log2(new_value) / self.curve)
 
