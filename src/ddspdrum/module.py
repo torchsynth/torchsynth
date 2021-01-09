@@ -516,14 +516,16 @@ class Drum(Synth):
     def __init__(
         self,
         sustain_duration: float,
-        drum_params: DummyModule= DummyModule(
+        drum_params: DummyModule = DummyModule(
             params=[
-            {"parameter_id": "vco_1_ratio",
-             "value": 0.5,
-             "minimum": 0.0,
-             "maximum": 1.0,
-             }]
-            ),
+                {
+                    "parameter_id": "vco_1_ratio",
+                    "value": 0.5,
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                }
+            ]
+        ),
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
         vco_1: VCO = SineVCO(),
