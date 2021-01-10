@@ -23,12 +23,12 @@ class Parameter:
     """
 
     def __init__(
-            self,
-            name: str,
-            value: float,
-            minimum: float,
-            maximum: float,
-            curve: str = "linear",
+        self,
+        name: str,
+        value: float,
+        minimum: float,
+        maximum: float,
+        curve: str = "linear",
     ):
         self.name = name
         self.minimum = minimum

@@ -396,7 +396,7 @@ class SquareSawVCO(VCO):
 
     def oscillator(self, argument):
         square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
-        shape = self.parameters['shape'].value
+        shape = self.parameters["shape"].value
         return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
@@ -407,7 +407,7 @@ class SquareSawVCO(VCO):
         require fewer partials whereas lower frequency sounds can safely have more
         partials without causing audible aliasing.
         """
-        max_pitch = self.parameters['pitch'].value + self.parameters['mod_depth'].value
+        max_pitch = self.parameters["pitch"].value + self.parameters["mod_depth"].value
         max_f0 = midi_to_hz(max_pitch)
         return 12000 / (max_f0 * np.log10(max_f0))
 
