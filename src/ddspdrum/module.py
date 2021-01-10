@@ -331,7 +331,6 @@ class VCO(SynthModule):
 
         assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
 
-        print(self.parameters)
         modulation = self.parameters["mod_depth"].value * mod_signal
         control_as_midi = self.parameters["pitch"].value + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
