@@ -523,7 +523,7 @@ class Drum(Synth):
         drum_params: DummyModule = DummyModule(
             parameters=[
                 Parameter(
-                    name="vco_1_ratio",
+                    name="vco_ratio",
                     value=0.5,
                     minimum=0.0,
                     maximum=1.0,
@@ -556,8 +556,6 @@ class Drum(Synth):
         self.noise_module = noise_module
         self.vca = vca
 
-        self.connect_parameter("vco_1_ratio", self.drum_params, "vco_1_ratio")
-
         # Pitch Envelope
         self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
         self.connect_parameter("pitch_decay", self.pitch_adsr, "decay")
@@ -580,6 +578,9 @@ class Drum(Synth):
         self.connect_parameter("vco_2_pitch", self.vco_2, "pitch")
         self.connect_parameter("vco_2_mod_depth", self.vco_2, "mod_depth")
         self.connect_parameter("vco_2_shape", self.vco_2, "shape")
+
+        # Mix between the two VCOs
+        self.connect_parameter("vco_ratio", self.drum_params, "vco_ratio")
 
         # Noise
         self.connect_parameter("noise_ratio", self.noise_module, "ratio")
