@@ -597,7 +597,7 @@ class Drum(Synth):
         vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = crossfade(
-            vco_1_out, vco_2_out, self.parameters["vco_1_ratio"].value
+            vco_1_out, vco_2_out, self.parameters["vco_ratio"].value
         )
 
         audio_out = self.noise_module(audio_out)
