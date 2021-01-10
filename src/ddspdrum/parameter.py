@@ -65,6 +65,7 @@ class Parameter:
         ---------
         new_value (float)   :   value to update parameter with
         """
+        assert self.minimum <= new_value <= self.maximum
         self.value = new_value
 
     def set_value_0to1(self, new_value):
@@ -75,6 +76,7 @@ class Parameter:
         ----------
         new_value (float)   :   value to update parameter with, in the range [0,1]
         """
+        assert 0 <= new_value <= 1
         if new_value != 0 and self.curve != 1:
             new_value = np.exp2(np.log2(new_value) / self.curve)
 
