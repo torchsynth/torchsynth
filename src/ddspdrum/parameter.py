@@ -13,28 +13,28 @@ class Parameter:
 
     Parameters
     ----------
-    value (float)   :   initial value of this parameter
+    name    (str)   :   Unique name to give to this parameter.
+    value   (float) :   initial value of this parameter
     minimum (float) :   minimum value that this parameter can take on
     maximum (float) :   maximum value that this parameter can take on
     curve   (str)   :   relationship between parameter values and the normalized values
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
-    name    (str)   :   Optional name to give to this parameter.
     """
 
     def __init__(
             self,
+            name: str,
             value: float,
             minimum: float,
             maximum: float,
             curve: str = "linear",
-            name: str = ""
     ):
+        self.name = name
         self.minimum = minimum
         self.maximum = maximum
         assert minimum <= value <= maximum
         self.value = value
-        self.name = name
 
         self.curve_type = curve
         if curve == "linear":
