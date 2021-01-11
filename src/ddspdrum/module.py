@@ -38,6 +38,16 @@ class SynthModule:
         self.control_rate = control_rate
         self.parameters: Dict[Parameter] = {}
 
+    def __repr__(self):
+        """
+        Return a string representation of this synth module and all its parameters
+        """
+        return "{}(sample_rate={}, parameters={})".format(
+            self.__class__,
+            repr(self.sample_rate),
+            repr(self.parameters)
+        )
+
     def add_parameters(self, parameters: List[Parameter]):
         """
         Add parameters to this SynthModule's parameters dictionary.
@@ -136,12 +146,6 @@ class SynthModule:
         value (float)       : Value to update parameter with
         """
         self.parameters[parameter_id].set_value_0to1(value)
-
-    def list_parameters(self):
-        """
-        Return a dictionary of the parameters as strings
-        """
-        return {key: str(self.parameters[key]) for key in self.parameters}
 
 
 class ADSR(SynthModule):
