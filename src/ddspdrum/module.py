@@ -174,10 +174,10 @@ class ADSR(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.add_parameters(
             [
-                Parameter("attack", a, 0, 20, scale=0.5),
-                Parameter("decay", d, 0, 20, scale=0.5),
+                Parameter("attack", a, 0, 20, curve="log"),
+                Parameter("decay", d, 0, 20, curve="log"),
                 Parameter("sustain", s, 0, 1),
-                Parameter("release", r, 0, 20, scale=0.5),
+                Parameter("release", r, 0, 20, curve="log"),
                 Parameter("alpha", alpha, 0, 10),
             ]
         )
@@ -331,7 +331,6 @@ class VCO(SynthModule):
 
         assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
 
-        print(self.parameters)
         modulation = self.parameters["mod_depth"].value * mod_signal
         control_as_midi = self.parameters["pitch"].value + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
@@ -396,16 +395,21 @@ class SquareSawVCO(VCO):
         )
 
     def oscillator(self, argument):
-        square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
+        square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
         shape = self.parameters["shape"].value
         return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
-    def k(self):
-        # What does k mean here? Can we give it a better name?
-        pitch = self.parameters["pitch"].value + self.parameters["mod_depth"].value
-        f0 = midi_to_hz(pitch)
-        return 12000 / (f0 * np.log10(f0))
+    def partials_constant(self):
+        """
+        Constant value that controls the number of partials in the resulting square /
+        saw wave in order to keep aliasing at an acceptable level. Higher frequencies
+        require fewer partials whereas lower frequency sounds can safely have more
+        partials without causing audible aliasing.
+        """
+        max_pitch = self.parameters["pitch"].value + self.parameters["mod_depth"].value
+        max_f0 = midi_to_hz(max_pitch)
+        return 12000 / (max_f0 * np.log10(max_f0))
 
 
 class VCA(SynthModule):
@@ -519,7 +523,7 @@ class Drum(Synth):
         drum_params: DummyModule = DummyModule(
             parameters=[
                 Parameter(
-                    name="vco_1_ratio",
+                    name="vco_ratio",
                     value=0.5,
                     minimum=0.0,
                     maximum=1.0,
@@ -552,8 +556,6 @@ class Drum(Synth):
         self.noise_module = noise_module
         self.vca = vca
 
-        self.connect_parameter("vco_1_ratio", self.drum_params, "vco_1_ratio")
-
         # Pitch Envelope
         self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
         self.connect_parameter("pitch_decay", self.pitch_adsr, "decay")
@@ -577,6 +579,9 @@ class Drum(Synth):
         self.connect_parameter("vco_2_mod_depth", self.vco_2, "mod_depth")
         self.connect_parameter("vco_2_shape", self.vco_2, "shape")
 
+        # Mix between the two VCOs
+        self.connect_parameter("vco_ratio", self.drum_params, "vco_ratio")
+
         # Noise
         self.connect_parameter("noise_ratio", self.noise_module, "ratio")
 
@@ -592,7 +597,7 @@ class Drum(Synth):
         vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = crossfade(
-            vco_1_out, vco_2_out, self.parameters["vco_1_ratio"].value
+            vco_1_out, vco_2_out, self.parameters["vco_ratio"].value
         )
 
         audio_out = self.noise_module(audio_out)
@@ -635,8 +640,8 @@ class SVF(SynthModule):
         self.self_oscillate = self_oscillate
         self.add_parameters(
             [
-                Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, scale=0.5),
-                Parameter("resonance", resonance, 0.5, 1000, scale=0.25),
+                Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, curve="log"),
+                Parameter("resonance", resonance, 0.5, 1000, curve="log"),
             ]
         )
 
@@ -829,7 +834,7 @@ class FIR(SynthModule):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
         self.add_parameters(
             [
-                Parameter("cutoff", cutoff, 5, sample_rate / 2.0, scale=0.5),
+                Parameter("cutoff", cutoff, 5, sample_rate / 2.0, curve="log"),
                 Parameter("length", filter_length, 4, 4096),
             ]
         )
