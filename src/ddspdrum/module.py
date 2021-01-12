@@ -43,9 +43,7 @@ class SynthModule:
         Return a string representation of this synth module and all its parameters
         """
         return "{}(sample_rate={}, parameters={})".format(
-            self.__class__,
-            repr(self.sample_rate),
-            repr(self.parameters)
+            self.__class__, repr(self.sample_rate), repr(self.parameters)
         )
 
     def add_parameters(self, parameters: List[Parameter]):
@@ -152,6 +150,7 @@ class SynthModule:
         Convenience method for getting the parameter value.
         """
         return self.parameters[parameter_id].value
+
 
 class ADSR(SynthModule):
     """
@@ -605,9 +604,7 @@ class Drum(Synth):
         vco_1_out = self.vco_1(pitch_envelope)
         vco_2_out = self.vco_2(pitch_envelope)
 
-        audio_out = crossfade(
-            vco_1_out, vco_2_out, self.p("vco_ratio")
-        )
+        audio_out = crossfade(vco_1_out, vco_2_out, self.p("vco_ratio"))
 
         audio_out = self.noise_module(audio_out)
 
@@ -859,9 +856,7 @@ class FIR(SynthModule):
         audio (np.ndarray)  :   audio samples to filter
         """
 
-        impulse = self.windowed_sinc(
-            self.p("cutoff"), self.p("length")
-        )
+        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
         y = np.convolve(audio, impulse)
         return y
 

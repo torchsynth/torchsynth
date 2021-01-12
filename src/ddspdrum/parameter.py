@@ -49,11 +49,7 @@ class Parameter:
 
     def __repr__(self):
         return "Parameter(name={}, value={}, min={}, max={}, curve={})".format(
-            self.name,
-            self.value,
-            self.minimum,
-            self.maximum,
-            self.curve_type
+            self.name, self.value, self.minimum, self.maximum, self.curve_type
         )
 
     def set_value(self, new_value):
