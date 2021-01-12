@@ -47,10 +47,9 @@ class Parameter:
             curve_types = ["linear", "log", "exp"]
             raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
 
-    def __str__(self):
-        name = "{}, ".format(self.name) if self.name else ""
-        return "Parameter: {}Value: {}, Min: {}, Max: {}, Curve: {}".format(
-            name,
+    def __repr__(self):
+        return "Parameter(name={}, value={}, min={}, max={}, curve={})".format(
+            self.name,
             self.value,
             self.minimum,
             self.maximum,

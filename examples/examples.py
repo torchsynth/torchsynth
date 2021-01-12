@@ -144,7 +144,10 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # ### Parameters
 # All synth modules and synth classes have named parameters which can be quered and updated. Let's look at the parameters for the Drum we just created. Each of these parameters shows the current value, minimum, maximum, and scale. The min and max refer to the smallest and largest values that parameter can take on. The scale value controls conversion between a range of 0 and 1. Let's look at that more below.
 
-my_drum.list_parameters()
+my_drum.parameters
+
+# Can also look at parameters by printing the object
+print(my_drum)
 
 # Setting a parameter with a range of [0,1]
 
