@@ -5,13 +5,16 @@ Synth modules.
                 - Convert operations to tensors, obvs.
 """
 
+from __future__ import annotations
+
 from abc import abstractmethod
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from scipy.signal import resample
 
 from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
+from ddspdrum.parameter import Parameter
 from ddspdrum.util import crossfade, fix_length, midi_to_hz
 
 
@@ -30,10 +33,27 @@ class SynthModule:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
         the computations will change when the parameters change.
-        Instead, consider @property getters that use the instance's parameters.
         """
         self.sample_rate = sample_rate
         self.control_rate = control_rate
+        self.parameters: Dict[Parameter] = {}
+
+    def __repr__(self):
+        """
+        Return a string representation of this synth module and all its parameters
+        """
+        return "{}(sample_rate={}, parameters={})".format(
+            self.__class__, repr(self.sample_rate), repr(self.parameters)
+        )
+
+    def add_parameters(self, parameters: List[Parameter]):
+        """
+        Add parameters to this SynthModule's parameters dictionary.
+        (Since there is inheritance, this might happen several times.)
+        """
+        for parameter in parameters:
+            assert parameter.name not in self.parameters
+            self.parameters[parameter.name] = parameter
 
     def control_to_sample_rate(self, control: np.array) -> np.array:
         """
@@ -57,6 +77,79 @@ class SynthModule:
                 round(len(control) * self.sample_rate / self.control_rate)
             )
             return resample(control, num_samples)
+
+    def connect_parameter(
+        self, parameter_id: str, module: SynthModule, module_parameter_id: str
+    ):
+        """
+        Create a named parameter for this synthesizer that is connected to a parameter
+        in an underlying synth module
+
+        Parameters
+        ----------
+        parameter_id (str)          : name of the new parameter
+        module (SynthModule)        : the SynthModule to connect to this parameter
+        module_parameter_id (str)   : parameter_id in SynthModule to target
+        """
+        if parameter_id in self.parameters:
+            raise ValueError("parameter_id: {} already used".format(parameter_id))
+
+        if module_parameter_id not in module.parameters:
+            raise KeyError(
+                "parameter_id: {} not a parameter in {}".format(
+                    module_parameter_id, module
+                )
+            )
+
+        self.parameters[parameter_id] = module.get_parameter(module_parameter_id)
+
+    def get_parameter(self, parameter_id: str) -> Parameter:
+        """
+        Get a single parameter for this module
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return
+        """
+        return self.parameters[parameter_id]
+
+    def get_parameter_0to1(self, parameter_id: str) -> float:
+        """
+        Get the value of a single parameter in the range of [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return the value for
+        """
+        return self.parameters[parameter_id].get_value_0to1()
+
+    def set_parameter(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter value, ensuring that it is within a specified range
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value(value)
+
+    def set_parameter_0to1(self, parameter_id: str, value: float):
+        """
+        Update a specific parameter with a value in the range [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
+        """
+        self.parameters[parameter_id].set_value_0to1(value)
+
+    def p(self, parameter_id: str):
+        """
+        Convenience method for getting the parameter value.
+        """
+        return self.parameters[parameter_id].value
 
 
 class ADSR(SynthModule):
@@ -87,21 +180,15 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert alpha >= 0
-        self.alpha = alpha
-
-        assert s >= 0 and s <= 1
-        self.s = s
-
-        assert a >= 0
-        self.a = a
-
-        assert d >= 0
-        self.d = d
-
-        assert r >= 0
-        self.r = r
+        self.add_parameters(
+            [
+                Parameter("attack", a, 0, 20, curve="log"),
+                Parameter("decay", d, 0, 20, curve="log"),
+                Parameter("sustain", s, 0, 1),
+                Parameter("release", r, 0, 20, curve="log"),
+                Parameter("alpha", alpha, 0, 10),
+            ]
+        )
 
     def __call__(self, sustain_duration: float = 0):
         """Generate an envelope that sustains for a given duration in seconds.
@@ -145,24 +232,31 @@ class ADSR(SynthModule):
         t = np.linspace(
             0, duration, int(round(duration * self.control_rate)), endpoint=False
         )
-        return (t / duration) ** self.alpha
+        return (t / duration) ** self.p("alpha")
 
     @property
     def attack(self):
-        return self._ramp(self.a)
+        return self._ramp(self.p("attack"))
 
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        return self._ramp(self.d)[::-1] * (1 - self.s) + self.s
+        decay = self.p("decay")
+        sustain = self.p("sustain")
+        return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
     def sustain(self, duration):
-        return np.full(round(int(duration * CONTROL_RATE)), fill_value=self.s)
+        return np.full(
+            round(int(duration * CONTROL_RATE)),
+            fill_value=self.p("sustain"),
+        )
 
     @property
     def release(self):
         # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        return self._ramp(self.r)[::-1] * self.s
+        sustain = self.p("sustain")
+        release = self.p("release")
+        return self._ramp(release)[::-1] * sustain
 
     @property
     def note_on(self):
@@ -173,9 +267,9 @@ class ADSR(SynthModule):
         return self.release
 
     def __str__(self):
-        return (
-            f"ADSR(a={self.a}, d={self.d}, s={self.s}, r={self.r}, alpha={self.alpha})"
-        )
+        return f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
+                s={self.parameters['sustain']}, r={self.parameters['release']},
+                alpha={self.get_parameter('alpha')})"""
 
 
 class VCO(SynthModule):
@@ -210,14 +304,13 @@ class VCO(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert 0 <= midi_f0 <= 127
-        self.midi_f0 = midi_f0
-
-        assert mod_depth >= 0
-        self.mod_depth = mod_depth
-        assert 0 <= self.midi_f0 + self.mod_depth <= 127
-
+        self.add_parameters(
+            [
+                Parameter("pitch", midi_f0, 0, 127),
+                Parameter("mod_depth", mod_depth, 0, 127),
+            ]
+        )
+        # TODO: Make this a parameter too?
         self.phase = phase
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
@@ -246,7 +339,8 @@ class VCO(SynthModule):
 
         assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
 
-        control_as_midi = self.mod_depth * mod_signal + self.midi_f0
+        modulation = self.p("mod_depth") * mod_signal
+        control_as_midi = self.p("pitch") + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
@@ -302,20 +396,28 @@ class SquareSawVCO(VCO):
         phase: float = 0,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
-
-        # 0 is square. 1 is saw.
-        assert 0.0 <= shape <= 1.0
-        self.shape = shape
+        self.add_parameters(
+            [
+                Parameter("shape", shape, 0, 1),
+            ]
+        )
 
     def oscillator(self, argument):
-        square = np.tanh(np.pi * self.k * np.sin(argument) / 2)
-        return (1 - self.shape / 2) * square * (1 + self.shape * np.cos(argument))
+        square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
+        shape = self.p("shape")
+        return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
-    def k(self):
-        # What does k mean here? Can we give it a better name?
-        f0 = midi_to_hz(self.midi_f0 + self.mod_depth)
-        return 12000 / (f0 * np.log10(f0))
+    def partials_constant(self):
+        """
+        Constant value that controls the number of partials in the resulting square /
+        saw wave in order to keep aliasing at an acceptable level. Higher frequencies
+        require fewer partials whereas lower frequency sounds can safely have more
+        partials without causing audible aliasing.
+        """
+        max_pitch = self.p("pitch") + self.p("mod_depth")
+        max_f0 = midi_to_hz(max_pitch)
+        return 12000 / (max_f0 * np.log10(max_f0))
 
 
 class VCA(SynthModule):
@@ -348,22 +450,52 @@ class NoiseModule(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        assert 0 <= ratio <= 1
-        self.ratio = ratio
+        self.add_parameters(
+            [
+                Parameter("ratio", ratio, 0, 1),
+            ]
+        )
 
     def __call__(self, audio_in: np.ndarray):
         noise = self.noise_of_length(audio_in)
-        return crossfade(audio_in, noise, self.ratio)
+        return crossfade(audio_in, noise, self.p("ratio"))
 
     @staticmethod
     def noise_of_length(audio_in: np.ndarray):
         return np.random.rand(len(audio_in))
 
 
-class Synth:
+class DummyModule(SynthModule):
     """
-    An abstract class for a modular synth, ensuring that all modules
+    A dummy module just encapsulates some parameters and don't create sound.
+    This is a temporary workaround that allows a Synth to contain parameters
+    without nesting SynthModules and without forcing Synth to be a SynthModule.
+    """
+
+    def __init__(
+        self,
+        parameters: List[Parameter],
+        sample_rate: int = SAMPLE_RATE,
+        control_rate: int = CONTROL_RATE,
+    ):
+        """
+        Parameters
+        ----------
+        dict                :   List of parameter dictionaries, for
+                                `Parameter`.,
+                                TODO: Take this as a list of Parameters instead?
+        """
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        self.add_parameters(parameters)
+
+    def __call__(self):
+        assert False
+
+
+# TODO: Remove SynthModule
+class Synth(SynthModule):
+    """
+    A base class for a modular synth, ensuring that all modules
     have the same sample and control rate.
     """
 
@@ -374,10 +506,18 @@ class Synth:
         the computations will change when the parameters change.
         Instead, consider @property getters that use the instance's parameters.
         """
+        sample_rate = modules[0].sample_rate
+        control_rate = modules[0].control_rate
+        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+
+        # Parameter list
+        # TODO: We can remove this later
+        self.parameters = {}
+
         # Check that we are not mixing different control rates or sample rates
         for m in modules[:1]:
-            assert m.sample_rate == modules[0].sample_rate
-            assert m.control_rate == modules[0].control_rate
+            assert m.sample_rate == sample_rate
+            assert m.control_rate == control_rate
 
 
 class Drum(Synth):
@@ -388,11 +528,20 @@ class Drum(Synth):
     def __init__(
         self,
         sustain_duration: float,
+        drum_params: DummyModule = DummyModule(
+            parameters=[
+                Parameter(
+                    name="vco_ratio",
+                    value=0.5,
+                    minimum=0.0,
+                    maximum=1.0,
+                )
+            ]
+        ),
         pitch_adsr: ADSR = ADSR(),
         amp_adsr: ADSR = ADSR(),
         vco_1: VCO = SineVCO(),
         vco_2: VCO = SquareSawVCO(),
-        vco_1_ratio: float = 0.5,
         noise_module: NoiseModule = NoiseModule(),
         vca: VCA = VCA(),
     ):
@@ -400,28 +549,62 @@ class Drum(Synth):
             modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
         )
         assert sustain_duration >= 0
-        assert 0 <= vco_1_ratio <= 1.0
 
+        # We assume that sustain duration is a hyper-parameter,
+        # with the mindset that if you are trying to learn to
+        # synthesize a sound, you won't be adjusting the sustain_duration.
+        # However, this is easily changed if desired.
         self.sustain_duration = sustain_duration
+
+        self.drum_params = drum_params
         self.pitch_adsr = pitch_adsr
         self.amp_adsr = amp_adsr
         self.vco_1 = vco_1
         self.vco_2 = vco_2
-        self.vco_1_ratio = vco_1_ratio
         self.noise_module = noise_module
         self.vca = vca
+
+        # Pitch Envelope
+        self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
+        self.connect_parameter("pitch_decay", self.pitch_adsr, "decay")
+        self.connect_parameter("pitch_sustain", self.pitch_adsr, "sustain")
+        self.connect_parameter("pitch_release", self.pitch_adsr, "release")
+        self.connect_parameter("pitch_alpha", self.pitch_adsr, "alpha")
+
+        # Amplitude Envelope
+        self.connect_parameter("amp_attack", self.amp_adsr, "attack")
+        self.connect_parameter("amp_decay", self.amp_adsr, "decay")
+        self.connect_parameter("amp_sustain", self.amp_adsr, "sustain")
+        self.connect_parameter("amp_release", self.amp_adsr, "release")
+        self.connect_parameter("amp_alpha", self.amp_adsr, "alpha")
+
+        # VCO 1
+        self.connect_parameter("vco_1_pitch", self.vco_1, "pitch")
+        self.connect_parameter("vco_1_mod_depth", self.vco_1, "mod_depth")
+
+        # VCO 2
+        self.connect_parameter("vco_2_pitch", self.vco_2, "pitch")
+        self.connect_parameter("vco_2_mod_depth", self.vco_2, "mod_depth")
+        self.connect_parameter("vco_2_shape", self.vco_2, "shape")
+
+        # Mix between the two VCOs
+        self.connect_parameter("vco_ratio", self.drum_params, "vco_ratio")
+
+        # Noise
+        self.connect_parameter("noise_ratio", self.noise_module, "ratio")
 
     def __call__(self):
         # The convention for triggering a note event is that it has
         # the same sustain_duration for both ADSRs.
-        pitch_envelope = self.pitch_adsr(self.sustain_duration)
-        amp_envelope = self.amp_adsr(self.sustain_duration)
+        sustain_duration = self.sustain_duration
+        pitch_envelope = self.pitch_adsr(sustain_duration)
+        amp_envelope = self.amp_adsr(sustain_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
         vco_1_out = self.vco_1(pitch_envelope)
         vco_2_out = self.vco_2(pitch_envelope)
 
-        audio_out = crossfade(vco_1_out, vco_2_out, self.vco_1_ratio)
+        audio_out = crossfade(vco_1_out, vco_2_out, self.p("vco_ratio"))
 
         audio_out = self.noise_module(audio_out)
 
@@ -438,7 +621,7 @@ class SVF(SynthModule):
     ----------
 
     mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
-    cutoff (float)          :   cutoff frequency in Hz must be between 0 and half the
+    cutoff (float)          :   cutoff frequency in Hz must be between 5 and half the
                                 sample rate. Defaults to 1000Hz
     resonance (float)       :   filter resonance, or "Quality Factor". Higher values
                                 cause the filter to resonate more. Must be greater than
@@ -459,14 +642,14 @@ class SVF(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
         self.mode = mode
-
-        self.cutoff = cutoff
-        assert 0 < self.cutoff < self.sample_rate / 2.0
-        self.resonance = resonance
-        assert 0.5 <= self.resonance
         self.self_oscillate = self_oscillate
+        self.add_parameters(
+            [
+                Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, curve="log"),
+                Parameter("resonance", resonance, 0.5, 1000, curve="log"),
+            ]
+        )
 
     def __call__(
         self,
@@ -492,7 +675,8 @@ class SVF(SynthModule):
         y = np.zeros_like(audio)
 
         # Calculate initial coefficients
-        coeff0, coeff1, rho = self.calculate_coefficients(self.cutoff)
+        cutoff = self.p("cutoff")
+        coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
 
         # Check if there is a filter cutoff envelope to apply
         if cutoff_mod_amount != 0.0:
@@ -504,8 +688,8 @@ class SVF(SynthModule):
 
             # If there is a cutoff modulation envelope, update coefficients
             if cutoff_mod_amount != 0.0:
-                cutoff = self.cutoff + cutoff_mod[i] * cutoff_mod_amount
-                coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
+                cutoff_val = cutoff + cutoff_mod[i] * cutoff_mod_amount
+                coeff0, coeff1, rho = self.calculate_coefficients(cutoff_val)
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio[i] - rho * h[0] - h[1])
@@ -537,7 +721,8 @@ class SVF(SynthModule):
         """
 
         g = np.tan(np.pi * cutoff / self.sample_rate)
-        R = 0.0 if self.self_oscillate else 1.0 / (2.0 * self.resonance)
+        resonance = self.p("resonance")
+        R = 0.0 if self.self_oscillate else 1.0 / (2.0 * resonance)
         coeff0 = 1.0 / (1.0 + 2.0 * R * g + g * g)
         coeff1 = g
         rho = 2.0 * R + g
@@ -637,7 +822,7 @@ class FIR(SynthModule):
     Parameters
     ----------
 
-    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 0 and
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
                             half the sampling rate. Defaults to 1000Hz.
     filter_length (int) :   The length of the filter in samples. A longer filter will
                             result in a steeper filter cutoff. Should be greater than 4.
@@ -653,11 +838,12 @@ class FIR(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        self.filter_length = filter_length
-        assert self.filter_length > 4
-        self.cutoff = cutoff
-        assert 0 < self.cutoff < self.sample_rate / 2
+        self.add_parameters(
+            [
+                Parameter("cutoff", cutoff, 5, sample_rate / 2.0, curve="log"),
+                Parameter("length", filter_length, 4, 4096),
+            ]
+        )
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -670,7 +856,7 @@ class FIR(SynthModule):
         audio (np.ndarray)  :   audio samples to filter
         """
 
-        impulse = self.windowed_sinc(self.cutoff, self.filter_length)
+        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
         y = np.convolve(audio, impulse)
         return y
 
@@ -728,9 +914,11 @@ class MovingAverage(SynthModule):
         control_rate: int = CONTROL_RATE,
     ):
         super().__init__(sample_rate=sample_rate, control_rate=control_rate)
-
-        self.filter_length = filter_length
-        assert self.filter_length > 0
+        self.add_parameters(
+            [
+                Parameter("length", filter_length, 1, 4096),
+            ]
+        )
 
     def __call__(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -741,6 +929,7 @@ class MovingAverage(SynthModule):
 
         audio (np.ndarray)  :   audio samples to filter
         """
-        impulse = np.ones(self.filter_length) / self.filter_length
+        length = self.p("length")
+        impulse = np.ones(length) / length
         y = np.convolve(audio, impulse)
         return y

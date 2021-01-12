@@ -34,4 +34,7 @@ which case you'll have to create a Python 3.7 conda environment.
 (You might also need to downgrade LLVM to 10 or 9.):
 ```
 conda install -c conda-forge ipython librosa matplotlib numpy matplotlib scipy jupytext
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=envname
 ```
+and change the kernel to `envname`.
