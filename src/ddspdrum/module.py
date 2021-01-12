@@ -147,6 +147,11 @@ class SynthModule:
         """
         self.parameters[parameter_id].set_value_0to1(value)
 
+    def p(self, parameter_id: str):
+        """
+        Convenience method for getting the parameter value.
+        """
+        return self.parameters[parameter_id].value
 
 class ADSR(SynthModule):
     """
@@ -228,30 +233,30 @@ class ADSR(SynthModule):
         t = np.linspace(
             0, duration, int(round(duration * self.control_rate)), endpoint=False
         )
-        return (t / duration) ** self.parameters["alpha"].value
+        return (t / duration) ** self.p("alpha")
 
     @property
     def attack(self):
-        return self._ramp(self.parameters["attack"].value)
+        return self._ramp(self.p("attack"))
 
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self.parameters["decay"].value
-        sustain = self.parameters["sustain"].value
+        decay = self.p("decay")
+        sustain = self.p("sustain")
         return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
     def sustain(self, duration):
         return np.full(
             round(int(duration * CONTROL_RATE)),
-            fill_value=self.parameters["sustain"].value,
+            fill_value=self.p("sustain"),
         )
 
     @property
     def release(self):
         # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        sustain = self.parameters["sustain"].value
-        release = self.parameters["release"].value
+        sustain = self.p("sustain")
+        release = self.p("release")
         return self._ramp(release)[::-1] * sustain
 
     @property
@@ -335,8 +340,8 @@ class VCO(SynthModule):
 
         assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
 
-        modulation = self.parameters["mod_depth"].value * mod_signal
-        control_as_midi = self.parameters["pitch"].value + modulation
+        modulation = self.p("mod_depth") * mod_signal
+        control_as_midi = self.p("pitch") + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
@@ -400,7 +405,7 @@ class SquareSawVCO(VCO):
 
     def oscillator(self, argument):
         square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
-        shape = self.parameters["shape"].value
+        shape = self.p("shape")
         return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
 
     @property
@@ -411,7 +416,7 @@ class SquareSawVCO(VCO):
         require fewer partials whereas lower frequency sounds can safely have more
         partials without causing audible aliasing.
         """
-        max_pitch = self.parameters["pitch"].value + self.parameters["mod_depth"].value
+        max_pitch = self.p("pitch") + self.p("mod_depth")
         max_f0 = midi_to_hz(max_pitch)
         return 12000 / (max_f0 * np.log10(max_f0))
 
@@ -454,7 +459,7 @@ class NoiseModule(SynthModule):
 
     def __call__(self, audio_in: np.ndarray):
         noise = self.noise_of_length(audio_in)
-        return crossfade(audio_in, noise, self.parameters["ratio"].value)
+        return crossfade(audio_in, noise, self.p("ratio"))
 
     @staticmethod
     def noise_of_length(audio_in: np.ndarray):
@@ -601,7 +606,7 @@ class Drum(Synth):
         vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = crossfade(
-            vco_1_out, vco_2_out, self.parameters["vco_ratio"].value
+            vco_1_out, vco_2_out, self.p("vco_ratio")
         )
 
         audio_out = self.noise_module(audio_out)
@@ -673,7 +678,7 @@ class SVF(SynthModule):
         y = np.zeros_like(audio)
 
         # Calculate initial coefficients
-        cutoff = self.parameters["cutoff"].value
+        cutoff = self.p("cutoff")
         coeff0, coeff1, rho = self.calculate_coefficients(cutoff)
 
         # Check if there is a filter cutoff envelope to apply
@@ -719,7 +724,7 @@ class SVF(SynthModule):
         """
 
         g = np.tan(np.pi * cutoff / self.sample_rate)
-        resonance = self.parameters["resonance"].value
+        resonance = self.p("resonance")
         R = 0.0 if self.self_oscillate else 1.0 / (2.0 * resonance)
         coeff0 = 1.0 / (1.0 + 2.0 * R * g + g * g)
         coeff1 = g
@@ -855,7 +860,7 @@ class FIR(SynthModule):
         """
 
         impulse = self.windowed_sinc(
-            self.parameters["cutoff"].value, self.parameters["length"].value
+            self.p("cutoff"), self.p("length")
         )
         y = np.convolve(audio, impulse)
         return y
@@ -929,7 +934,7 @@ class MovingAverage(SynthModule):
 
         audio (np.ndarray)  :   audio samples to filter
         """
-        length = self.parameters["length"].value
+        length = self.p("length")
         impulse = np.ones(length) / length
         y = np.convolve(audio, impulse)
         return y
