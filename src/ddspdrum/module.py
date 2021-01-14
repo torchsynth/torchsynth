@@ -1,8 +1,7 @@
 """
 Synth modules.
 
-    TODO    :   - sustain_duration change name to "hold_duration."
-                - make "one-shot" behaviour for ADSR.
+    TODO    :   - sustain_duration change name?
                 - Convert operations to tensors, obvs.
 """
 
