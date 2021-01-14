@@ -11,7 +11,6 @@ from abc import abstractmethod
 from typing import Dict, List, Tuple
 
 import numpy as np
-from scipy.signal import resample
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.parameter import Parameter
