@@ -43,9 +43,7 @@ d = 0.05
 s = 0.75
 r = 0.5
 alpha = 3
-sustain_duration = 0
-
-dur = a + d + r + sustain_duration
+sustain_duration = 0.5
 
 # ## The Envelope
 # Our module is based on an ADSR envelope, standing for "attack, decay, sustain, release," which is specified by four
@@ -78,7 +76,7 @@ ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 # SquareSawVCO test: shape 0 --> square, 1 --> saw.
 
 shape = 0
-midi_f0 = 55
+midi_f0 = 24
 sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
 sqs_out = sqs(envelope, phase=0)
 # -

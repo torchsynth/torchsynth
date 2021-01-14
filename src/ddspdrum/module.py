@@ -1,7 +1,8 @@
 """
 Synth modules.
 
-    TODO    :   - ADSR needs fixing. sustain duration should actually decay.
+    TODO    :   - sustain_duration change name to "hold_duration."
+                - make "one-shot" behaviour for ADSR.
                 - Convert operations to tensors, obvs.
 """
 
@@ -11,7 +12,6 @@ from abc import abstractmethod
 from typing import Dict, List, Tuple
 
 import numpy as np
-from scipy.signal import resample
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.parameter import Parameter
@@ -166,20 +166,19 @@ class ADSR(SynthModule):
         )
 
     def __call__(self, sustain_duration: float = 0):
-        """
-        Generate an ADSR envelope.
+        """Generate an ADSR envelope. TODO: one-shot mode. Doc-Spiel.
 
-        TODO: moar explayn.
         """
 
-        assert sustain_duration >= 0
-        return np.concatenate(
-            (
-                self.note_on,
-                self.sustain(sustain_duration),
-                self.note_off,
-            )
-        )
+        # Can't sustain for less than one audio sample's worth of time.
+        assert sustain_duration > (1/SAMPLE_RATE)
+
+        num_samples = round(int(sustain_duration * SAMPLE_RATE))
+
+        ADS = self.note_on(num_samples)
+        R = self.note_off(ADS[-1])
+
+        return np.concatenate((ADS, R))
 
     def _ramp(self, duration: float):
         """Makes a ramp of a given duration in seconds.
@@ -191,7 +190,7 @@ class ADSR(SynthModule):
 
         attack      -->     returns an `a`-length ramp, as is.
         decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
-        release     -->     `r`-length reverse ramp, descends from `s` to 0.
+        release     -->     `r`-length reverse ramp, descends to 0.
 
         Its curve is determined by alpha:
 
@@ -217,26 +216,24 @@ class ADSR(SynthModule):
         sustain = self.p("sustain")
         return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
-    def sustain(self, duration):
-        return np.full(
-            round(int(duration * SAMPLE_RATE)),
-            fill_value=self.p("sustain"),
-        )
-
-    @property
     def release(self):
-        # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        sustain = self.p("sustain")
+        # `r`-length reverse ramp, reversed to descend to 0.
         release = self.p("release")
-        return self._ramp(release)[::-1] * sustain
+        return self._ramp(release)[::-1]
 
-    @property
-    def note_on(self):
-        return np.append(self.attack, self.decay)
+    def note_on(self, num_samples):
+        out_ = np.append(self.attack, self.decay)
 
-    @property
-    def note_off(self):
-        return self.release
+        # Truncate or extend based on sustain duration.
+        if num_samples < len(out_):
+            out_ = out_[:num_samples]
+        elif num_samples > len(out_):
+            hold_samples = num_samples - len(out_)
+            out_ = np.pad(out_, [0, hold_samples], mode='edge')
+        return out_
+
+    def note_off(self, last_val):
+        return self.release() * last_val
 
     def __str__(self):
         return f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
