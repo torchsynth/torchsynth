@@ -13,7 +13,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from scipy.signal import resample
 
-from ddspdrum.defaults import CONTROL_RATE, SAMPLE_RATE
+from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.parameter import Parameter
 from ddspdrum.util import crossfade, fix_length, midi_to_hz
 
@@ -26,7 +26,7 @@ class SynthModule:
     """
 
     def __init__(
-        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+        self, sample_rate: int = SAMPLE_RATE
     ):
         """
         NOTE:
@@ -35,7 +35,6 @@ class SynthModule:
         the computations will change when the parameters change.
         """
         self.sample_rate = sample_rate
-        self.control_rate = control_rate
         self.parameters: Dict[Parameter] = {}
 
     def __repr__(self):
@@ -54,29 +53,6 @@ class SynthModule:
         for parameter in parameters:
             assert parameter.name not in self.parameters
             self.parameters[parameter.name] = parameter
-
-    def control_to_sample_rate(self, control: np.array) -> np.array:
-        """
-        Resample a control signal to the sample rate
-        TODO: One thing I worry about with all these casts to
-        ints back and forth between sample and control rate is
-        off-by-one errors.
-        I'm beginning to believe we should standardize as much
-        as possible on nsamples in most places instead of
-        float duration in seconds, and just convert to ncontrol
-        when needed..
-        """
-        # Right now it appears that all signals are 1d, but later
-        # we'll probably convert things to 2d: instance x signal
-
-        if self.control_rate == self.sample_rate:
-            return control
-        else:
-            assert control.ndim == 1
-            num_samples = int(
-                round(len(control) * self.sample_rate / self.control_rate)
-            )
-            return resample(control, num_samples)
 
     def connect_parameter(
         self, parameter_id: str, module: SynthModule, module_parameter_id: str
@@ -164,8 +140,7 @@ class ADSR(SynthModule):
         s: float = 0.5,
         r: float = 0.5,
         alpha: float = 3.0,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         """
         Parameters
@@ -179,7 +154,7 @@ class ADSR(SynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
                 Parameter("attack", a, 0, 20, curve="log"),
@@ -191,13 +166,10 @@ class ADSR(SynthModule):
         )
 
     def __call__(self, sustain_duration: float = 0):
-        """Generate an envelope that sustains for a given duration in seconds.
+        """
+        Generate an ADSR envelope.
 
-        Generates a control-rate envelope signal with given attack, decay and
-        release times, sustained for `sustain_duration` in seconds. E.g., an
-        envelope with no attack or decay, a sustain duration of 1 and a 0.5
-        release will last for 1.5 seconds.
-
+        TODO: moar explayn.
         """
 
         assert sustain_duration >= 0
@@ -210,7 +182,7 @@ class ADSR(SynthModule):
         )
 
     def _ramp(self, duration: float):
-        """Makes a ramp of a given duration in seconds at control rate.
+        """Makes a ramp of a given duration in seconds.
 
         This function is used for the piece-wise construction of the envelope
         signal. Its output monotonically increases from 0 to 1. As a result,
@@ -230,7 +202,7 @@ class ADSR(SynthModule):
         """
 
         t = np.linspace(
-            0, duration, int(round(duration * self.control_rate)), endpoint=False
+            0, duration, int(round(duration * self.sample_rate)), endpoint=False
         )
         return (t / duration) ** self.p("alpha")
 
@@ -247,7 +219,7 @@ class ADSR(SynthModule):
 
     def sustain(self, duration):
         return np.full(
-            round(int(duration * CONTROL_RATE)),
+            round(int(duration * SAMPLE_RATE)),
             fill_value=self.p("sustain"),
         )
 
@@ -278,8 +250,8 @@ class VCO(SynthModule):
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
-    accepts a control-rate modulation signal between 0 - 1. An array of 0's
-    returns a stationary audio signal at its base pitch.
+    accepts a modulation signal between 0 - 1. An array of 0's returns a
+    stationary audio signal at its base pitch.
 
 
     Parameters
@@ -300,10 +272,9 @@ class VCO(SynthModule):
         midi_f0: float = 10,
         mod_depth: float = 50,
         phase: float = 0,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
                 Parameter("pitch", midi_f0, 0, 127),
@@ -315,7 +286,7 @@ class VCO(SynthModule):
 
     def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
         """
-        Generates audio signal from control-rate mod.
+        Generates audio signal from modulation signal.
 
         There are three representations of the 'pitch' at play here: (1) midi,
         (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
@@ -352,8 +323,7 @@ class VCO(SynthModule):
         Generates the phase argument to feed a cosine function to make audio.
         """
 
-        up_sampled = self.control_to_sample_rate(control_as_frequency)
-        return np.cumsum(2 * np.pi * up_sampled / SAMPLE_RATE)
+        return np.cumsum(2 * np.pi * control_as_frequency / SAMPLE_RATE)
 
     @abstractmethod
     def oscillator(self, argument):
@@ -410,10 +380,10 @@ class SquareSawVCO(VCO):
     @property
     def partials_constant(self):
         """
-        Constant value that controls the number of partials in the resulting square /
-        saw wave in order to keep aliasing at an acceptable level. Higher frequencies
-        require fewer partials whereas lower frequency sounds can safely have more
-        partials without causing audible aliasing.
+        Constant value that determines the number of partials in the resulting
+        square / saw wave in order to keep aliasing at an acceptable level.
+        Higher frequencies require fewer partials whereas lower frequency sounds
+        can safely have more partials without causing audible aliasing.
         """
         max_pitch = self.p("pitch") + self.p("mod_depth")
         max_f0 = midi_to_hz(max_pitch)
@@ -426,16 +396,15 @@ class VCA(SynthModule):
     """
 
     def __init__(
-        self, sample_rate: int = SAMPLE_RATE, control_rate: int = CONTROL_RATE
+        self, sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
 
     def __call__(self, control_in: np.array, audio_in: np.array):
         control_in = np.clip(control_in, 0, 1)
         audio_in = np.clip(audio_in, -1, 1)
-        amp = self.control_to_sample_rate(control_in)
-        audio_in = fix_length(audio_in, len(amp))
-        return amp * audio_in
+        audio_in = fix_length(audio_in, len(control_in))
+        return control_in * audio_in
 
 
 class NoiseModule(SynthModule):
@@ -446,10 +415,9 @@ class NoiseModule(SynthModule):
     def __init__(
         self,
         ratio: float = 0.25,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
                 Parameter("ratio", ratio, 0, 1),
@@ -467,7 +435,7 @@ class NoiseModule(SynthModule):
 
 class DummyModule(SynthModule):
     """
-    A dummy module just encapsulates some parameters and don't create sound.
+    A dummy module just encapsulates some parameters and doesn't create sound.
     This is a temporary workaround that allows a Synth to contain parameters
     without nesting SynthModules and without forcing Synth to be a SynthModule.
     """
@@ -475,8 +443,7 @@ class DummyModule(SynthModule):
     def __init__(
         self,
         parameters: List[Parameter],
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         """
         Parameters
@@ -485,7 +452,7 @@ class DummyModule(SynthModule):
                                 `Parameter`.,
                                 TODO: Take this as a list of Parameters instead?
         """
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(parameters)
 
     def __call__(self):
@@ -496,7 +463,7 @@ class DummyModule(SynthModule):
 class Synth(SynthModule):
     """
     A base class for a modular synth, ensuring that all modules
-    have the same sample and control rate.
+    have the same sample rate.
     """
 
     def __init__(self, modules: Tuple[SynthModule]):
@@ -507,17 +474,15 @@ class Synth(SynthModule):
         Instead, consider @property getters that use the instance's parameters.
         """
         sample_rate = modules[0].sample_rate
-        control_rate = modules[0].control_rate
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
 
         # Parameter list
         # TODO: We can remove this later
         self.parameters = {}
 
-        # Check that we are not mixing different control rates or sample rates
+        # Check that we are not mixing different sample rates.
         for m in modules[:1]:
             assert m.sample_rate == sample_rate
-            assert m.control_rate == control_rate
 
 
 class Drum(Synth):
@@ -615,20 +580,21 @@ class SVF(SynthModule):
     """
     A State Variable Filter that can do low-pass, high-pass, band-pass, and
     band-reject filtering. Allows modulation of the cutoff frequency and an
-    adjustable resonance parameter. Can self-oscillate to make a sinusoid oscillator.
+    adjustable resonance parameter. Can self-oscillate to make a sinusoid
+    oscillator.
 
     Parameters
     ----------
 
     mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
-    cutoff (float)          :   cutoff frequency in Hz must be between 5 and half the
-                                sample rate. Defaults to 1000Hz
-    resonance (float)       :   filter resonance, or "Quality Factor". Higher values
-                                cause the filter to resonate more. Must be greater than
-                                0.5. Defaults to 0.707.
-    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which turns
-                                this into a sine wave oscillator with the filter cutoff
-                                as the frequency. Defaults to False.
+    cutoff (float)          :   cutoff frequency in Hz must be between 5 and
+                                half the sample rate. Defaults to 1000Hz.
+    resonance (float)       :   filter resonance, or "Quality Factor". Higher
+                                values cause the filter to resonate more. Must
+                                be greater than 0.5. Defaults to 0.707.
+    self_oscillate (bool)   :   Set the filter into self-oscillation mode, which
+                                turns this into a sine wave oscillator with the
+                                filter cutoff as frequency. Defaults to False.
     sample_rate (float)     :   Processing sample rate.
     """
 
@@ -638,10 +604,9 @@ class SVF(SynthModule):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.mode = mode
         self.self_oscillate = self_oscillate
         self.add_parameters(
@@ -740,7 +705,7 @@ class LowPassSVF(SVF):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         super().__init__(
             mode="LPF",
@@ -761,7 +726,7 @@ class HighPassSVF(SVF):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         super().__init__(
             mode="HPF",
@@ -782,7 +747,7 @@ class BandPassSVF(SVF):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         super().__init__(
             mode="BPF",
@@ -803,7 +768,7 @@ class BandRejectSVF(SVF):
         cutoff: float = 1000,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
         super().__init__(
             mode="BSF",
@@ -834,10 +799,9 @@ class FIR(SynthModule):
         self,
         cutoff: float = 1000,
         filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
                 Parameter("cutoff", cutoff, 5, sample_rate / 2.0, curve="log"),
@@ -910,10 +874,9 @@ class MovingAverage(SynthModule):
     def __init__(
         self,
         filter_length: int = 32,
-        sample_rate: int = SAMPLE_RATE,
-        control_rate: int = CONTROL_RATE,
+        sample_rate: int = SAMPLE_RATE
     ):
-        super().__init__(sample_rate=sample_rate, control_rate=control_rate)
+        super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
                 Parameter("length", filter_length, 1, 4096),

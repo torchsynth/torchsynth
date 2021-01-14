@@ -62,7 +62,7 @@ dur = a + d + r + sustain_duration
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr(sustain_duration)
-time_plot(envelope, adsr.control_rate)
+time_plot(envelope, adsr.sample_rate)
 
 # SineVCO test
 midi_f0 = 12
