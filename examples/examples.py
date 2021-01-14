@@ -38,8 +38,8 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
 
 
 # Synthesis parameters.
-a = 0.01
-d = 0.05
+a = 0.1
+d = 0.1
 s = 0.75
 r = 0.5
 alpha = 3
@@ -56,10 +56,25 @@ sustain_duration = 0.5
 #
 # Envelopes are used to modulate a variety of signals; usually one of pitch, amplitude, or filter cutoff frequency. In
 # this notebook we will use the same envelope to modulate several different audio parameters.
+#
+# ### A note about note-on, note-off behaviour 
+#
+# By default, this envelope reacts as if it was triggered with midi, for example playing a keyboard. Each midi event has a beginning and end: note-on, when you press the key down; and note-off, when you release the key. `sustain_duration` is the amount of time that the key is depressed. During the note-on, the envelope moves through the attack and decay sections of the envelope. This leads to musically-intuitive, but programatically-counterintuitive behaviour.
+#
+# Assume attack is 0.5 seconds, and decay is 0.5 seconds. If a note is held for 0.75 seconds, the envelope won't traverse through the entire attack-and-decay phase (specifically, it will execute the entire attack, and 0.25 seconds of the decay).
+#
+# If this is confusing, don't worry about it. ADSR's do a lot of work behind the scenes to make the playing experience feel natural. Alternately, you may specify one-shot mode (see below), which is more typical of drum machines. 
 
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr(sustain_duration)
+time_plot(envelope, adsr.sample_rate)
+
+# ### One-Shot Mode
+#
+# Alternately, you can specify a sustain time of "0" which will switch the envelope to one-shot mode. In this case, the envelope moves through the entire attack, decay, and release.
+
+envelope = adsr(sustain_duration = 0)
 time_plot(envelope, adsr.sample_rate)
 
 # SineVCO test

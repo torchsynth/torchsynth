@@ -166,14 +166,42 @@ class ADSR(SynthModule):
         )
 
     def __call__(self, sustain_duration: float = 0):
-        """Generate an ADSR envelope. TODO: one-shot mode. Doc-Spiel.
+        """Generate an ADSR envelope.
+
+        By default, this envelope reacts as if it was triggered with midi, for
+        example playing a keyboard. Each midi event has a beginning and end:
+        note-on, when you press the key down; and note-off, when you release the
+        key. `sustain_duration` is the amount of time that the key is depressed.
+
+        During the note-on, the envelope moves through the attack and decay
+        sections of the envelope. This leads to musically-intuitive, but
+        programatically-counterintuitive behaviour:
+
+        Assume attack is 0.5 seconds, and decay is 0.5 seconds. If a note is
+        held for 0.75 seconds, the envelope won't traverse through the entire
+        attack-and-decay (specifically, it will execute the entire attack, and
+        0.25 seconds of the decay).
+
+        Alternately, you can specify a sustain time of "0" which will switch the
+        envelope to one-shot mode. In this case, the envelope moves through the
+        entire attack, decay, and release, with no held "sustain" value.
+
+        If this is confusing, don't worry about it. ADSR's do a lot of work
+        behind the scenes to make the playing experience feel natural.
 
         """
 
-        # Can't sustain for less than one audio sample's worth of time.
-        assert sustain_duration > (1/SAMPLE_RATE)
+        assert sustain_duration >= 0
 
-        num_samples = round(int(sustain_duration * SAMPLE_RATE))
+        # If sustain is "0" go to one-shot mode (moves through ADR sections).
+        if sustain_duration == 0:
+            num_samples = round(
+                int(self.p("attack") + self.p("decay") * SAMPLE_RATE)
+            )
+        else:
+            num_samples = round(
+                int(sustain_duration * SAMPLE_RATE)
+            )
 
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
