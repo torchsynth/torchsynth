@@ -1,7 +1,7 @@
 """
 Synth modules.
 
-    TODO    :   - sustain_duration change name?
+    TODO    :   - note_on_duration change name?
                 - Convert operations to tensors, obvs.
 """
 
@@ -43,6 +43,9 @@ class SynthModule:
         return "{}(sample_rate={}, parameters={})".format(
             self.__class__, repr(self.sample_rate), repr(self.parameters)
         )
+
+    def seconds_to_samples(self, seconds: float) -> int:
+        return round(int(seconds * self.sample_rate))
 
     def add_parameters(self, parameters: List[Parameter]):
         """
@@ -164,44 +167,42 @@ class ADSR(SynthModule):
             ]
         )
 
-    def __call__(self, sustain_duration: float = 0):
+    def __call__(self, note_on_duration: float = 0):
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
         example playing a keyboard. Each midi event has a beginning and end:
         note-on, when you press the key down; and note-off, when you release the
-        key. `sustain_duration` is the amount of time that the key is depressed.
+        key. `note_on_duration` is the amount of time that the key is depressed.
 
         During the note-on, the envelope moves through the attack and decay
         sections of the envelope. This leads to musically-intuitive, but
         programatically-counterintuitive behaviour:
 
-        Assume attack is 0.5 seconds, and decay is 0.5 seconds. If a note is
-        held for 0.75 seconds, the envelope won't traverse through the entire
+        E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+        held for .75 seconds, the envelope won't pass through the entire
         attack-and-decay (specifically, it will execute the entire attack, and
-        0.25 seconds of the decay).
+        only .25 seconds of the decay).
 
-        Alternately, you can specify a sustain time of "0" which will switch the
-        envelope to one-shot mode. In this case, the envelope moves through the
-        entire attack, decay, and release, with no held "sustain" value.
+        Alternately, you can specify a `note_on_duration` of "0" which will
+        switch the envelope to one-shot mode. In this case, the envelope moves
+        through the entire attack, decay, and release, with no held "sustain"
+        value.
 
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
 
         """
 
-        assert sustain_duration >= 0
+        assert note_on_duration >= 0
 
         # If sustain is "0" go to one-shot mode (moves through ADR sections).
-        if sustain_duration == 0:
-            num_samples = round(
-                int(self.p("attack") + self.p("decay") * SAMPLE_RATE)
-            )
-        else:
-            num_samples = round(
-                int(sustain_duration * SAMPLE_RATE)
-            )
+        if note_on_duration == 0:
+            note_on_duration = self.p("attack") + self.p("decay")
 
+        num_samples = self.seconds_to_samples(note_on_duration)
+
+        # Release decays from the last value of the attack-and-decay sections.
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
 
@@ -228,7 +229,7 @@ class ADSR(SynthModule):
         """
 
         t = np.linspace(
-            0, duration, int(round(duration * self.sample_rate)), endpoint=False
+            0, duration, self.seconds_to_samples(duration), endpoint=False
         )
         return (t / duration) ** self.p("alpha")
 
@@ -516,7 +517,7 @@ class Drum(Synth):
 
     def __init__(
         self,
-        sustain_duration: float,
+        note_on_duration: float,
         drum_params: DummyModule = DummyModule(
             parameters=[
                 Parameter(
@@ -537,13 +538,13 @@ class Drum(Synth):
         super().__init__(
             modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
         )
-        assert sustain_duration >= 0
+        assert note_on_duration >= 0
 
         # We assume that sustain duration is a hyper-parameter,
         # with the mindset that if you are trying to learn to
-        # synthesize a sound, you won't be adjusting the sustain_duration.
+        # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        self.sustain_duration = sustain_duration
+        self.note_on_duration = note_on_duration
 
         self.drum_params = drum_params
         self.pitch_adsr = pitch_adsr
@@ -584,10 +585,10 @@ class Drum(Synth):
 
     def __call__(self):
         # The convention for triggering a note event is that it has
-        # the same sustain_duration for both ADSRs.
-        sustain_duration = self.sustain_duration
-        pitch_envelope = self.pitch_adsr(sustain_duration)
-        amp_envelope = self.amp_adsr(sustain_duration)
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr(note_on_duration)
+        amp_envelope = self.amp_adsr(note_on_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
         vco_1_out = self.vco_1(pitch_envelope)

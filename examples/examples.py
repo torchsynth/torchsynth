@@ -1,8 +1,7 @@
 # # ddsp-drum examples
 #
-# We walk through basic functionality of `ddsp-drum` in this Jupyter notebook. Just note that all ipd.Audio play widgets normalize the audio.
-#
-# In this example, we'll build a very basic kick sound.
+# We walk through basic functionality of `ddsp-drum` in this Jupyter notebook.
+# Just note that all ipd.Audio play widgets normalize the audio.
 
 # +
 # %load_ext autoreload
@@ -43,38 +42,55 @@ d = 0.1
 s = 0.75
 r = 0.5
 alpha = 3
-sustain_duration = 0.5
+note_on_duration = 0.5
 
 # ## The Envelope
-# Our module is based on an ADSR envelope, standing for "attack, decay, sustain, release," which is specified by four
-# values:
+# Our module is based on an ADSR envelope, standing for "attack, decay, sustain,
+# release," which is specified by four values:
 #
-# - a: the attack time, in seconds; the time it takes for the signal to ramp from 0 to 1.
-# - d: the decay time, in seconds; the time to 'decay' from a peak of 1 to a sustain level.
-# - s: the sustain level; a value between 0 and 1 that the envelope holds during a sustained note (**not a time value**).
-# - r: the release time, in seconds; the time it takes the signal to decay from the sustain value to 0.
+# - a: the attack time, in seconds; the time it takes for the signal to ramp
+#      from 0 to 1.
+# - d: the decay time, in seconds; the time to 'decay' from a peak of 1 to a
+#      sustain level.
+# - s: the sustain level; a value between 0 and 1 that the envelope holds during
+# a sustained note (**not a time value**).
+# - r: the release time, in seconds; the time it takes the signal to decay from
+#      the sustain value to 0.
 #
-# Envelopes are used to modulate a variety of signals; usually one of pitch, amplitude, or filter cutoff frequency. In
-# this notebook we will use the same envelope to modulate several different audio parameters.
+# Envelopes are used to modulate a variety of signals; usually one of pitch,
+# amplitude, or filter cutoff frequency. In this notebook we will use the same
+# envelope to modulate several different audio parameters.
 #
 # ### A note about note-on, note-off behaviour 
 #
-# By default, this envelope reacts as if it was triggered with midi, for example playing a keyboard. Each midi event has a beginning and end: note-on, when you press the key down; and note-off, when you release the key. `sustain_duration` is the amount of time that the key is depressed. During the note-on, the envelope moves through the attack and decay sections of the envelope. This leads to musically-intuitive, but programatically-counterintuitive behaviour.
+# By default, this envelope reacts as if it was triggered with midi, for example
+# playing a keyboard. Each midi event has a beginning and end: note-on, when you
+# press the key down; and note-off, when you release the key. `note_on_duration`
+# is the amount of time that the key is depressed. During the note-on, the
+# envelope moves through the attack and decay sections of the envelope. This
+# leads to musically-intuitive, but programatically-counterintuitive behaviour.
 #
-# Assume attack is 0.5 seconds, and decay is 0.5 seconds. If a note is held for 0.75 seconds, the envelope won't traverse through the entire attack-and-decay phase (specifically, it will execute the entire attack, and 0.25 seconds of the decay).
+# Assume attack is 0.5 seconds, and decay is 0.5 seconds. If a note is held for
+# 0.75 seconds, the envelope won't traverse through the entire attack-and-decay
+# phase (specifically, it will execute the entire attack, and 0.25 seconds of
+# the decay).
 #
-# If this is confusing, don't worry about it. ADSR's do a lot of work behind the scenes to make the playing experience feel natural. Alternately, you may specify one-shot mode (see below), which is more typical of drum machines. 
+# If this is confusing, don't worry about it. ADSR's do a lot of work behind the
+# scenes to make the playing experience feel natural. Alternately, you may
+# specify one-shot mode (see below), which is more typical of drum machines.
 
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
-envelope = adsr(sustain_duration)
+envelope = adsr(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
 
 # ### One-Shot Mode
 #
-# Alternately, you can specify a sustain time of "0" which will switch the envelope to one-shot mode. In this case, the envelope moves through the entire attack, decay, and release.
+# Alternately, you can specify a sustain time of "0" which will switch the
+# envelope to one-shot mode. In this case, the envelope moves through the entire
+# attack, decay, and release.
 
-envelope = adsr(sustain_duration = 0)
+envelope = adsr(note_on_duration = 0)
 time_plot(envelope, adsr.sample_rate)
 
 # SineVCO test
@@ -85,7 +101,8 @@ sine_out = sine_vco(envelope, phase=0)
 stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 
-# Check this out, it's a square / saw oscillator. Use the shape parameter to interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
+# Check this out, it's a square / saw oscillator. Use the shape parameter to
+# interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
 # +
 # SquareSawVCO test: shape 0 --> square, 1 --> saw.
@@ -112,7 +129,8 @@ time_plot(noisey_out)
 stft_plot(noisey_out)
 ipd.Audio(noisey_out, rate=sqs.sample_rate)
 
-# Notice that this sound is rather clicky. We'll add an envelope to the amplitude to smooth it out.
+# Notice that this sound is rather clicky. We'll add an envelope to the
+# amplitude to smooth it out.
 
 # VCA test
 vca = VCA()
@@ -122,7 +140,8 @@ time_plot(vca_out)
 stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
 
-# Alternately, you can just use the Drum class that composes all these modules together automatically.
+# Alternately, you can just use the Drum class that composes all these modules
+# together automatically.
 
 # +
 my_drum = Drum(
@@ -130,7 +149,7 @@ my_drum = Drum(
     amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
     vco_1=SineVCO(midi_f0=69, mod_depth=12),
     noise_module=NoiseModule(ratio=0.5),
-    sustain_duration=1,
+    note_on_duration=1,
 )
 
 drum_out = my_drum()
@@ -147,7 +166,7 @@ my_drum = Drum(
     vco_1=SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
     vco_2=SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
     noise_module=NoiseModule(ratio=0.1),
-    sustain_duration=1,
+    note_on_duration=1,
 )
 
 drum_out = my_drum()
@@ -155,7 +174,12 @@ stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
 # ### Parameters
-# All synth modules and synth classes have named parameters which can be quered and updated. Let's look at the parameters for the Drum we just created. Each of these parameters shows the current value, minimum, maximum, and scale. The min and max refer to the smallest and largest values that parameter can take on. The scale value controls conversion between a range of 0 and 1. Let's look at that more below.
+# All synth modules and synth classes have named parameters which can be quered
+# and updated. Let's look at the parameters for the Drum we just created. Each
+# of these parameters shows the current value, minimum, maximum, and scale. The
+# min and max refer to the smallest and largest values that parameter can take
+# on. The scale value controls conversion between a range of 0 and 1. Let's look
+# at that more below.
 
 my_drum.parameters
 
@@ -215,7 +239,9 @@ plt.show()
 
 # **FIR - Windowed Sinc**
 #
-# Finite Impulse Response (FIR) lowpass with a cutoff frequency of 5000Hz. Filter length controls the slope of the cutoff. A longer filter will have a sharper cutoff.
+# Finite Impulse Response (FIR) lowpass with a cutoff frequency of 5000Hz.
+# Filter length controls the slope of the cutoff. A longer filter will have a
+# sharper cutoff.
 
 # +
 lpf = FIR(cutoff=5000, filter_length=1024)
@@ -265,7 +291,8 @@ plt.show()
 
 # **IIR -State Variable Filter**
 #
-# State variable filter with the same cutoff -- the slope is much more relaxed with this filter
+# State variable filter with the same cutoff -- the slope is much more relaxed
+# with this filter
 
 # +
 svf = LowPassSVF(cutoff=5000)
@@ -327,7 +354,9 @@ plt.show()
 
 # **Kick drum with SVF**
 #
-# With high resonance and an envelope applied to the cutoff frequency we can get something like a kick drum. To get the filter resonating we can use a short burst of noise.
+# With high resonance and an envelope applied to the cutoff frequency we can get
+# something like a kick drum. To get the filter resonating we can use a short
+# burst of noise.
 
 duration = 1.0
 signal = np.zeros(int(sample_rate * duration))
