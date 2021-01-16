@@ -2,7 +2,7 @@
 Synth modules.
 
     TODO    :   - Convert operations to tensors, obvs.
-    
+
 """
 
 from __future__ import annotations
