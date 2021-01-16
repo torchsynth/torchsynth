@@ -1,8 +1,8 @@
 """
 Synth modules.
 
-    TODO    :   - note_on_duration change name?
-                - Convert operations to tensors, obvs.
+    TODO    :   - Convert operations to tensors, obvs.
+    
 """
 
 from __future__ import annotations
