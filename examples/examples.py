@@ -174,6 +174,7 @@ stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
 # ### Parameters
+
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Drum we just created. Each
 # of these parameters shows the current value, minimum, maximum, and scale. The
@@ -184,6 +185,7 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 my_drum.parameters
 
 # Can also look at parameters by printing the object
+# TODO: this looks a little messy. I know it gets tricky with nested repr. But... just saying.
 print(my_drum)
 
 # Setting a parameter with a range of [0,1]
