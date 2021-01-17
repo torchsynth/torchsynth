@@ -1,8 +1,8 @@
 """
 Synth modules.
 
-    TODO    :   - ADSR needs fixing. sustain duration should actually decay.
-                - Convert operations to tensors, obvs.
+    TODO    :   - Convert operations to tensors, obvs.
+
 """
 
 from __future__ import annotations
@@ -43,6 +43,9 @@ class SynthModule:
         return "{}(sample_rate={}, parameters={})".format(
             self.__class__, repr(self.sample_rate), repr(self.parameters)
         )
+
+    def seconds_to_samples(self, seconds: float) -> int:
+        return round(int(seconds * self.sample_rate))
 
     def add_parameters(self, parameters: List[Parameter]):
         """
@@ -164,21 +167,46 @@ class ADSR(SynthModule):
             ]
         )
 
-    def __call__(self, sustain_duration: float = 0):
-        """
-        Generate an ADSR envelope.
+    def __call__(self, note_on_duration: float = 0):
+        """Generate an ADSR envelope.
 
-        TODO: moar explayn.
+        By default, this envelope reacts as if it was triggered with midi, for
+        example playing a keyboard. Each midi event has a beginning and end:
+        note-on, when you press the key down; and note-off, when you release the
+        key. `note_on_duration` is the amount of time that the key is depressed.
+
+        During the note-on, the envelope moves through the attack and decay
+        sections of the envelope. This leads to musically-intuitive, but
+        programatically-counterintuitive behaviour:
+
+        E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+        held for .75 seconds, the envelope won't pass through the entire
+        attack-and-decay (specifically, it will execute the entire attack, and
+        only .25 seconds of the decay).
+
+        Alternately, you can specify a `note_on_duration` of "0" which will
+        switch the envelope to one-shot mode. In this case, the envelope moves
+        through the entire attack, decay, and release, with no held "sustain"
+        value.
+
+        If this is confusing, don't worry about it. ADSR's do a lot of work
+        behind the scenes to make the playing experience feel natural.
+
         """
 
-        assert sustain_duration >= 0
-        return np.concatenate(
-            (
-                self.note_on,
-                self.sustain(sustain_duration),
-                self.note_off,
-            )
-        )
+        assert note_on_duration >= 0
+
+        # If sustain is "0" go to one-shot mode (moves through ADR sections).
+        if note_on_duration == 0:
+            note_on_duration = self.p("attack") + self.p("decay")
+
+        num_samples = self.seconds_to_samples(note_on_duration)
+
+        # Release decays from the last value of the attack-and-decay sections.
+        ADS = self.note_on(num_samples)
+        R = self.note_off(ADS[-1])
+
+        return np.concatenate((ADS, R))
 
     def _ramp(self, duration: float):
         """Makes a ramp of a given duration in seconds.
@@ -190,7 +218,7 @@ class ADSR(SynthModule):
 
         attack      -->     returns an `a`-length ramp, as is.
         decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
-        release     -->     `r`-length reverse ramp, descends from `s` to 0.
+        release     -->     `r`-length reverse ramp, descends to 0.
 
         Its curve is determined by alpha:
 
@@ -201,7 +229,7 @@ class ADSR(SynthModule):
         """
 
         t = np.linspace(
-            0, duration, int(round(duration * self.sample_rate)), endpoint=False
+            0, duration, self.seconds_to_samples(duration), endpoint=False
         )
         return (t / duration) ** self.p("alpha")
 
@@ -216,26 +244,24 @@ class ADSR(SynthModule):
         sustain = self.p("sustain")
         return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
-    def sustain(self, duration):
-        return np.full(
-            round(int(duration * SAMPLE_RATE)),
-            fill_value=self.p("sustain"),
-        )
-
-    @property
     def release(self):
-        # `r`-length reverse ramp, scaled and shifted to descend from `s` to 0.
-        sustain = self.p("sustain")
+        # `r`-length reverse ramp, reversed to descend to 0.
         release = self.p("release")
-        return self._ramp(release)[::-1] * sustain
+        return self._ramp(release)[::-1]
 
-    @property
-    def note_on(self):
-        return np.append(self.attack, self.decay)
+    def note_on(self, num_samples):
+        out_ = np.append(self.attack, self.decay)
 
-    @property
-    def note_off(self):
-        return self.release
+        # Truncate or extend based on sustain duration.
+        if num_samples < len(out_):
+            out_ = out_[:num_samples]
+        elif num_samples > len(out_):
+            hold_samples = num_samples - len(out_)
+            out_ = np.pad(out_, [0, hold_samples], mode='edge')
+        return out_
+
+    def note_off(self, last_val):
+        return self.release() * last_val
 
     def __str__(self):
         return f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
@@ -491,7 +517,7 @@ class Drum(Synth):
 
     def __init__(
         self,
-        sustain_duration: float,
+        note_on_duration: float,
         drum_params: DummyModule = DummyModule(
             parameters=[
                 Parameter(
@@ -512,13 +538,13 @@ class Drum(Synth):
         super().__init__(
             modules=[pitch_adsr, amp_adsr, vco_1, vco_2, noise_module, vca]
         )
-        assert sustain_duration >= 0
+        assert note_on_duration >= 0
 
         # We assume that sustain duration is a hyper-parameter,
         # with the mindset that if you are trying to learn to
-        # synthesize a sound, you won't be adjusting the sustain_duration.
+        # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        self.sustain_duration = sustain_duration
+        self.note_on_duration = note_on_duration
 
         self.drum_params = drum_params
         self.pitch_adsr = pitch_adsr
@@ -559,10 +585,10 @@ class Drum(Synth):
 
     def __call__(self):
         # The convention for triggering a note event is that it has
-        # the same sustain_duration for both ADSRs.
-        sustain_duration = self.sustain_duration
-        pitch_envelope = self.pitch_adsr(sustain_duration)
-        amp_envelope = self.amp_adsr(sustain_duration)
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr(note_on_duration)
+        amp_envelope = self.amp_adsr(note_on_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
         vco_1_out = self.vco_1(pitch_envelope)
