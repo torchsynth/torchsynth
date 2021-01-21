@@ -49,13 +49,13 @@ jobs:
         pytest --cov-report=xml --cov=./src tests/
     - name: Upload pytest coverage to Codecov
       uses: codecov/codecov-action@v1.2.0
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          #        directory: ./coverage/reports/
-          flags: unittests
-          env_vars: OS,PYTHON
-          name: codecov-umbrella
-          fail_ci_if_error: true
-          #        path_to_write_report: ./coverage/codecov_report.txt
-          verbose: true
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml
+        #        directory: ./coverage/reports/
+        flags: unittests
+        env_vars: OS,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: true
+        #        path_to_write_report: ./coverage/codecov_report.txt
+        verbose: true

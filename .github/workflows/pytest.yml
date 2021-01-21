@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-      python-verion: [3.7]
+        python-verion: [3.7]
 
     steps:
       - uses: actions/checkout@master
