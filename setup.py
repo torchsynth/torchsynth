@@ -31,6 +31,6 @@ setup(
     python_requires=">=3.6",
     install_requires=["numpy", "matplotlib", "scipy"],
     extras_require={
-        "dev": [],
+        "dev": ["pytest", "pytest-cov"],
     },
 )
