@@ -38,3 +38,22 @@ conda install -c anaconda ipykernel
 python -m ipykernel install --user --name=envname
 ```
 and change the kernel to `envname`.
+
+### Tests
+Unit testing is performed using `pytest`.
+
+`pytest` and other project development dependencies can be installed as follows: 
+```
+pip install -e ".[dev]"
+```
+
+To run tests, run `pytest` from the project root:
+```
+pytest
+```
+
+To run tests with a coverage report:
+```
+pytest --cov=./src
+```
+
