@@ -127,6 +127,145 @@ class TorchSynthModule(nn.Module, SynthModule):
 #
 
 
+
+class TorchADSR(TorchSynthModule):
+    """
+    Envelope class for building a control rate ADSR signal
+    """
+
+    def __init__(
+            self,
+            a: float = 0.25,
+            d: float = 0.25,
+            s: float = 0.5,
+            r: float = 0.5,
+            alpha: float = 3.0,
+            sample_rate: int = SAMPLE_RATE,
+    ):
+        """
+        Parameters
+        ----------
+        a                   :   attack time (sec), >= 0
+        d                   :   decay time (sec), >= 0
+        s                   :   sustain amplitude between 0-1. The only part of
+                                ADSR that (confusingly, by convention) is not
+                                a time value.
+        r                   :   release time (sec), >= 0
+        alpha               :   envelope curve, >= 0. 1 is linear, >1 is
+                                exponential.
+        """
+        super().__init__(sample_rate=sample_rate)
+        self.add_modparameters(
+            [
+                ModParameter("attack", a, 0.0, 20.0, curve="log"),
+                ModParameter("decay", d, 0.0, 20.0, curve="log"),
+                ModParameter("sustain", s, 0.0, 1.0),
+                ModParameter("release", r, 0.0, 20.0, curve="log"),
+                ModParameter("alpha", alpha, 0.0, 10.0),
+            ]
+        )
+
+    def npyforward(self, note_on_duration: T = T(0)) -> np.ndarray:
+        """Generate an ADSR envelope.
+
+        By default, this envelope reacts as if it was triggered with midi, for
+        example playing a keyboard. Each midi event has a beginning and end:
+        note-on, when you press the key down; and note-off, when you release the
+        key. `note_on_duration` is the amount of time that the key is depressed.
+
+        During the note-on, the envelope moves through the attack and decay
+        sections of the envelope. This leads to musically-intuitive, but
+        programatically-counterintuitive behaviour:
+
+        E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+        held for .75 seconds, the envelope won't pass through the entire
+        attack-and-decay (specifically, it will execute the entire attack, and
+        only .25 seconds of the decay).
+
+        Alternately, you can specify a `note_on_duration` of "0" which will
+        switch the envelope to one-shot mode. In this case, the envelope moves
+        through the entire attack, decay, and release, with no held "sustain"
+        value.
+
+        If this is confusing, don't worry about it. ADSR's do a lot of work
+        behind the scenes to make the playing experience feel natural.
+
+        """
+
+        assert note_on_duration >= 0
+
+        # If sustain is "0" go to one-shot mode (moves through ADR sections).
+        if note_on_duration == T(0):
+            note_on_duration = self.p("attack") + self.p("decay")
+
+        num_samples = self.seconds_to_samples(note_on_duration)
+
+        # Release decays from the last value of the attack-and-decay sections.
+        ADS = self.note_on(num_samples)
+        R = self.note_off(ADS[-1])
+
+        return torch.concatenate((ADS, R))
+
+    def _ramp(self, duration: T):
+        """Makes a ramp of a given duration in seconds.
+
+        This function is used for the piece-wise construction of the envelope
+        signal. Its output monotonically increases from 0 to 1. As a result,
+        each component of the envelope is a scaled and possibly reversed
+        version of this ramp:
+
+        attack      -->     returns an `a`-length ramp, as is.
+        decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
+        release     -->     `r`-length reverse ramp, descends to 0.
+
+        Its curve is determined by alpha:
+
+        alpha = 1 --> linear,
+        alpha > 1 --> exponential,
+        alpha < 1 --> logarithmic.
+
+        """
+
+        t = np.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
+        return (t / duration) ** self.p("alpha")
+
+    @property
+    def attack(self):
+        return self._ramp(self.p("attack"))
+
+    @property
+    def decay(self):
+        # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
+        decay = self.p("decay")
+        sustain = self.p("sustain")
+        return self._ramp(decay)[::-1] * (1 - sustain) + sustain
+
+    def release(self):
+        # `r`-length reverse ramp, reversed to descend to 0.
+        release = self.p("release")
+        return self._ramp(release)[::-1]
+
+    def note_on(self, num_samples):
+        out_ = torch.append(self.attack, self.decay)
+
+        # Truncate or extend based on sustain duration.
+        if num_samples < len(out_):
+            out_ = out_[:num_samples]
+        elif num_samples > len(out_):
+            hold_samples = num_samples - len(out_)
+            out_ = torch.pad(out_, [0, hold_samples], mode="edge")
+        return out_
+
+    def note_off(self, last_val):
+        return self.release() * last_val
+
+    def __str__(self):
+        return f"""ADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},
+                s={self.modparameters['sustain']}, r={self.modparameters['release']},
+                alpha={self.get_parameter('alpha')})"""
+
+
+
 class TorchVCO(TorchSynthModule):
     """
     Voltage controlled oscillator.
@@ -165,9 +304,9 @@ class TorchVCO(TorchSynthModule):
             ]
         )
         # TODO: Make this a parameter too?
-        self.phase = phase
+        self.phase = T(phase)
 
-    def forward(self, mod_signal: T, phase: float = 0.0) -> T:
+    def forward(self, mod_signal: T, phase: T = T(0.0)) -> T:
         """
         Generates audio signal from modulation signal.
 
@@ -197,7 +336,6 @@ class TorchVCO(TorchSynthModule):
         control_as_midi = self.p("pitch") + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
         cosine_argument = self.make_argument(control_as_frequency) + phase
-        print(cosine_argument)
 
         self.phase = cosine_argument[-1]
         return self.oscillator(cosine_argument)

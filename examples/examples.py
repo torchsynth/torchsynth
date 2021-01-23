@@ -433,7 +433,8 @@ torchmod = torchmodule.TorchSineVCO()
 numpymod.randomize()
 
 for modparameter_id in numpymod.modparameters:
-    print(modparameter_id)
-    torchmod.set_modparameter(T(numpymod.p()))
+    torchmod.set_modparameter(modparameter_id, T(numpymod.p(modparameter_id)))
+
+numpymod.npyforward()
 
 
