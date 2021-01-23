@@ -594,18 +594,18 @@ class Drum(Synth):
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on_duration
-        pitch_envelope = self.pitch_adsr(note_on_duration)
-        amp_envelope = self.amp_adsr(note_on_duration)
+        pitch_envelope = self.pitch_adsr.npyforward(note_on_duration)
+        amp_envelope = self.amp_adsr.npyforward(note_on_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
-        vco_1_out = self.vco_1(pitch_envelope)
-        vco_2_out = self.vco_2(pitch_envelope)
+        vco_1_out = self.vco_1.npyforward(pitch_envelope)
+        vco_2_out = self.vco_2.npyforward(pitch_envelope)
 
         audio_out = crossfade(vco_1_out, vco_2_out, self.p("vco_ratio"))
 
-        audio_out = self.noise_module(audio_out)
+        audio_out = self.noise_module.npyforward(audio_out)
 
-        return self.vca(amp_envelope, audio_out)
+        return self.vca.npyforward(amp_envelope, audio_out)
 
 
 class SVF(SynthModule):
