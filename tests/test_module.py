@@ -30,8 +30,10 @@ class TestSynthModule:
         param_2 = ModParameter("param_2", 0.5, 0.2, 1.0)
         module.add_modparameters([param_1, param_2])
 
-        expected_str = f"{module.__class__}(sample_rate={SAMPLE_RATE}, "\
-                       f"parameters={repr(module.modparameters)})"
+        expected_str = (
+            f"{module.__class__}(sample_rate={SAMPLE_RATE}, "
+            f"parameters={repr(module.modparameters)})"
+        )
 
         assert repr(module) == expected_str
 
@@ -84,7 +86,7 @@ class TestSynthModule:
 
         # Now add the second param
         module.connect_modparameter("connected_param_2", sub_module, "param_2")
-        assert module.modparameters['connected_param_2'] == sub_param_2
+        assert module.modparameters["connected_param_2"] == sub_param_2
 
     def test_get_parameter(self):
         module = SynthModule()

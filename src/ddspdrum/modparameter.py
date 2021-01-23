@@ -6,6 +6,7 @@ import random
 
 import numpy as np
 
+
 class ModParameter:
     """
     Parameter class is a structure for keeping track of parameters
