@@ -8,7 +8,7 @@ Synth modules.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -129,6 +129,8 @@ class SynthModule:
         """
         return self.parameters[parameter_id].value
 
+    def __call__(self, *inputs: Any) -> np.ndarray:
+        pass
 
 class ADSR(SynthModule):
     """
@@ -167,7 +169,7 @@ class ADSR(SynthModule):
             ]
         )
 
-    def __call__(self, note_on_duration: float = 0):
+    def __call__(self, note_on_duration: float = 0) -> np.ndarray:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -309,7 +311,7 @@ class VCO(SynthModule):
         # TODO: Make this a parameter too?
         self.phase = phase
 
-    def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
+    def __call__(self, mod_signal: np.array, phase: float = 0) -> np.ndarray:
         """
         Generates audio signal from modulation signal.
 
@@ -425,7 +427,7 @@ class VCA(SynthModule):
     ):
         super().__init__(sample_rate=sample_rate)
 
-    def __call__(self, control_in: np.array, audio_in: np.array):
+    def __call__(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
         control_in = np.clip(control_in, 0, 1)
         audio_in = np.clip(audio_in, -1, 1)
         audio_in = fix_length(audio_in, len(control_in))
@@ -449,7 +451,7 @@ class NoiseModule(SynthModule):
             ]
         )
 
-    def __call__(self, audio_in: np.ndarray):
+    def __call__(self, audio_in: np.ndarray) -> np.ndarray:
         noise = self.noise_of_length(audio_in)
         return crossfade(audio_in, noise, self.p("ratio"))
 
@@ -480,7 +482,7 @@ class DummyModule(SynthModule):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(parameters)
 
-    def __call__(self):
+    def __call__(self) -> np.ndarray:
         assert False
 
 
@@ -583,7 +585,7 @@ class Drum(Synth):
         # Noise
         self.connect_parameter("noise_ratio", self.noise_module, "ratio")
 
-    def __call__(self):
+    def __call__(self) -> np.ndarray:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on_duration
