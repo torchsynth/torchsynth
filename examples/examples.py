@@ -398,6 +398,7 @@ ipd.Audio(kick, rate=sample_rate)
 # ## Torch examples
 
 
+import torch
 from ddspdrum.torchmodule import TorchADSR
 
 # Create a simple envelope
@@ -417,7 +418,7 @@ envelope = adsr(note_on_duration)
 time_plot(envelope.detach(), adsr.sample_rate)
 # -
 
-# Create a second envelope, lower decay
+# Create a second envelope, higher decay
 
 # +
 # Synthesis parameters.
@@ -440,13 +441,11 @@ err = torch.mean(torch.abs(envelope - envelope2))
 print("Error =", err)
 plt.plot(torch.abs(envelope - envelope2).detach())
 
-# And here are the gradient
+# And here are the gradients
 
 err.backward(retain_graph=True)
 for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
-
-
 
 
 
