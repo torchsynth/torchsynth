@@ -130,6 +130,9 @@ class SynthModule:
         return self.parameters[parameter_id].value
 
     def __call__(self, *inputs: Any) -> np.ndarray:
+        """
+        Each SynthModule should override this.
+        """
         pass
 
 class ADSR(SynthModule):
