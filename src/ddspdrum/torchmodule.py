@@ -252,7 +252,8 @@ class TorchADSR(TorchSynthModule):
 
         """
 
-        # TODO: We originally used endpoint=False, which torch.linspace doesn't support :(
+        # TODO: We originally used endpoint=False,
+        # which torch.linspace doesn't support :(
         assert duration.ndim == 0
         t = torch.linspace(0, duration.item(), self.seconds_to_samples(duration))
         # t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
@@ -295,9 +296,13 @@ class TorchADSR(TorchSynthModule):
         return self.release * last_val
 
     def __str__(self):
-        return f"""TorchADSR(a={self.torchparameters['attack']}, d={self.torchparameters['decay']},
-                s={self.torchparameters['sustain']}, r={self.torchparameters['release']},
-                alpha={self.torchparameters['alpha']})"""
+        return (
+            f"""TorchADSR(a={self.torchparameters['attack']}, """
+            f"""d={self.torchparameters['decay']}, """
+            f"""s={self.torchparameters['sustain']}, """
+            f"""r={self.torchparameters['release']}, """
+            f"""alpha={self.torchparameters['alpha']}"""
+        )
 
 
 class TorchVCO(TorchSynthModule):
