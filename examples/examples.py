@@ -473,7 +473,7 @@ plt.plot(torch.abs(sine_out - sine_out2).detach())
 
 err.backward(retain_graph=True)
 for p in sine_vco.torchparameters:
-    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
+    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={sine_vco2.torchparameters[p].grad.item()}")
 # Both SineVCOs use the sample envelope
 for p in adsr.torchparameters:
     print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
