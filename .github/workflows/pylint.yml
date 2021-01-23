@@ -18,7 +18,7 @@ jobs:
 # For some reason, I get black complaints on github
 #          use-black: true
           use-black: false
-          use-mypy: false
+          use-mypy: true
           use-isort: true
           extra-pylint-options: ""
           extra-pycodestyle-options: ""
