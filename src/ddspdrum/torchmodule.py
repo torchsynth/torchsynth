@@ -13,7 +13,7 @@ import torch.tensor as T
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.module import SynthModule, VCO
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.torchutil import crossfade, fix_length, midi_to_hz
+from ddspdrum.torchutil import midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -165,7 +165,7 @@ class TorchADSR(TorchSynthModule):
             ]
         )
 
-    def npyforward(self, note_on_duration: T = T(0)) -> np.ndarray:
+    def forward(self, note_on_duration: T = T(0)) -> np.ndarray:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -204,7 +204,7 @@ class TorchADSR(TorchSynthModule):
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
 
-        return torch.concatenate((ADS, R))
+        return torch.cat((ADS, R))
 
     def _ramp(self, duration: T):
         """Makes a ramp of a given duration in seconds.
@@ -226,7 +226,9 @@ class TorchADSR(TorchSynthModule):
 
         """
 
-        t = np.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
+        # TODO: We originally used endpoint=False, which torch.linspace doesn't support :(
+        t = torch.linspace(0, duration, self.seconds_to_samples(duration))
+        #t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
     @property
@@ -238,26 +240,29 @@ class TorchADSR(TorchSynthModule):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
         decay = self.p("decay")
         sustain = self.p("sustain")
-        return self._ramp(decay)[::-1] * (1 - sustain) + sustain
+        return reverse_signal(self._ramp(decay)) * (1 - sustain) + sustain
 
+    @property
     def release(self):
         # `r`-length reverse ramp, reversed to descend to 0.
         release = self.p("release")
-        return self._ramp(release)[::-1]
+        return reverse_signal(self._ramp(release))
 
     def note_on(self, num_samples):
-        out_ = torch.append(self.attack, self.decay)
+        assert self.attack.ndim == 1
+        assert self.decay.ndim == 1
+        out_ = torch.cat((self.attack, self.decay), 0)
 
         # Truncate or extend based on sustain duration.
         if num_samples < len(out_):
             out_ = out_[:num_samples]
         elif num_samples > len(out_):
             hold_samples = num_samples - len(out_)
-            out_ = torch.pad(out_, [0, hold_samples], mode="edge")
+            out_ = torch.nn.functional.pad(out_, [0, hold_samples], value=out_[-1])
         return out_
 
     def note_off(self, last_val):
-        return self.release() * last_val
+        return self.release * last_val
 
     def __str__(self):
         return f"""ADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},

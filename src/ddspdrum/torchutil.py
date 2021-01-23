@@ -74,3 +74,7 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """
     assert 0.0 <= ratio <= 1.0
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
+
+def reverse_signal(signal: T) -> T:
+    assert signal.ndim == 1
+    return torch.flip(signal, (0,))

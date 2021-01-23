@@ -37,14 +37,6 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
     plt.show()
 
 
-# Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.75
-r = 0.5
-alpha = 3
-note_on_duration = 0.5
-
 # ## The Envelope
 # Our module is based on an ADSR envelope, standing for "attack, decay, sustain,
 # release," which is specified by four values:
@@ -80,10 +72,20 @@ note_on_duration = 0.5
 # scenes to make the playing experience feel natural. Alternately, you may
 # specify one-shot mode (see below), which is more typical of drum machines.
 
+# +
+# Synthesis parameters.
+a = 0.1
+d = 0.1
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr.npyforward(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
+# -
 
 # ### One-Shot Mode
 #
@@ -416,6 +418,50 @@ ipd.Audio(sine_out.numpy(), rate=sine_vco.sample_rate)
 
 
 
+# +
+import ddspdrum.module
+from ddspdrum.module import ADSR
+
+# Synthesis parameters.
+a = 0.1
+d = 0.1
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
+# Envelope test
+numpyadsr = ADSR(a, d, s, r, alpha)
+envelope = numpyadsr.npyforward(note_on_duration)
+print(envelope)
+time_plot(envelope, adsr.sample_rate)
+
+# +
+from ddspdrum.torchmodule import TorchADSR
+
+
+# Synthesis parameters.
+a = 0.1
+d = 0.1
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
+# Envelope test
+adsr = TorchADSR(a, d, s, r, alpha)
+envelope = adsr(note_on_duration)
+print(envelope)
+time_plot(envelope, adsr.sample_rate)
+# -
+
+
+
+for i in range(10):
+    numpyadsr.randomize()
+    plt.plot(numpyadsr.npyforward())
+    plt.show()
+
 
 
 # +
@@ -436,5 +482,16 @@ for modparameter_id in numpymod.modparameters:
     torchmod.set_modparameter(modparameter_id, T(numpymod.p(modparameter_id)))
 
 numpymod.npyforward()
+
+np.linspace(0, 1, 10)[::,-1]
+
+x = torch.linspace(0, 1, 10) ** 0.5
+
+torch.flip(x, (0,))
+
+try:
+    assert False
+except Exception as e:
+    print(type(e))
 
 
