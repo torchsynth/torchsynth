@@ -196,12 +196,14 @@ class TorchVCO(TorchSynthModule):
         modulation = self.p("mod_depth") * mod_signal
         control_as_midi = self.p("pitch") + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
+        print(control_as_frequency, "control_as_frequency")
+        print(phase, "phase")
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
         return self.oscillator(cosine_argument)
 
-    def make_argument(self, control_as_frequency: np.array):
+    def make_argument(self, control_as_frequency: T) -> T:
         """
         Generates the phase argument to feed a cosine function to make audio.
         """

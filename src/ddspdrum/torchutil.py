@@ -3,6 +3,8 @@ Utility functions for torch DSP related things
 
 TODO: After everything is torch'ified, remove numpyutil.py version
 and rename this to util.py.
+
+TODO: Test all these.
 """
 
 import torch
@@ -35,7 +37,7 @@ def peak_gain_for_Q(Q: T) -> T:
     if Q <= 0.707:
         return 1.0
 
-    return Q * Q / pow((Q * Q - 0.25), 0.5)
+    return Q * Q / torch.pow((Q * Q - 0.25), 0.5)
 
 
 def hz_to_midi(hz: T) -> T:
