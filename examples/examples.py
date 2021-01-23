@@ -190,7 +190,7 @@ print(my_drum)
 
 # Setting a parameter with a range of [0,1]
 
-my_drum.set_parameter_0to1("pitch_attack", 0.25)
+my_drum.set_modparameter_0to1("pitch_attack", 0.25)
 print(my_drum.parameters['pitch_attack'])
 
 drum_out = my_drum()
@@ -200,11 +200,11 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # Setting a parameter with regular range
 
 # +
-my_drum.set_parameter("amp_attack", 1.25)
+my_drum.set_modparameter("amp_attack", 1.25)
 print(my_drum.parameters['amp_attack'])
 
 # Get the value in the range 0 to 1
-print("Value in 0 to 1 range: ", my_drum.get_parameter_0to1('amp_attack'))
+print("Value in 0 to 1 range: ", my_drum.get_modparameter_0to1('amp_attack'))
 # -
 
 drum_out = my_drum()
