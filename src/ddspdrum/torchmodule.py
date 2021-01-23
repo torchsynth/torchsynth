@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, List
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
@@ -11,13 +11,13 @@ import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.module import SynthModule, VCO
+from ddspdrum.module import VCO
 from ddspdrum.modparameter import ModParameter
 from ddspdrum.torchutil import midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
-class TorchSynthModule(nn.Module, SynthModule):
+class TorchSynthModule(nn.Module):
     """
     Base class for synthesis modules, in torch.
 
@@ -33,20 +33,22 @@ class TorchSynthModule(nn.Module, SynthModule):
         the computations will change when the parameters change.
         """
         nn.Module.__init__(self)
-        SynthModule.__init__(self, sample_rate=sample_rate)
+        self.sample_rate = T(sample_rate)
+        self.modparameters: Dict[ModParameter] = {}
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
-#    def seconds_to_samples(self, seconds: T) -> T:
-#        return torch.round(seconds * self.sample_rate).int()
+    def seconds_to_samples(self, seconds: T) -> T:
+        return torch.round(seconds * self.sample_rate).int()
 
     def add_modparameters(self, modparameters: List[ModParameter]):
         """
         Add parameters to this SynthModule's parameters dictionary.
         (Since there is inheritance, this might happen several times.)
         """
-        print(modparameters)
-        SynthModule.add_modparameters(self, modparameters)
         for modparameter in modparameters:
+            assert modparameter.name not in self.modparameters
+            self.modparameters[modparameter.name] = modparameter
+
             assert modparameter.name not in self.torchparameters
             # TODO: I'm not 100% sure it's kosher to add nn.Parameters
             # outside of __init__, but here we go.
@@ -56,7 +58,6 @@ class TorchSynthModule(nn.Module, SynthModule):
             # We might also rethink the syntactic sugar, e.g. sometimes
             # we want to expose the raw 0/1 and sometimes we want to expose the
             # clipped one.
-            print(modparameter.value)
             self.torchparameters[modparameter.name] = nn.Parameter(
                 T(modparameter.value)
             )
@@ -80,55 +81,67 @@ class TorchSynthModule(nn.Module, SynthModule):
                 npyinput.append(i)
         return self.forward(*npyinputs).numpy()
 
-#    def get_modparameter(self, modparameter_id: str) -> Parameter:
-#        """
-#        Get a single modparameter for this module
-#
-#        Parameters
-#        ----------
-#        modparameter_id (str)  :   Id of the modparameter to return
-#        """
-#        return self.modparameters[modparameter_id]
-#
-#    def get_modparameter_0to1(self, modparameter_id: str) -> float:
-#        """
-#        Get the value of a single modparameter in the range of [0,1]
-#
-#        Parameters
-#        ----------
-#        modparameter_id (str)  :   Id of the modparameter to return the value for
-#        """
-#        return self.modparameters[modparameter_id].get_value_0to1()
-#
-#    def set_modparameter(self, modparameter_id: str, value: float):
-#        """
-#        Update a specific modparameter value, ensuring that it is within a specified range
-#
-#        Parameters
-#        ----------
-#        modparameter_id (str)  : Id of the modparameter to update
-#        value (float)       : Value to update modparameter with
-#        """
-#        self.modparameters[modparameter_id].set_value(value)
-#
-#    def set_modparameter_0to1(self, modparameter_id: str, value: float):
-#        """
-#        Update a specific modparameter with a value in the range [0,1]
-#
-#        Parameters
-#        ----------
-#        modparameter_id (str)  : Id of the modparameter to update
-#        value (float)       : Value to update modparameter with
-#        """
-#        self.modparameters[modparameter_id].set_value_0to1(value)
-#
-#    def p(self, modparameter_id: str):
-#        """
-#        Convenience method for getting the modparameter value.
-#        """
-#        return self.modparameters[modparameter_id].value
-#
+    # The following is cheesy AF but needed because the
+    # torchparameter is the master variable.
+    # TODO: Remove .value from modparameter
+    def _update_modparameters(self) -> None:
+        for modparameter_id in self.modparameters:
+            self.modparameters[modparameter_id].set_value(float(self.torchparameters[modparameter_id].numpy()))
 
+    # In general, we should consider removing all the following
+    # since we don't want to cast to int and then back to Tensor
+
+    def get_modparameter(self, modparameter_id: str) -> ModParameter:
+        """
+        Get a single modparameter for this module
+
+        Parameters
+        ----------
+        modparameter_id (str)  :   Id of the modparameter to return
+        """
+        self._update_modparameters()
+        return self.modparameters[modparameter_id]
+
+    def get_modparameter_0to1(self, modparameter_id: str) -> float:
+        """
+        Get the value of a single modparameter in the range of [0,1]
+
+        Parameters
+        ----------
+        modparameter_id (str)  :   Id of the modparameter to return the value for
+        """
+        self._update_modparameters()
+        return self.modparameters[modparameter_id].get_value_0to1()
+
+    def set_modparameter(self, modparameter_id: str, value: float):
+        """
+        Update a specific modparameter value, ensuring that it is within a specified range
+
+        Parameters
+        ----------
+        modparameter_id (str)  : Id of the modparameter to update
+        value (float)       : Value to update modparameter with
+        """
+        self.modparameters[modparameter_id].set_value(value)
+        self.torchparameters[modparameter_id] = T(self.torchparameters[modparameter_id].value)
+
+    def set_modparameter_0to1(self, modparameter_id: str, value: float):
+        """
+        Update a specific modparameter with a value in the range [0,1]
+
+        Parameters
+        ----------
+        modparameter_id (str)  : Id of the modparameter to update
+        value (float)       : Value to update modparameter with
+        """
+        self.modparameters[modparameter_id].set_value_0to1(value)
+        self.torchparameters[modparameter_id] = T(self.torchparameters[modparameter_id].value)
+
+    def p(self, modparameter_id: str) -> T:
+        """
+        Convenience method for getting the modparameter value.
+        """
+        return self.torchparameters[modparameter_id]
 
 
 class TorchADSR(TorchSynthModule):
@@ -195,9 +208,6 @@ class TorchADSR(TorchSynthModule):
 
         """
 
-        # TODO: This is super cheesy
-        note_on_duration = note_on_duration.numpy()
-        print("note_on_duration", note_on_duration)
         assert note_on_duration >= 0
 
         # If sustain is "0" go to one-shot mode (moves through ADR sections).
@@ -233,7 +243,8 @@ class TorchADSR(TorchSynthModule):
         """
 
         # TODO: We originally used endpoint=False, which torch.linspace doesn't support :(
-        t = torch.linspace(0, duration, self.seconds_to_samples(duration))
+        assert duration.ndim == 0
+        t = torch.linspace(0, duration.item(), self.seconds_to_samples(duration))
         #t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
@@ -264,7 +275,8 @@ class TorchADSR(TorchSynthModule):
             out_ = out_[:num_samples]
         elif num_samples > len(out_):
             hold_samples = num_samples - len(out_)
-            out_ = torch.nn.functional.pad(out_, [0, hold_samples], value=out_[-1])
+            assert hold_samples.ndim == 0
+            out_ = torch.nn.functional.pad(out_, [0, hold_samples], value=out_[-1].item())
         return out_
 
     def note_off(self, last_val):

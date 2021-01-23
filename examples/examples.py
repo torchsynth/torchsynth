@@ -500,4 +500,10 @@ x()
 
 torch.round(T(0.9)).int()
 
+adsr
+
+float(T(adsr.torchparameters["attack"]).numpy())
+
+T(1.0).item()
+
 
