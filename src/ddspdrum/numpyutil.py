@@ -66,4 +66,5 @@ def crossfade(in_1, in_2, ratio):
     """
     Equal power cross-fade.
     """
+    assert 0.0 <= ratio <= 1.0
     return EQ_POW * (np.sqrt(1 - ratio) * in_1 + np.sqrt(ratio) * in_2)

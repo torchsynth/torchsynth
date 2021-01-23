@@ -19,7 +19,7 @@ def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
     """
     Convert an amplitude value to decibels
     """
-    return 20 * torch.log10(torch.maximum(amplitude, amin))
+    return 20 * torch.log10(torch.max(amplitude, amin))
 
 
 def db_to_amplitude(db: T) -> T:
@@ -72,4 +72,5 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """
     Equal power cross-fade.
     """
+    assert 0.0 <= ratio <= 1.0
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
