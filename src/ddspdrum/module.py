@@ -304,15 +304,9 @@ class VCO(SynthModule):
 
     def __init__(
         self,
-<<<<<<< HEAD
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-=======
-        midi_f0: float = 10,
-        mod_depth: float = 50,
-        phase: float = 0,
->>>>>>> randomize-modparameter
         sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
