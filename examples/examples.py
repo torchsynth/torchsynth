@@ -450,7 +450,7 @@ note_on_duration = 0.5
 
 # Envelope test
 adsr = TorchADSR(a, d, s, r, alpha)
-envelope = adsr(note_on_duration)
+envelope = adsr(T(note_on_duration))
 print(envelope)
 time_plot(envelope, adsr.sample_rate)
 # -
@@ -493,5 +493,11 @@ try:
     assert False
 except Exception as e:
     print(type(e))
+
+x = lambda: random.random()
+
+x()
+
+torch.round(T(0.9)).int()
 
 

@@ -3,7 +3,7 @@ Tests for torch synth modules.
 """
 
 import random
-from typing import Dict
+from typing import Any, Callable, Dict
 
 import numpy as np
 import pytest
@@ -15,6 +15,16 @@ import ddspdrum.torchmodule as torchmodule
 random.seed(0)
 
 
+def _random_uniform(low, hi):
+    return lambda: random.uniform(low, hi)
+
+
+def _random_envelope():
+    adsr = numpymodule.ADSR()
+    adsr.randomize()
+    return adsr.npyforward(note_on_duration=random.uniform(-1, 10))
+
+
 class TestTorchSynthModule:
     """
     Tests for TorchSynthModules
@@ -24,49 +34,26 @@ class TestTorchSynthModule:
         self,
         numpymod: numpymodule.SynthModule,
         torchmod: torchmodule.TorchSynthModule,
-        param_name_to_type: Dict[str, str],
     ):
         """
         Randomize numpymod and set torchmod to the same.
         """
         numpymod.randomize()
         for modparameter_id in numpymod.modparameters:
-            torchmod.set_modparameter(
-                modparameter_id, T(numpymod.p(modparameter_id))
-            )
-
-    def _choose_random_params(
-        self,
-        param_name_to_type: Dict[str, str]
-    ):
-        params = {}
-        for name, ty in param_name_to_type.items():
-            if ty == "float":
-                params[name] = random.uniform(-10, 10)
-            elif ty == "float1000":
-                params[name] = random.uniform(0, 1000)
-            elif ty == "pr":
-                params[name] = random.uniform(0, 1)
-            elif ty == "signal":
-                params[name] = np.random.rand(512)
-            elif ty == "int":
-                params[name] = random.randint(0, 1000)
-            else:
-                assert False
-        return params
+            torchmod.set_modparameter(modparameter_id, T(numpymod.p(modparameter_id)))
 
     def _compare_values(
-            self,
-            numpymod: numpymodule.SynthModule,
-            torchmod: torchmodule.TorchSynthModule,
-            param_name_to_type: Dict[str, str],
+        self,
+        numpymod: numpymodule.SynthModule,
+        torchmod: torchmodule.TorchSynthModule,
+        param_name_to_randfn: Dict[str, Callable[[], Any]],
     ):
         """
         Fuzz tester, for seeing that numpy and torch methods give the same values.
         """
         for i in range(1000):
             self._randomize_numpy_and_torch_mods(numpymod, torchmod)
-            params = self._choose_random_params(param_name_to_type)
+            params = {name: randfn() for name, randfn in param_name_to_randfn.items()}
 
             threw = False
             try:
@@ -76,16 +63,20 @@ class TestTorchSynthModule:
                 threw = True
             for name in params:
                 params[name] = T(params[name])
+            ty = torchmod(**params).numpy()
             try:
                 ty = torchmod(**params).numpy()
             except Exception as e:
                 ty = str(type(e))
                 threw = True
             if threw:
+                print("params", params)
+                print("ny", ny, numpymod)
+                print("ty", ty, torchmod)
                 assert ny == ty
                 return
-            print(ny)
-            print(ty)
+            print("ny", ny)
+            print("ty", ty)
             print()
             np.testing.assert_allclose(ny, ty, rtol=1e-4)
 
@@ -93,14 +84,19 @@ class TestTorchSynthModule:
         numpymod = numpymodule.ADSR()
         torchmod = torchmodule.TorchADSR()
         self._compare_values(
-            numpymod, torchmod, param_name_to_type={"note_on_duration": "float"}
+            numpymod,
+            torchmod,
+            param_name_to_randfn={"note_on_duration": _random_uniform(-1.0, 10.0)},
         )
 
     def test_TorchSineVCO(self):
         numpymod = numpymodule.SineVCO()
         torchmod = torchmodule.TorchSineVCO()
-        numpyadsr = numpymodule.SineADSR()
-        torchadsr = torchmodule.TorchSineADSR()
         self._compare_values(
-            numpymod, torchmod, param_name_to_type={"note_on_duration": "float"}
+            numpymod,
+            torchmod,
+            param_name_to_randfn={
+                "envelope": _random_envelope,
+                "phase": _random_uniform(-np.pi, np.pi),
+            },
         )

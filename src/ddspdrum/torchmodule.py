@@ -36,6 +36,9 @@ class TorchSynthModule(nn.Module, SynthModule):
         SynthModule.__init__(self, sample_rate=sample_rate)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
+#    def seconds_to_samples(self, seconds: T) -> T:
+#        return torch.round(seconds * self.sample_rate).int()
+
     def add_modparameters(self, modparameters: List[ModParameter]):
         """
         Add parameters to this SynthModule's parameters dictionary.
@@ -192,6 +195,9 @@ class TorchADSR(TorchSynthModule):
 
         """
 
+        # TODO: This is super cheesy
+        note_on_duration = note_on_duration.numpy()
+        print("note_on_duration", note_on_duration)
         assert note_on_duration >= 0
 
         # If sustain is "0" go to one-shot mode (moves through ADR sections).
@@ -265,7 +271,7 @@ class TorchADSR(TorchSynthModule):
         return self.release * last_val
 
     def __str__(self):
-        return f"""ADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},
+        return f"""TorchADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},
                 s={self.modparameters['sustain']}, r={self.modparameters['release']},
                 alpha={self.get_parameter('alpha')})"""
 
