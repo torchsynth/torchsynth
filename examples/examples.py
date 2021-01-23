@@ -383,24 +383,41 @@ ipd.Audio(kick, rate=sample_rate)
 
 # ## Torch examples
 
+import torch
+import torch.tensor as T
 
-
-import ddspdrum.torchmodule
-vco = ddspdrum.torchmodule.TorchVCO(midi_f0=69.0, mod_depth=24.0)
-two_8ve_chirp = vco(np.linspace(0, 1, 1000, endpoint=False))
-ipd.Audio(two_8ve_chirp.numpy(), rate=vco.sample_rate)
+from ddspdrum.torchmodule import TorchSineVCO
+# SineVCO test
+midi_f0 = T(12.0)
+mod_depth = T(50.0)
+sine_vco = TorchSineVCO(midi_f0=midi_f0, mod_depth=mod_depth)
+sine_out = sine_vco(envelope, phase=T(0.0))
 
 # These are the torch parameters, not the ModParameters.
 
+print(sine_vco.parameters)
+
+stft_plot(sine_out.numpy())
+ipd.Audio(sine_out.numpy(), rate=sine_vco.sample_rate)
+
+
+
+
+
+
+
 # +
 
-print(vco.parameters)
+import ddspdrum.module as numpymodule
+import ddspdrum.torchmodule as torchmodule
+import random
+
+random.seed(0)
 # -
 
-vco.sample_rate
+numpymod = numpymodule.SineVCO()
+torchmod = torchmodule.TorchSineVCO()
 
-vco.npyforward(np.linspace(0, 1, 1000, endpoint=False))
-
-help(vco)
+nmod.modparameters
 
 

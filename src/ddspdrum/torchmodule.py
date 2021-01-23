@@ -196,9 +196,8 @@ class TorchVCO(TorchSynthModule):
         modulation = self.p("mod_depth") * mod_signal
         control_as_midi = self.p("pitch") + modulation
         control_as_frequency = midi_to_hz(control_as_midi)
-        print(control_as_frequency, "control_as_frequency")
-        print(phase, "phase")
         cosine_argument = self.make_argument(control_as_frequency) + phase
+        print(cosine_argument)
 
         self.phase = cosine_argument[-1]
         return self.oscillator(cosine_argument)
@@ -207,12 +206,31 @@ class TorchVCO(TorchSynthModule):
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
-        return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE)
+        assert control_as_frequency.ndim == 1
+        return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE, dim=0)
 
     @abstractmethod
     # TODO: Type me!
-    def oscillator(self, argument):
+    def oscillator(self, argument: T) -> T:
         """
         Dummy method. Overridden by child class VCO's.
         """
         pass
+
+
+class TorchSineVCO(TorchVCO):
+    """
+    Simple VCO that generates a pitched sinudoid.
+
+    Built off the VCO base class, it simply implements a cosine function as oscillator.
+    """
+
+    def __init__(
+            self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+    ):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+
+    def oscillator(self, argument):
+        return np.cos(argument)
+
+
