@@ -129,7 +129,7 @@ class SynthModule:
         """
         return self.parameters[parameter_id].value
 
-    def __call__(self, *inputs: Any) -> np.ndarray:
+    def __call__(self, *inputs: Any) -> np.ndarray: # pragma: no cover
         """
         Each SynthModule should override this.
         """
