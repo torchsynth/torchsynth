@@ -38,7 +38,7 @@ class Parameter:
 
         self.curve_type = curve
         if curve == "linear":
-            self.curve = 1
+            self.curve = 1.0
         elif curve == "log":
             self.curve = 0.5
         elif curve == "exp":
