@@ -5,7 +5,7 @@ Parameter Class
 import numpy as np
 
 
-class Parameter:
+class ModParameter:
     """
     Parameter class is a structure for keeping track of parameters
     that have a specific range. Also handles functionality for converting

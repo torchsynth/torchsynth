@@ -182,7 +182,7 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # on. The scale value controls conversion between a range of 0 and 1. Let's look
 # at that more below.
 
-my_drum.parameters
+my_drum.modparameters
 
 # Can also look at parameters by printing the object
 # TODO: this looks a little messy. I know it gets tricky with nested repr. But... just saying.
@@ -190,8 +190,8 @@ print(my_drum)
 
 # Setting a parameter with a range of [0,1]
 
-my_drum.set_parameter_0to1("pitch_attack", 0.25)
-print(my_drum.parameters['pitch_attack'])
+my_drum.set_modparameter_0to1("pitch_attack", 0.25)
+print(my_drum.modparameters['pitch_attack'])
 
 drum_out = my_drum.npyforward()
 stft_plot(drum_out)
@@ -200,11 +200,11 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 # Setting a parameter with regular range
 
 # +
-my_drum.set_parameter("amp_attack", 1.25)
-print(my_drum.parameters['amp_attack'])
+my_drum.set_modparameter("amp_attack", 1.25)
+print(my_drum.modparameters['amp_attack'])
 
 # Get the value in the range 0 to 1
-print("Value in 0 to 1 range: ", my_drum.get_parameter_0to1('amp_attack'))
+print("Value in 0 to 1 range: ", my_drum.get_modparameter_0to1('amp_attack'))
 # -
 
 drum_out = my_drum.npyforward()
