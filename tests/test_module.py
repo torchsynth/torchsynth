@@ -3,9 +3,11 @@ Tests for DDSP Drum Modules
 """
 
 import pytest
+
+from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.module import SynthModule
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.parameter import Parameter
 
 
 class TestSynthModule:
