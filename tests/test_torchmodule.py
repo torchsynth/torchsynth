@@ -63,9 +63,8 @@ class TestTorchSynthModule:
                 threw = True
             for name in params:
                 params[name] = T(params[name])
-            ty = torchmod(**params).numpy()
             try:
-                ty = torchmod(**params).numpy()
+                ty = torchmod(**params).detach().numpy()
             except Exception as e:
                 ty = str(type(e))
                 threw = True
@@ -78,7 +77,8 @@ class TestTorchSynthModule:
             print("ny", ny)
             print("ty", ty)
             print()
-            np.testing.assert_allclose(ny, ty, rtol=1e-4)
+            # Absolute tolerance, not relative tolerance
+            np.testing.assert_allclose(ny, ty, atol=1e-5, rtol=1e99)
 
     def test_TorchADSR(self):
         numpymod = numpymodule.ADSR()

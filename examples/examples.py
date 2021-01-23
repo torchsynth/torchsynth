@@ -452,7 +452,7 @@ note_on_duration = 0.5
 adsr = TorchADSR(a, d, s, r, alpha)
 envelope = adsr(T(note_on_duration))
 print(envelope)
-time_plot(envelope, adsr.sample_rate)
+time_plot(envelope.detach(), adsr.sample_rate)
 # -
 
 
@@ -476,8 +476,9 @@ random.seed(0)
 numpymod = numpymodule.SineVCO()
 torchmod = torchmodule.TorchSineVCO()
 
-numpymod.randomize()
 
+
+numpymod.randomize()
 for modparameter_id in numpymod.modparameters:
     torchmod.set_modparameter(modparameter_id, T(numpymod.p(modparameter_id)))
 

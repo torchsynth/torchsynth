@@ -90,6 +90,8 @@ class TorchSynthModule(nn.Module):
 
     # In general, we should consider removing all the following
     # since we don't want to cast to int and then back to Tensor
+    # Alternately, we should make a SynthParameter which is an nn.Parameter
+    # but decorated with ModParameter stuff.
 
     def get_modparameter(self, modparameter_id: str) -> ModParameter:
         """
@@ -123,7 +125,7 @@ class TorchSynthModule(nn.Module):
         value (float)       : Value to update modparameter with
         """
         self.modparameters[modparameter_id].set_value(value)
-        self.torchparameters[modparameter_id] = T(self.torchparameters[modparameter_id].value)
+        self.torchparameters[modparameter_id].data = T(self.modparameters[modparameter_id].value)
 
     def set_modparameter_0to1(self, modparameter_id: str, value: float):
         """
@@ -135,7 +137,7 @@ class TorchSynthModule(nn.Module):
         value (float)       : Value to update modparameter with
         """
         self.modparameters[modparameter_id].set_value_0to1(value)
-        self.torchparameters[modparameter_id] = T(self.torchparameters[modparameter_id].value)
+        self.torchparameters[modparameter_id].data = T(self.modparameters[modparameter_id].value)
 
     def p(self, modparameter_id: str) -> T:
         """
@@ -283,9 +285,9 @@ class TorchADSR(TorchSynthModule):
         return self.release * last_val
 
     def __str__(self):
-        return f"""TorchADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},
-                s={self.modparameters['sustain']}, r={self.modparameters['release']},
-                alpha={self.get_parameter('alpha')})"""
+        return f"""TorchADSR(a={self.torchparameters['attack']}, d={self.torchparameters['decay']},
+                s={self.torchparameters['sustain']}, r={self.torchparameters['release']},
+                alpha={self.torchparameters['alpha']})"""
 
 
 
