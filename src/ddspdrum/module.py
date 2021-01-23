@@ -135,6 +135,7 @@ class SynthModule:
         """
         pass
 
+
 class ADSR(SynthModule):
     """
     Envelope class for building a control rate ADSR signal
