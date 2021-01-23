@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.module import VCO
 from ddspdrum.modparameter import ModParameter
 from ddspdrum.torchutil import midi_to_hz, reverse_signal
 
@@ -22,7 +21,8 @@ class TorchSynthModule(nn.Module):
     """
     Base class for synthesis modules, in torch.
 
-    WARNING: For now, TorchSynthModules should be atomic and not contain other SynthModules.
+    WARNING: For now, TorchSynthModules should be atomic and not contain other
+    SynthModules.
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
@@ -80,7 +80,7 @@ class TorchSynthModule(nn.Module):
                 npyinput.append(i.numpy())
             else:
                 npyinput.append(i)
-        return self.forward(*npyinputs).numpy()
+        return self.forward(*npyinput).numpy()
 
     # The following is cheesy AF but needed because the
     # torchparameter is the master variable.
@@ -120,7 +120,8 @@ class TorchSynthModule(nn.Module):
 
     def set_modparameter(self, modparameter_id: str, value: float):
         """
-        Update a specific modparameter value, ensuring that it is within a specified range
+        Update a specific modparameter value, ensuring that it is within a specified
+        range
 
         Parameters
         ----------
