@@ -17,6 +17,7 @@ from ddspdrum.torchutil import midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
+
 class TorchSynthModule(nn.Module):
     """
     Base class for synthesis modules, in torch.
@@ -86,7 +87,9 @@ class TorchSynthModule(nn.Module):
     # TODO: Remove .value from modparameter
     def _update_modparameters(self) -> None:
         for modparameter_id in self.modparameters:
-            self.modparameters[modparameter_id].set_value(float(self.torchparameters[modparameter_id].numpy()))
+            self.modparameters[modparameter_id].set_value(
+                float(self.torchparameters[modparameter_id].numpy())
+            )
 
     # In general, we should consider removing all the following
     # since we don't want to cast to int and then back to Tensor
@@ -125,7 +128,9 @@ class TorchSynthModule(nn.Module):
         value (float)       : Value to update modparameter with
         """
         self.modparameters[modparameter_id].set_value(value)
-        self.torchparameters[modparameter_id].data = T(self.modparameters[modparameter_id].value)
+        self.torchparameters[modparameter_id].data = T(
+            self.modparameters[modparameter_id].value
+        )
 
     def set_modparameter_0to1(self, modparameter_id: str, value: float):
         """
@@ -137,7 +142,9 @@ class TorchSynthModule(nn.Module):
         value (float)       : Value to update modparameter with
         """
         self.modparameters[modparameter_id].set_value_0to1(value)
-        self.torchparameters[modparameter_id].data = T(self.modparameters[modparameter_id].value)
+        self.torchparameters[modparameter_id].data = T(
+            self.modparameters[modparameter_id].value
+        )
 
     def p(self, modparameter_id: str) -> T:
         """
@@ -152,13 +159,13 @@ class TorchADSR(TorchSynthModule):
     """
 
     def __init__(
-            self,
-            a: float = 0.25,
-            d: float = 0.25,
-            s: float = 0.5,
-            r: float = 0.5,
-            alpha: float = 3.0,
-            sample_rate: int = SAMPLE_RATE,
+        self,
+        a: float = 0.25,
+        d: float = 0.25,
+        s: float = 0.5,
+        r: float = 0.5,
+        alpha: float = 3.0,
+        sample_rate: int = SAMPLE_RATE,
     ):
         """
         Parameters
@@ -247,7 +254,7 @@ class TorchADSR(TorchSynthModule):
         # TODO: We originally used endpoint=False, which torch.linspace doesn't support :(
         assert duration.ndim == 0
         t = torch.linspace(0, duration.item(), self.seconds_to_samples(duration))
-        #t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
+        # t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
     @property
@@ -278,7 +285,9 @@ class TorchADSR(TorchSynthModule):
         elif num_samples > len(out_):
             hold_samples = num_samples - len(out_)
             assert hold_samples.ndim == 0
-            out_ = torch.nn.functional.pad(out_, [0, hold_samples], value=out_[-1].item())
+            out_ = torch.nn.functional.pad(
+                out_, [0, hold_samples], value=out_[-1].item()
+            )
         return out_
 
     def note_off(self, last_val):
@@ -288,7 +297,6 @@ class TorchADSR(TorchSynthModule):
         return f"""TorchADSR(a={self.torchparameters['attack']}, d={self.torchparameters['decay']},
                 s={self.torchparameters['sustain']}, r={self.torchparameters['release']},
                 alpha={self.torchparameters['alpha']})"""
-
 
 
 class TorchVCO(TorchSynthModule):
@@ -389,11 +397,9 @@ class TorchSineVCO(TorchVCO):
     """
 
     def __init__(
-            self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
         return np.cos(argument)
-
-
