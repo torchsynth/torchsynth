@@ -2,16 +2,15 @@
 Tests for torch DSP utils.
 """
 
+import random
 from typing import Dict
 
 import numpy as np
-import torch.tensor as T
 import pytest
+import torch.tensor as T
 
-import ddspdrum.torchutil as torchutil
 import ddspdrum.numpyutil as numpyutil
-
-import random
+import ddspdrum.torchutil as torchutil
 
 random.seed(0)
 

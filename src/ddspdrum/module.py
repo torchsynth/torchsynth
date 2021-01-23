@@ -13,8 +13,8 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.parameter import Parameter
 from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
+from ddspdrum.parameter import Parameter
 
 
 class SynthModule:
