@@ -252,11 +252,10 @@ class TorchADSR(TorchSynthModule):
 
         """
 
-        # TODO: We originally used endpoint=False,
-        # which torch.linspace doesn't support :(
         assert duration.ndim == 0
+        # BUG: We originally used endpoint=False,
+        # which torch.linspace doesn't support :(
         t = torch.linspace(0, duration.item(), self.seconds_to_samples(duration))
-        # t = torch.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
     @property
