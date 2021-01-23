@@ -26,7 +26,7 @@ def db_to_amplitude(db: T) -> T:
     """
     Convert decibel value to an amplitude between 0 and 1
     """
-    return torch.power(10, db / 20)
+    return torch.pow(10, db / 20)
 
 
 def peak_gain_for_Q(Q: T) -> T:

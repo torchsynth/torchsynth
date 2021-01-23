@@ -42,11 +42,16 @@ class TestTorchUtil:
             print()
             np.testing.assert_allclose(ny, ty, rtol=1e-5)
 
-    # What is amin here? And maybe we should convert it to a value in defaults?
-    # What is the range of amplitude?
     def test_amplitude_to_db(self):
         self._compare_values(
             numpyutil.amplitude_to_db,
             torchutil.amplitude_to_db,
             {"amplitude": "float", "amin": "float"},
+        )
+
+    def test_db_to_amplitude(self):
+        self._compare_values(
+            numpyutil.db_to_amplitude,
+            torchutil.db_to_amplitude,
+            {"db": "float"},
         )
