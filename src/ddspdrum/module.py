@@ -129,7 +129,7 @@ class SynthModule:
         """
         return self.parameters[parameter_id].value
 
-    def npyforward(self, *inputs: Any) -> np.ndarray: # pragma: no cover
+    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
         """
         Each SynthModule should override this.
         This is the numpy version of the torch.nn.Module.forward command.
