@@ -9,6 +9,7 @@
 # %matplotlib inline
 
 import IPython.display as ipd
+from IPython.core.display import display
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
@@ -210,6 +211,17 @@ print("Value in 0 to 1 range: ", my_drum.get_modparameter_0to1('amp_attack'))
 drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
+
+# # Random synths
+#
+# Let's generate some random synths
+
+drum = Drum(note_on_duration=1.0)
+for i in range(10):
+    drum.randomize()
+    drum_out = drum()
+    stft_plot(drum_out)
+    display(ipd.Audio(drum_out, rate=vca.sample_rate))
 
 # # Filter Examples
 #

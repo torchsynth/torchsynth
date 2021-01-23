@@ -2,6 +2,8 @@
 Parameter Class
 """
 
+import random
+
 import numpy as np
 
 
@@ -86,3 +88,10 @@ class ModParameter:
             value = np.power(value, self.curve)
 
         return value
+
+    def randomize(self) -> None:
+        """
+        Choose a random value for this parameter, based upon its scale.
+        TODO: Optionally accept an RNG?
+        """
+        self.set_value_0to1(random.uniform(0.0, 1.0))
