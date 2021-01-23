@@ -1,5 +1,5 @@
 """
-Utility functions for DSP related things
+Utility functions for DSP related things, numpy only
 """
 
 import numpy as np

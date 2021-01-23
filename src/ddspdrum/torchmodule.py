@@ -13,7 +13,7 @@ import torch.tensor as T
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.module import SynthModule, VCO
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.util import crossfade, fix_length, midi_to_hz
+from ddspdrum.torchutil import crossfade, fix_length, midi_to_hz
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 

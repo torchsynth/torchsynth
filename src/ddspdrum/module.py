@@ -14,7 +14,7 @@ import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.util import crossfade, fix_length, midi_to_hz
+from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
 
 
 class SynthModule:
