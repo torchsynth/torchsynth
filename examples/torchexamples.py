@@ -25,4 +25,6 @@ vco = ddspdrum.torchmodule.TorchVCO(midi_f0=69.0, mod_depth=24.0)
 
 two_8ve_chirp = vco(np.linspace(0, 1, 1000, endpoint=False))
 
+print(vco.parameters)
+
 

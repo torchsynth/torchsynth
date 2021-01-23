@@ -2,14 +2,14 @@
 Synth modules in Torch.
 """
 
-from typing import List
+from typing import Any, List
 
 import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.module import SynthModule
-from ddspdrum.parameter import Parameter
+from ddspdrum.modparameter import ModParameter
 
 class TorchSynthModule(nn.Module, SynthModule):
     """
@@ -32,73 +32,74 @@ class TorchSynthModule(nn.Module, SynthModule):
         SynthModule.__init__(self, sample_rate = sample_rate)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
-    def add_parameters(self, parameters: List[Parameter]):
+    def add_modparameters(self, modparameters: List[ModParameter]):
         """
         Add parameters to this SynthModule's parameters dictionary.
         (Since there is inheritance, this might happen several times.)
         """
-        SynthModule.add_parameters(self, parameters)
-        for parameter in parameters:
-            assert parameter.name not in self.torchparameters
+        SynthModule.add_modparameters(self, modparameters)
+        for modparameter in modparameters:
+            assert modparameter.name not in self.torchparameters
             # TODO: I'm not 100% sure it's kosher to add nn.Parameters
             # outside of __init__, but here we go.
-            # TODO: Internally we want to store all torch parameter
+            # TODO: Internally we want to store all torch modparameter
             # values using their 0/1 range, not their human-interpretable
             # range.
             # We might also rethink the syntactic sugar, e.g. sometimes
             # we want to expose the raw 0/1 and sometimes we want to expose the
             # clipped one.
-            print(parameter.value)
-            self.torchparameters[parameter.name] = nn.Parameter(T(parameter.value))
+            self.torchparameters[modparameter.name] = nn.Parameter(T(modparameter.value))
  
+    def forward(self, *input: Any) -> T:
+        return self.__call__(*input)
 
-#    def get_parameter(self, parameter_id: str) -> Parameter:
+#    def get_modparameter(self, modparameter_id: str) -> Parameter:
 #        """
-#        Get a single parameter for this module
+#        Get a single modparameter for this module
 #
 #        Parameters
 #        ----------
-#        parameter_id (str)  :   Id of the parameter to return
+#        modparameter_id (str)  :   Id of the modparameter to return
 #        """
-#        return self.parameters[parameter_id]
+#        return self.modparameters[modparameter_id]
 #
-#    def get_parameter_0to1(self, parameter_id: str) -> float:
+#    def get_modparameter_0to1(self, modparameter_id: str) -> float:
 #        """
-#        Get the value of a single parameter in the range of [0,1]
-#
-#        Parameters
-#        ----------
-#        parameter_id (str)  :   Id of the parameter to return the value for
-#        """
-#        return self.parameters[parameter_id].get_value_0to1()
-#
-#    def set_parameter(self, parameter_id: str, value: float):
-#        """
-#        Update a specific parameter value, ensuring that it is within a specified range
+#        Get the value of a single modparameter in the range of [0,1]
 #
 #        Parameters
 #        ----------
-#        parameter_id (str)  : Id of the parameter to update
-#        value (float)       : Value to update parameter with
+#        modparameter_id (str)  :   Id of the modparameter to return the value for
 #        """
-#        self.parameters[parameter_id].set_value(value)
+#        return self.modparameters[modparameter_id].get_value_0to1()
 #
-#    def set_parameter_0to1(self, parameter_id: str, value: float):
+#    def set_modparameter(self, modparameter_id: str, value: float):
 #        """
-#        Update a specific parameter with a value in the range [0,1]
+#        Update a specific modparameter value, ensuring that it is within a specified range
 #
 #        Parameters
 #        ----------
-#        parameter_id (str)  : Id of the parameter to update
-#        value (float)       : Value to update parameter with
+#        modparameter_id (str)  : Id of the modparameter to update
+#        value (float)       : Value to update modparameter with
 #        """
-#        self.parameters[parameter_id].set_value_0to1(value)
+#        self.modparameters[modparameter_id].set_value(value)
 #
-#    def p(self, parameter_id: str):
+#    def set_modparameter_0to1(self, modparameter_id: str, value: float):
 #        """
-#        Convenience method for getting the parameter value.
+#        Update a specific modparameter with a value in the range [0,1]
+#
+#        Parameters
+#        ----------
+#        modparameter_id (str)  : Id of the modparameter to update
+#        value (float)       : Value to update modparameter with
 #        """
-#        return self.parameters[parameter_id].value
+#        self.modparameters[modparameter_id].set_value_0to1(value)
+#
+#    def p(self, modparameter_id: str):
+#        """
+#        Convenience method for getting the modparameter value.
+#        """
+#        return self.modparameters[modparameter_id].value
 #
 
 class TorchVCO(TorchSynthModule):
@@ -132,11 +133,11 @@ class TorchVCO(TorchSynthModule):
         sample_rate: int = SAMPLE_RATE
     ):
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("pitch", midi_f0, 0, 127),
-                Parameter("mod_depth", mod_depth, 0, 127),
+                ModParameter("pitch", midi_f0, 0, 127),
+                ModParameter("mod_depth", mod_depth, 0, 127),
             ]
         )
-        # TODO: Make this a parameter too?
+        # TODO: Make this a modparameter too?
         self.phase = phase

@@ -31,6 +31,7 @@ jobs:
       run: |
         # Limit to coverage of source files in current directory
         coverage run -m examples.examples --source=.
+        # TODO: Also do torchexamples? But can't have two lines :\
         coverage xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.2.0
