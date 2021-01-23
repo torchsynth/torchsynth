@@ -219,7 +219,7 @@ ipd.Audio(drum_out, rate=vca.sample_rate)
 drum = Drum(note_on_duration=1.0)
 for i in range(10):
     drum.randomize()
-    drum_out = drum()
+    drum_out = drum.npyforward()
     stft_plot(drum_out)
     display(ipd.Audio(drum_out, rate=vca.sample_rate))
 
