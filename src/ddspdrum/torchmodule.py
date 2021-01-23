@@ -107,7 +107,7 @@ class TorchSynthModule(nn.Module, SynthModule):
 #
 
 
-class TorchVCO(VCO, TorchSynthModule):
+class TorchVCO(TorchSynthModule, VCO):
     """
     Voltage controlled oscillator.
 
@@ -137,14 +137,7 @@ class TorchVCO(VCO, TorchSynthModule):
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(
-            midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, sample_rate=sample_rate
+        TorchSynthModule.__init__(self, sample_rate=sample_rate)
+        VCO.__init__(
+            self, midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, sample_rate=sample_rate
         )
-        self.add_modparameters(
-            [
-                ModParameter("pitch", midi_f0, 0, 127),
-                ModParameter("mod_depth", mod_depth, 0, 127),
-            ]
-        )
-        # TODO: Make this a modparameter too?
-        self.phase = phase
