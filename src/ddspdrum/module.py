@@ -45,7 +45,7 @@ class SynthModule:
         )
 
     def seconds_to_samples(self, seconds: float) -> int:
-        return round(int(seconds * self.sample_rate))
+        return int(round(seconds * self.sample_rate))
 
     def add_parameters(self, parameters: List[Parameter]):
         """
