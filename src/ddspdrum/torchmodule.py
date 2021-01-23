@@ -8,8 +8,9 @@ import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.module import SynthModule
+from ddspdrum.module import SynthModule, VCO
 from ddspdrum.modparameter import ModParameter
+
 
 class TorchSynthModule(nn.Module, SynthModule):
     """
@@ -19,9 +20,7 @@ class TorchSynthModule(nn.Module, SynthModule):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(
-        self, sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE):
         """
         NOTE:
         __init__ should only set parameters.
@@ -29,7 +28,7 @@ class TorchSynthModule(nn.Module, SynthModule):
         the computations will change when the parameters change.
         """
         nn.Module.__init__(self)
-        SynthModule.__init__(self, sample_rate = sample_rate)
+        SynthModule.__init__(self, sample_rate=sample_rate)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def add_modparameters(self, modparameters: List[ModParameter]):
@@ -37,6 +36,7 @@ class TorchSynthModule(nn.Module, SynthModule):
         Add parameters to this SynthModule's parameters dictionary.
         (Since there is inheritance, this might happen several times.)
         """
+        print(modparameters)
         SynthModule.add_modparameters(self, modparameters)
         for modparameter in modparameters:
             assert modparameter.name not in self.torchparameters
@@ -48,10 +48,14 @@ class TorchSynthModule(nn.Module, SynthModule):
             # We might also rethink the syntactic sugar, e.g. sometimes
             # we want to expose the raw 0/1 and sometimes we want to expose the
             # clipped one.
-            self.torchparameters[modparameter.name] = nn.Parameter(T(modparameter.value))
- 
+            print(modparameter.value)
+            self.torchparameters[modparameter.name] = nn.Parameter(
+                T(modparameter.value)
+            )
+
     def forward(self, *input: Any) -> T:
         return self.npyforward(*input)
+
 
 #    def get_modparameter(self, modparameter_id: str) -> Parameter:
 #        """
@@ -102,7 +106,8 @@ class TorchSynthModule(nn.Module, SynthModule):
 #        return self.modparameters[modparameter_id].value
 #
 
-class TorchVCO(TorchSynthModule):
+
+class TorchVCO(VCO, TorchSynthModule):
     """
     Voltage controlled oscillator.
 
@@ -130,9 +135,11 @@ class TorchVCO(TorchSynthModule):
         midi_f0: float = 10,
         mod_depth: float = 50,
         phase: float = 0,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
-        super().__init__(sample_rate=sample_rate)
+        super().__init__(
+            midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, sample_rate=sample_rate
+        )
         self.add_modparameters(
             [
                 ModParameter("pitch", midi_f0, 0, 127),
