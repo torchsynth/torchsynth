@@ -129,6 +129,12 @@ class SynthModule:
         """
         return self.modparameters[modparameter_id].value
 
+    def randomize(self) -> None:
+        """
+        Randomize all modparameters.
+        """
+        for modparameter_id in self.modparameters:
+            self.modparameters[modparameter_id].randomize()
 
 class ADSR(SynthModule):
     """
