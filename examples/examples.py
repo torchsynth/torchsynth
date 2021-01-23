@@ -381,4 +381,21 @@ ipd.Audio(kick, rate=sample_rate)
 
 
 
+# ## Torch examples
+
+import ddspdrum.torchmodule
+
+vco = ddspdrum.torchmodule.TorchVCO(midi_f0=69.0, mod_depth=24.0)
+two_8ve_chirp = vco(np.linspace(0, 1, 1000, endpoint=False))
+ipd.Audio(two_8ve_chirp, rate=vco.sample_rate)
+
+# These are the torch parameters, not the ModParameters.
+
+# +
+
+print(vco.parameters)
+# -
+
+vco.sample_rate
+
 

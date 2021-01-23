@@ -27,4 +27,6 @@ two_8ve_chirp = vco(np.linspace(0, 1, 1000, endpoint=False))
 
 print(vco.parameters)
 
+two_8ve_chirp
+
 

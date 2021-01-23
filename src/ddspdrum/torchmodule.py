@@ -51,7 +51,7 @@ class TorchSynthModule(nn.Module, SynthModule):
             self.torchparameters[modparameter.name] = nn.Parameter(T(modparameter.value))
  
     def forward(self, *input: Any) -> T:
-        return self.__call__(*input)
+        return super(, self).__call__(*input)
 
 #    def get_modparameter(self, modparameter_id: str) -> Parameter:
 #        """
