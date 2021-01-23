@@ -4,7 +4,7 @@ Utility functions for torch DSP related things
 TODO: After everything is torch'ified, remove numpyutil.py version
 and rename this to util.py.
 
-TODO: Test all these.
+TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import torch
@@ -35,7 +35,7 @@ def peak_gain_for_Q(Q: T) -> T:
     """
     # No gain added for quality factor less then 1/sqrt(2)
     if Q <= 0.707:
-        return 1.0
+        return T(1.0)
 
     return Q * Q / torch.pow((Q * Q - 0.25), 0.5)
 
@@ -61,7 +61,7 @@ def fix_length(signal: T, length: T) -> T:
 
     assert signal.ndim == 1
     if len(signal) < length:
-        signal = torch.pad(signal, [0, length - len(signal)])
+        signal = torch.nn.functional.pad(signal, [0, length - len(signal)])
     elif len(signal) > length:
         signal = signal[:length]
     assert signal.shape == (length,)
