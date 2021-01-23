@@ -1,1 +1,3 @@
-from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO 
+from ddspdrum.module import * 
+__all__ = ['ADSR', 'VCA', 'Drum', 'NoiseModule', 'SineVCO', 'SquareSawVCO']
+
