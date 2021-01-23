@@ -24,9 +24,7 @@ class SynthModule:
     WARNING: For now, SynthModules should be atomic and not contain other SynthModules.
     """
 
-    def __init__(
-        self, sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE):
         """
         NOTE:
         __init__ should only set parameters.
@@ -149,7 +147,7 @@ class ADSR(SynthModule):
         s: float = 0.5,
         r: float = 0.5,
         alpha: float = 3.0,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         """
         Parameters
@@ -235,9 +233,7 @@ class ADSR(SynthModule):
 
         """
 
-        t = np.linspace(
-            0, duration, self.seconds_to_samples(duration), endpoint=False
-        )
+        t = np.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
     @property
@@ -264,7 +260,7 @@ class ADSR(SynthModule):
             out_ = out_[:num_samples]
         elif num_samples > len(out_):
             hold_samples = num_samples - len(out_)
-            out_ = np.pad(out_, [0, hold_samples], mode='edge')
+            out_ = np.pad(out_, [0, hold_samples], mode="edge")
         return out_
 
     def note_off(self, last_val):
@@ -304,7 +300,7 @@ class VCO(SynthModule):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(
@@ -372,7 +368,9 @@ class SineVCO(VCO):
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
 
-    def __init__(self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0):
+    def __init__(
+        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
@@ -427,9 +425,7 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(
-        self, sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
 
     def npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
@@ -444,11 +440,7 @@ class NoiseModule(SynthModule):
     Adds noise.
     """
 
-    def __init__(
-        self,
-        ratio: float = 0.25,
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, ratio: float = 0.25, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(
             [
@@ -472,11 +464,7 @@ class DummyModule(SynthModule):
     without nesting SynthModules and without forcing Synth to be a SynthModule.
     """
 
-    def __init__(
-        self,
-        parameters: List[ModParameter],
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, parameters: List[ModParameter], sample_rate: int = SAMPLE_RATE):
         """
         Parameters
         ----------
@@ -636,14 +624,16 @@ class SVF(SynthModule):
         cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
         self.mode = mode
         self.self_oscillate = self_oscillate
         self.add_modparameters(
             [
-                ModParameter("cutoff", cutoff, 5.0, self.sample_rate / 2.0, curve="log"),
+                ModParameter(
+                    "cutoff", cutoff, 5.0, self.sample_rate / 2.0, curve="log"
+                ),
                 ModParameter("resonance", resonance, 0.5, 1000.0, curve="log"),
             ]
         )
@@ -737,7 +727,7 @@ class LowPassSVF(SVF):
         cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="LPF",
@@ -758,7 +748,7 @@ class HighPassSVF(SVF):
         cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="HPF",
@@ -779,7 +769,7 @@ class BandPassSVF(SVF):
         cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="BPF",
@@ -800,7 +790,7 @@ class BandRejectSVF(SVF):
         cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="BSF",
@@ -831,7 +821,7 @@ class FIR(SynthModule):
         self,
         cutoff: float = 1000.0,
         filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(
@@ -903,11 +893,7 @@ class MovingAverage(SynthModule):
     sample_rate (int)   :   Sampling rate to run processing at.
     """
 
-    def __init__(
-        self,
-        filter_length: int = 32,
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(
             [
