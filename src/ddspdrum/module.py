@@ -34,6 +34,13 @@ class SynthModule:
         self.sample_rate = sample_rate
         self.modparameters: Dict[ModParameter] = {}
 
+    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
+        """
+        Each SynthModule should override this.
+        This is the numpy version of the torch.nn.Module.forward command.
+        """
+        pass
+
     def __repr__(self):
         """
         Return a string representation of this synth module and all its parameters
@@ -127,12 +134,12 @@ class SynthModule:
         """
         return self.modparameters[modparameter_id].value
 
-    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
+    def randomize(self) -> None:
         """
-        Each SynthModule should override this.
-        This is the numpy version of the torch.nn.Module.forward command.
+        Randomize all modparameters.
         """
-        pass
+        for modparameter_id in self.modparameters:
+            self.modparameters[modparameter_id].randomize()
 
 
 class ADSR(SynthModule):
@@ -297,9 +304,15 @@ class VCO(SynthModule):
 
     def __init__(
         self,
+<<<<<<< HEAD
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
+=======
+        midi_f0: float = 10,
+        mod_depth: float = 50,
+        phase: float = 0,
+>>>>>>> randomize-modparameter
         sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
