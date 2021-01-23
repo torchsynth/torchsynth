@@ -324,7 +324,7 @@ class TorchVCO(TorchSynthModule):
     --------
 
     >>> vco = VCO(midi_f0=69.0, mod_depth=24.0)
-    >>> two_8ve_chirp = vco(np.linspace(0, 1, 1000, endpoint=False))
+    >>> two_8ve_chirp = vco(torch.linspace(0, 1, 1000, endpoint=False))
     """
 
     def __init__(
@@ -407,4 +407,4 @@ class TorchSineVCO(TorchVCO):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
-        return np.cos(argument)
+        return torch.cos(argument)

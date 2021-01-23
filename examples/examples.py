@@ -100,7 +100,6 @@ time_plot(envelope, adsr.sample_rate)
 midi_f0 = 12
 sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
 sine_out = sine_vco.npyforward(envelope, phase=0)
-
 stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 
@@ -448,5 +447,35 @@ for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
 
+
+from ddspdrum.torchmodule import TorchSineVCO
+
+# SineVCO vs SineVCO with higher midi_f0
+
+# SineVCO test
+sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
+sine_out = sine_vco(envelope, phase=0.0)
+stft_plot(sine_out.detach().numpy())
+ipd.Audio(sine_out.detach().numpy(), rate=sine_vco.sample_rate.item())
+
+# SineVCO test
+midi_f0 = 12.0
+sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0)
+sine_out2 = sine_vco2(envelope, phase=0.0)
+stft_plot(sine_out2.detach().numpy())
+ipd.Audio(sine_out2.detach().numpy(), rate=sine_vco2.sample_rate.item())
+
+# We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
+
+err = torch.mean(torch.abs(sine_out - sine_out2))
+print("Error =", err)
+plt.plot(torch.abs(sine_out - sine_out2).detach())
+
+err.backward(retain_graph=True)
+for p in sine_vco.torchparameters:
+    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
+# Both SineVCOs use the sample envelope
+for p in adsr.torchparameters:
+    print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
 
 
