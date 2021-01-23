@@ -81,7 +81,7 @@ note_on_duration = 0.5
 
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
-envelope = adsr(note_on_duration)
+envelope = adsr.npyforward(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
 
 # ### One-Shot Mode
@@ -90,13 +90,13 @@ time_plot(envelope, adsr.sample_rate)
 # envelope to one-shot mode. In this case, the envelope moves through the entire
 # attack, decay, and release.
 
-envelope = adsr(note_on_duration = 0)
+envelope = adsr.npyforward(note_on_duration = 0)
 time_plot(envelope, adsr.sample_rate)
 
 # SineVCO test
 midi_f0 = 12
 sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
-sine_out = sine_vco(envelope, phase=0)
+sine_out = sine_vco.npyforward(envelope, phase=0)
 
 stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
@@ -110,7 +110,7 @@ ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 shape = 0
 midi_f0 = 24
 sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
-sqs_out = sqs(envelope, phase=0)
+sqs_out = sqs.npyforward(envelope, phase=0)
 # -
 
 stft_plot(sqs_out)
@@ -122,7 +122,7 @@ ipd.Audio(sqs_out, rate=sqs.sample_rate)
 # NoiseModule test.
 
 noiser = NoiseModule(ratio=0.5)
-noisey_out = noiser(sqs_out)
+noisey_out = noiser.npyforward(sqs_out)
 # -
 
 time_plot(noisey_out)
@@ -134,7 +134,7 @@ ipd.Audio(noisey_out, rate=sqs.sample_rate)
 
 # VCA test
 vca = VCA()
-vca_out = vca(envelope, noisey_out)
+vca_out = vca.npyforward(envelope, noisey_out)
 
 time_plot(vca_out)
 stft_plot(vca_out)
@@ -152,7 +152,7 @@ my_drum = Drum(
     note_on_duration=1,
 )
 
-drum_out = my_drum()
+drum_out = my_drum.npyforward()
 
 stft_plot(drum_out)
 
@@ -169,7 +169,7 @@ my_drum = Drum(
     note_on_duration=1,
 )
 
-drum_out = my_drum()
+drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
@@ -193,7 +193,7 @@ print(my_drum)
 my_drum.set_parameter_0to1("pitch_attack", 0.25)
 print(my_drum.parameters['pitch_attack'])
 
-drum_out = my_drum()
+drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
@@ -207,7 +207,7 @@ print(my_drum.parameters['amp_attack'])
 print("Value in 0 to 1 range: ", my_drum.get_parameter_0to1('amp_attack'))
 # -
 
-drum_out = my_drum()
+drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
@@ -247,7 +247,7 @@ plt.show()
 
 # +
 lpf = FIR(cutoff=5000, filter_length=1024)
-filtered_fir = lpf(noise)
+filtered_fir = lpf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_fir, rate=sample_rate))
 
 # Plot Spectrogram
@@ -259,7 +259,7 @@ plt.show()
 
 # +
 lpf = FIR(cutoff=5000, filter_length=32)
-filtered_fir = lpf(noise)
+filtered_fir = lpf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_fir, rate=sample_rate))
 
 # Plot Spectrogram
@@ -271,7 +271,7 @@ plt.show()
 
 # +
 ma_lpf = MovingAverage()
-filtered_ma = ma_lpf(noise)
+filtered_ma = ma_lpf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
 
 # Plot Spectrogram
@@ -283,7 +283,7 @@ plt.show()
 
 # +
 ma_lpf = MovingAverage(filter_length=64)
-filtered_ma = ma_lpf(noise)
+filtered_ma = ma_lpf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
 
 # Plot Spectrogram
@@ -298,7 +298,7 @@ plt.show()
 
 # +
 svf = LowPassSVF(cutoff=5000)
-filtered_svf = svf(noise)
+filtered_svf = svf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
 # Plot Spectrogram
@@ -310,7 +310,7 @@ plt.show()
 
 # +
 svf = LowPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf(noise)
+filtered_svf = svf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
 # Plot Spectrogram
@@ -322,7 +322,7 @@ plt.show()
 
 # +
 svf = HighPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf(noise)
+filtered_svf = svf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
 # Plot Spectrogram
@@ -334,7 +334,7 @@ plt.show()
 
 # +
 svf = BandPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf(noise)
+filtered_svf = svf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
 # Plot Spectrogram
@@ -346,7 +346,7 @@ plt.show()
 
 # +
 svf = BandRejectSVF(cutoff=5000)
-filtered_svf = svf(noise)
+filtered_svf = svf.npyforward(noise)
 ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
 
 # Plot Spectrogram
@@ -373,7 +373,7 @@ plt.plot(cutoff_mod)
 
 # Apply filter and listen to results
 svf = LowPassSVF(cutoff=45, resonance=50)
-kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
+kick = svf.npyforward(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
 
