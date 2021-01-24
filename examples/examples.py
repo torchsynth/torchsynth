@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
+from ddspdrum import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
 
 # -
 
@@ -477,5 +477,3 @@ for p in sine_vco.torchparameters:
 # Both SineVCOs use the sample envelope
 for p in adsr.torchparameters:
     print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
-
-

@@ -25,7 +25,7 @@ avoid.)
 
 To run examples, you should also do:
 ```
-pip install ipython librosa matplotlib
+pip install -e ".[dev]"
 ```
 
 Unfortunately, Python 3.9 (e.g. OSX Big Sur) won't work, because
