@@ -74,3 +74,16 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """
     assert 0.0 <= ratio <= 1.0
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
+
+
+def linspace(
+        start: float, stop: float, num_steps: int, endpoint: bool = False
+) -> T:
+    """
+    Wrapper for torch.linspace that allows to count to `stop` non-inclusive.
+    """
+    if endpoint is False:
+        temp = stop - start
+        stop = stop - (temp / num_steps)
+
+    return torch.linspace(start, stop, num_steps)
