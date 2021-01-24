@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
+from ddspdrum import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
 
 # -
 
@@ -376,9 +376,5 @@ svf = LowPassSVF(cutoff=45, resonance=50)
 kick = svf(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
-
-
-
-
 
 
