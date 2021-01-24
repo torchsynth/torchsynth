@@ -1,3 +1,2 @@
-from ddspdrum.module import * 
-__all__ = ['ADSR', 'VCA', 'Drum', 'NoiseModule', 'SineVCO', 'SquareSawVCO']
-
+# pylint: disable=unused-import
+from ddspdrum.module import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
