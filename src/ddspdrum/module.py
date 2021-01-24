@@ -171,11 +171,11 @@ class ADSR(SynthModule):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(
             [
-                ModParameter("attack", a, 0.0, 20.0, curve="log"),
-                ModParameter("decay", d, 0.0, 20.0, curve="log"),
-                ModParameter("sustain", s, 0.0, 1.0),
-                ModParameter("release", r, 0.0, 20.0, curve="log"),
-                ModParameter("alpha", alpha, 0.0, 10.0),
+                ModParameter("attack", a, 0, 2, curve="log"),
+                ModParameter("decay", d, 0, 2, curve="log"),
+                ModParameter("sustain", s, 0, 1),
+                ModParameter("release", r, 0, 5, curve="log"),
+                ModParameter("alpha", alpha, 0.1, 6),
             ]
         )
 
