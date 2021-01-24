@@ -446,6 +446,24 @@ err.backward(retain_graph=True)
 for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
+# +
+optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.01, momentum=0.9)
+
+for i in range(10):
+    optimizer.zero_grad()
+    print(list(adsr.parameters()))
+    print(list(adsr2.parameters()))
+    print(note_on_duration)
+    envelope = adsr(note_on_duration)
+    envelope2 = adsr2(note_on_duration)
+    print(envelope.shape)
+    print(envelope2.shape)
+    err = torch.mean(torch.abs(envelope - envelope2))
+    print(err)
+    err.backward()
+    optimizer.step()
+# -
+
 
 
 from ddspdrum.torchmodule import TorchSineVCO
