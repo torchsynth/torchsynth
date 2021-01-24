@@ -8,13 +8,15 @@ Synth modules.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.modparameter import ModParameter
 from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
 from ddspdrum.parameter import Parameter
+from ddspdrum.util import crossfade, fix_length, midi_to_hz
 
 
 class SynthModule:
@@ -24,9 +26,7 @@ class SynthModule:
     WARNING: For now, SynthModules should be atomic and not contain other SynthModules.
     """
 
-    def __init__(
-        self, sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE):
         """
         NOTE:
         __init__ should only set parameters.
@@ -34,30 +34,37 @@ class SynthModule:
         the computations will change when the parameters change.
         """
         self.sample_rate = sample_rate
-        self.parameters: Dict[Parameter] = {}
+        self.modparameters: Dict[ModParameter] = {}
+
+    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
+        """
+        Each SynthModule should override this.
+        This is the numpy version of the torch.nn.Module.forward command.
+        """
+        pass
 
     def __repr__(self):
         """
         Return a string representation of this synth module and all its parameters
         """
         return "{}(sample_rate={}, parameters={})".format(
-            self.__class__, repr(self.sample_rate), repr(self.parameters)
+            self.__class__, repr(self.sample_rate), repr(self.modparameters)
         )
 
     def seconds_to_samples(self, seconds: float) -> int:
         return int(round(seconds * self.sample_rate))
 
-    def add_parameters(self, parameters: List[Parameter]):
+    def add_modparameters(self, modparameters: List[ModParameter]):
         """
         Add parameters to this SynthModule's parameters dictionary.
         (Since there is inheritance, this might happen several times.)
         """
-        for parameter in parameters:
-            assert parameter.name not in self.parameters
-            self.parameters[parameter.name] = parameter
+        for modparameter in modparameters:
+            assert modparameter.name not in self.modparameters
+            self.modparameters[modparameter.name] = modparameter
 
-    def connect_parameter(
-        self, parameter_id: str, module: SynthModule, module_parameter_id: str
+    def connect_modparameter(
+        self, modparameter_id: str, module: SynthModule, module_parameter_id: str
     ):
         """
         Create a named parameter for this synthesizer that is connected to a parameter
@@ -65,43 +72,43 @@ class SynthModule:
 
         Parameters
         ----------
-        parameter_id (str)          : name of the new parameter
+        modparameter_id (str)       : name of the new parameter
         module (SynthModule)        : the SynthModule to connect to this parameter
         module_parameter_id (str)   : parameter_id in SynthModule to target
         """
-        if parameter_id in self.parameters:
-            raise ValueError("parameter_id: {} already used".format(parameter_id))
+        if modparameter_id in self.modparameters:
+            raise ValueError("parameter_id: {} already used".format(modparameter_id))
 
-        if module_parameter_id not in module.parameters:
+        if module_parameter_id not in module.modparameters:
             raise KeyError(
                 "parameter_id: {} not a parameter in {}".format(
                     module_parameter_id, module
                 )
             )
 
-        self.parameters[parameter_id] = module.get_parameter(module_parameter_id)
+        self.modparameters[modparameter_id] = module.get_parameter(module_parameter_id)
 
-    def get_parameter(self, parameter_id: str) -> Parameter:
+    def get_parameter(self, modparameter_id: str) -> ModParameter:
         """
         Get a single parameter for this module
 
         Parameters
         ----------
-        parameter_id (str)  :   Id of the parameter to return
+        modparameter_id (str)  :   Id of the parameter to return
         """
-        return self.parameters[parameter_id]
+        return self.modparameters[modparameter_id]
 
-    def get_parameter_0to1(self, parameter_id: str) -> float:
+    def get_modparameter_0to1(self, modparameter_id: str) -> float:
         """
         Get the value of a single parameter in the range of [0,1]
 
         Parameters
         ----------
-        parameter_id (str)  :   Id of the parameter to return the value for
+        modparameter_id (str)  :   Id of the parameter to return the value for
         """
-        return self.parameters[parameter_id].get_value_0to1()
+        return self.modparameters[modparameter_id].get_value_0to1()
 
-    def set_parameter(self, parameter_id: str, value: float):
+    def set_modparameter(self, modparameter_id: str, value: float):
         """
         Update a specific parameter value, ensuring that it is within a specified range
 
@@ -110,24 +117,31 @@ class SynthModule:
         parameter_id (str)  : Id of the parameter to update
         value (float)       : Value to update parameter with
         """
-        self.parameters[parameter_id].set_value(value)
+        self.modparameters[modparameter_id].set_value(value)
 
-    def set_parameter_0to1(self, parameter_id: str, value: float):
+    def set_modparameter_0to1(self, modparameter_id: str, value: float):
         """
         Update a specific parameter with a value in the range [0,1]
 
         Parameters
         ----------
-        parameter_id (str)  : Id of the parameter to update
+        modparameter_id (str)  : Id of the parameter to update
         value (float)       : Value to update parameter with
         """
-        self.parameters[parameter_id].set_value_0to1(value)
+        self.modparameters[modparameter_id].set_value_0to1(value)
 
-    def p(self, parameter_id: str):
+    def p(self, modparameter_id: str):
         """
         Convenience method for getting the parameter value.
         """
-        return self.parameters[parameter_id].value
+        return self.modparameters[modparameter_id].value
+
+    def randomize(self) -> None:
+        """
+        Randomize all modparameters.
+        """
+        for modparameter_id in self.modparameters:
+            self.modparameters[modparameter_id].randomize()
 
 
 class ADSR(SynthModule):
@@ -142,7 +156,7 @@ class ADSR(SynthModule):
         s: float = 0.5,
         r: float = 0.5,
         alpha: float = 3.0,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         """
         Parameters
@@ -157,17 +171,17 @@ class ADSR(SynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("attack", a, 0, 20, curve="log"),
-                Parameter("decay", d, 0, 20, curve="log"),
-                Parameter("sustain", s, 0, 1),
-                Parameter("release", r, 0, 20, curve="log"),
-                Parameter("alpha", alpha, 0, 10),
+                ModParameter("attack", a, 0.0, 20.0, curve="log"),
+                ModParameter("decay", d, 0.0, 20.0, curve="log"),
+                ModParameter("sustain", s, 0.0, 1.0),
+                ModParameter("release", r, 0.0, 20.0, curve="log"),
+                ModParameter("alpha", alpha, 0.0, 10.0),
             ]
         )
 
-    def __call__(self, note_on_duration: float = 0):
+    def npyforward(self, note_on_duration: float = 0) -> np.ndarray:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -228,9 +242,7 @@ class ADSR(SynthModule):
 
         """
 
-        t = np.linspace(
-            0, duration, self.seconds_to_samples(duration), endpoint=False
-        )
+        t = np.linspace(0, duration, self.seconds_to_samples(duration), endpoint=False)
         return (t / duration) ** self.p("alpha")
 
     @property
@@ -257,15 +269,15 @@ class ADSR(SynthModule):
             out_ = out_[:num_samples]
         elif num_samples > len(out_):
             hold_samples = num_samples - len(out_)
-            out_ = np.pad(out_, [0, hold_samples], mode='edge')
+            out_ = np.pad(out_, [0, hold_samples], mode="edge")
         return out_
 
     def note_off(self, last_val):
         return self.release() * last_val
 
     def __str__(self):
-        return f"""ADSR(a={self.parameters['attack']}, d={self.parameters['decay']},
-                s={self.parameters['sustain']}, r={self.parameters['release']},
+        return f"""ADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},
+                s={self.modparameters['sustain']}, r={self.modparameters['release']},
                 alpha={self.get_parameter('alpha')})"""
 
 
@@ -294,22 +306,22 @@ class VCO(SynthModule):
 
     def __init__(
         self,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
-        phase: float = 0,
-        sample_rate: int = SAMPLE_RATE
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("pitch", midi_f0, 0, 127),
-                Parameter("mod_depth", mod_depth, 0, 127),
+                ModParameter("pitch", midi_f0, 0.0, 127.0),
+                ModParameter("mod_depth", mod_depth, 0.0, 127.0),
             ]
         )
         # TODO: Make this a parameter too?
         self.phase = phase
 
-    def __call__(self, mod_signal: np.array, phase: float = 0) -> np.array:
+    def npyforward(self, mod_signal: np.array, phase: float = 0.0) -> np.ndarray:
         """
         Generates audio signal from modulation signal.
 
@@ -365,7 +377,9 @@ class SineVCO(VCO):
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
 
-    def __init__(self, midi_f0: float = 10, mod_depth: float = 50, phase: float = 0):
+    def __init__(
+        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
@@ -385,15 +399,15 @@ class SquareSawVCO(VCO):
 
     def __init__(
         self,
-        shape: float = 0,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
-        phase: float = 0,
+        shape: float = 0.0,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("shape", shape, 0, 1),
+                ModParameter("shape", shape, 0.0, 1.0),
             ]
         )
 
@@ -420,12 +434,10 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(
-        self, sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
 
-    def __call__(self, control_in: np.array, audio_in: np.array):
+    def npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
         control_in = np.clip(control_in, 0, 1)
         audio_in = np.clip(audio_in, -1, 1)
         audio_in = fix_length(audio_in, len(control_in))
@@ -437,19 +449,15 @@ class NoiseModule(SynthModule):
     Adds noise.
     """
 
-    def __init__(
-        self,
-        ratio: float = 0.25,
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, ratio: float = 0.25, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("ratio", ratio, 0, 1),
+                ModParameter("ratio", ratio, 0.0, 1.0),
             ]
         )
 
-    def __call__(self, audio_in: np.ndarray):
+    def npyforward(self, audio_in: np.ndarray) -> np.ndarray:
         noise = self.noise_of_length(audio_in)
         return crossfade(audio_in, noise, self.p("ratio"))
 
@@ -465,11 +473,7 @@ class DummyModule(SynthModule):
     without nesting SynthModules and without forcing Synth to be a SynthModule.
     """
 
-    def __init__(
-        self,
-        parameters: List[Parameter],
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, parameters: List[ModParameter], sample_rate: int = SAMPLE_RATE):
         """
         Parameters
         ----------
@@ -478,9 +482,9 @@ class DummyModule(SynthModule):
                                 TODO: Take this as a list of Parameters instead?
         """
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(parameters)
+        self.add_modparameters(parameters)
 
-    def __call__(self):
+    def npyforward(self) -> np.ndarray:
         assert False
 
 
@@ -520,7 +524,7 @@ class Drum(Synth):
         note_on_duration: float,
         drum_params: DummyModule = DummyModule(
             parameters=[
-                Parameter(
+                ModParameter(
                     name="vco_ratio",
                     value=0.5,
                     minimum=0.0,
@@ -555,50 +559,50 @@ class Drum(Synth):
         self.vca = vca
 
         # Pitch Envelope
-        self.connect_parameter("pitch_attack", self.pitch_adsr, "attack")
-        self.connect_parameter("pitch_decay", self.pitch_adsr, "decay")
-        self.connect_parameter("pitch_sustain", self.pitch_adsr, "sustain")
-        self.connect_parameter("pitch_release", self.pitch_adsr, "release")
-        self.connect_parameter("pitch_alpha", self.pitch_adsr, "alpha")
+        self.connect_modparameter("pitch_attack", self.pitch_adsr, "attack")
+        self.connect_modparameter("pitch_decay", self.pitch_adsr, "decay")
+        self.connect_modparameter("pitch_sustain", self.pitch_adsr, "sustain")
+        self.connect_modparameter("pitch_release", self.pitch_adsr, "release")
+        self.connect_modparameter("pitch_alpha", self.pitch_adsr, "alpha")
 
         # Amplitude Envelope
-        self.connect_parameter("amp_attack", self.amp_adsr, "attack")
-        self.connect_parameter("amp_decay", self.amp_adsr, "decay")
-        self.connect_parameter("amp_sustain", self.amp_adsr, "sustain")
-        self.connect_parameter("amp_release", self.amp_adsr, "release")
-        self.connect_parameter("amp_alpha", self.amp_adsr, "alpha")
+        self.connect_modparameter("amp_attack", self.amp_adsr, "attack")
+        self.connect_modparameter("amp_decay", self.amp_adsr, "decay")
+        self.connect_modparameter("amp_sustain", self.amp_adsr, "sustain")
+        self.connect_modparameter("amp_release", self.amp_adsr, "release")
+        self.connect_modparameter("amp_alpha", self.amp_adsr, "alpha")
 
         # VCO 1
-        self.connect_parameter("vco_1_pitch", self.vco_1, "pitch")
-        self.connect_parameter("vco_1_mod_depth", self.vco_1, "mod_depth")
+        self.connect_modparameter("vco_1_pitch", self.vco_1, "pitch")
+        self.connect_modparameter("vco_1_mod_depth", self.vco_1, "mod_depth")
 
         # VCO 2
-        self.connect_parameter("vco_2_pitch", self.vco_2, "pitch")
-        self.connect_parameter("vco_2_mod_depth", self.vco_2, "mod_depth")
-        self.connect_parameter("vco_2_shape", self.vco_2, "shape")
+        self.connect_modparameter("vco_2_pitch", self.vco_2, "pitch")
+        self.connect_modparameter("vco_2_mod_depth", self.vco_2, "mod_depth")
+        self.connect_modparameter("vco_2_shape", self.vco_2, "shape")
 
         # Mix between the two VCOs
-        self.connect_parameter("vco_ratio", self.drum_params, "vco_ratio")
+        self.connect_modparameter("vco_ratio", self.drum_params, "vco_ratio")
 
         # Noise
-        self.connect_parameter("noise_ratio", self.noise_module, "ratio")
+        self.connect_modparameter("noise_ratio", self.noise_module, "ratio")
 
-    def __call__(self):
+    def npyforward(self) -> np.ndarray:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on_duration
-        pitch_envelope = self.pitch_adsr(note_on_duration)
-        amp_envelope = self.amp_adsr(note_on_duration)
+        pitch_envelope = self.pitch_adsr.npyforward(note_on_duration)
+        amp_envelope = self.amp_adsr.npyforward(note_on_duration)
         pitch_envelope = fix_length(pitch_envelope, len(amp_envelope))
 
-        vco_1_out = self.vco_1(pitch_envelope)
-        vco_2_out = self.vco_2(pitch_envelope)
+        vco_1_out = self.vco_1.npyforward(pitch_envelope)
+        vco_2_out = self.vco_2.npyforward(pitch_envelope)
 
         audio_out = crossfade(vco_1_out, vco_2_out, self.p("vco_ratio"))
 
-        audio_out = self.noise_module(audio_out)
+        audio_out = self.noise_module.npyforward(audio_out)
 
-        return self.vca(amp_envelope, audio_out)
+        return self.vca.npyforward(amp_envelope, audio_out)
 
 
 class SVF(SynthModule):
@@ -626,22 +630,24 @@ class SVF(SynthModule):
     def __init__(
         self,
         mode: str,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
         self.mode = mode
         self.self_oscillate = self_oscillate
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("cutoff", cutoff, 5, self.sample_rate / 2.0, curve="log"),
-                Parameter("resonance", resonance, 0.5, 1000, curve="log"),
+                ModParameter(
+                    "cutoff", cutoff, 5.0, self.sample_rate / 2.0, curve="log"
+                ),
+                ModParameter("resonance", resonance, 0.5, 1000.0, curve="log"),
             ]
         )
 
-    def __call__(
+    def npyforward(
         self,
         audio: np.ndarray,
         cutoff_mod: np.ndarray = None,
@@ -727,10 +733,10 @@ class LowPassSVF(SVF):
 
     def __init__(
         self,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="LPF",
@@ -748,10 +754,10 @@ class HighPassSVF(SVF):
 
     def __init__(
         self,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="HPF",
@@ -769,10 +775,10 @@ class BandPassSVF(SVF):
 
     def __init__(
         self,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="BPF",
@@ -790,10 +796,10 @@ class BandRejectSVF(SVF):
 
     def __init__(
         self,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         resonance: float = 0.707,
         self_oscillate: bool = False,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(
             mode="BSF",
@@ -822,19 +828,19 @@ class FIR(SynthModule):
 
     def __init__(
         self,
-        cutoff: float = 1000,
+        cutoff: float = 1000.0,
         filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE
+        sample_rate: int = SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("cutoff", cutoff, 5, sample_rate / 2.0, curve="log"),
-                Parameter("length", filter_length, 4, 4096),
+                ModParameter("cutoff", cutoff, 5.0, sample_rate / 2.0, curve="log"),
+                ModParameter("length", filter_length, 4.0, 4096.0),
             ]
         )
 
-    def __call__(self, audio: np.ndarray) -> np.ndarray:
+    def npyforward(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         TODO: Cutoff frequency modulation, if there is an efficient way to do it
@@ -896,19 +902,15 @@ class MovingAverage(SynthModule):
     sample_rate (int)   :   Sampling rate to run processing at.
     """
 
-    def __init__(
-        self,
-        filter_length: int = 32,
-        sample_rate: int = SAMPLE_RATE
-    ):
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
+        self.add_modparameters(
             [
-                Parameter("length", filter_length, 1, 4096),
+                ModParameter("length", filter_length, 1.0, 4096.0),
             ]
         )
 
-    def __call__(self, audio: np.ndarray) -> np.ndarray:
+    def npyforward(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
 
