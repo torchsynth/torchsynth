@@ -29,8 +29,8 @@ setup(
     },
     scripts=[],
     python_requires=">=3.6",
-    install_requires=["numpy", "matplotlib", "scipy"],
+    install_requires=["numpy", "scipy"],
     extras_require={
-        "dev": ["pytest", "pytest-cov"],
+        "dev": ["pytest", "pytest-cov", "ipython", "librosa", "matplotlib"],
     },
 )
