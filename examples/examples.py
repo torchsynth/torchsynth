@@ -447,6 +447,7 @@ for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
 # +
+"""
 optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.01, momentum=0.9)
 
 for i in range(10):
@@ -462,6 +463,7 @@ for i in range(10):
     print(err)
     err.backward()
     optimizer.step()
+"""
 # -
 
 
