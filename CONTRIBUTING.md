@@ -8,9 +8,9 @@ documentation.
 
 * Enforce preconditions on parameter values.
 
-* `SynthModule` should have a `__call__` method. Parameters intrinsic
+* `SynthModule` should have a `npyforward` method. Parameters intrinsic
 to the module should be in `__init__`. Outputs from other modules
-should go in `__call__`.
+should go in `npyforward`.
 
 * Let's standardize on naming conventions for things like `signal`
 or `audio` or whatever.
