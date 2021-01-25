@@ -254,6 +254,7 @@ class ADSR(SynthModule):
         sustain = self.p("sustain")
         return self._ramp(decay)[::-1] * (1 - sustain) + sustain
 
+    @property
     def release(self):
         # `r`-length reverse ramp, reversed to descend to 0.
         release = self.p("release")
@@ -271,7 +272,7 @@ class ADSR(SynthModule):
         return out_
 
     def note_off(self, last_val):
-        return self.release() * last_val
+        return self.release * last_val
 
     def __str__(self):
         return f"""ADSR(a={self.modparameters['attack']}, d={self.modparameters['decay']},

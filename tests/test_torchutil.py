@@ -39,17 +39,21 @@ class TestTorchUtil:
                     params[name] = random.randint(0, 1000)
                 else:
                     assert False
+
+            threw = False
             try:
                 ny = np.array(numpyf(**params))
-            except RuntimeWarning:
-                ny = "RuntimeWarning"
+            except Exception as e:
+                ny = type(e)
+                threw = True
             for name in params:
                 params[name] = T(params[name])
             try:
                 ty = torchf(**params).numpy()
-            except RuntimeWarning:
-                ty = "RuntimeWarning"
-            if ny == "RuntimeWarning" or ty == "RuntimeWarning":
+            except Exception as e:
+                ty = type(e)
+                threw = True
+            if threw:
                 assert ny == ty
                 return
             print(ny)
