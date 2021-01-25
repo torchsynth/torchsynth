@@ -39,12 +39,26 @@ class SynthModule:
         self.buffer_size = buffer_size
         self.modparameters: Dict[ModParameter] = {}
 
-    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
+    def _npyforward(
+            self,
+            *args: Any,
+            **kwargs: Any
+    ) -> np.ndarray:  # pragma: no cover
         """
         Each SynthModule should override this.
         This is the numpy version of the torch.nn.Module.forward command.
         """
         pass
+
+    def npyforward(
+            self,
+            *args: Any,
+            **kwargs: Any
+    ) -> np.ndarray:  # pragma: no cover
+        """
+        Wrapper for _npyforward that ensures a buffer_size length output.
+        """
+        return self.to_buffer_size(self._npyforward(*args, **kwargs))
 
     def __repr__(self):
         """
@@ -188,7 +202,7 @@ class ADSR(SynthModule):
             ]
         )
 
-    def npyforward(self, note_on_duration: float = 0) -> np.ndarray:
+    def _npyforward(self, note_on_duration: float = 0) -> np.ndarray:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -227,8 +241,7 @@ class ADSR(SynthModule):
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
 
-        out_ = np.concatenate((ADS, R))
-        return self.to_buffer_size(out_)
+        return np.concatenate((ADS, R))
 
     def _ramp(self, duration: float):
         """Makes a ramp of a given duration in seconds.
@@ -331,7 +344,7 @@ class VCO(SynthModule):
         # TODO: Make this a parameter too?
         self.phase = phase
 
-    def npyforward(self, mod_signal: np.array, phase: float = 0.0) -> np.ndarray:
+    def _npyforward(self, mod_signal: np.array, phase: float = 0.0) -> np.ndarray:
         """
         Generates audio signal from modulation signal.
 
@@ -363,8 +376,7 @@ class VCO(SynthModule):
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
-        out_ = self.oscillator(cosine_argument)
-        return self.to_buffer_size(out_)
+        return self.oscillator(cosine_argument)
 
     def make_argument(self, control_as_frequency: np.array):
         """
@@ -452,12 +464,11 @@ class VCA(SynthModule):
     ):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
 
-    def npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
+    def _npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
         control_in = np.clip(control_in, 0, 1)
         audio_in = np.clip(audio_in, -1, 1)
         audio_in = fix_length(audio_in, len(control_in))
-        out_ = control_in * audio_in
-        return self.to_buffer_size(out_)
+        return control_in * audio_in
 
 
 class NoiseModule(SynthModule):
@@ -478,10 +489,9 @@ class NoiseModule(SynthModule):
             ]
         )
 
-    def npyforward(self, audio_in: np.ndarray) -> np.ndarray:
+    def _npyforward(self, audio_in: np.ndarray) -> np.ndarray:
         noise = self.noise_of_length(audio_in)
-        out_ = crossfade(audio_in, noise, self.p("ratio"))
-        return self.to_buffer_size(out_)
+        return crossfade(audio_in, noise, self.p("ratio"))
 
     @staticmethod
     def noise_of_length(audio_in: np.ndarray):
@@ -506,7 +516,7 @@ class DummyModule(SynthModule):
         super().__init__(sample_rate=sample_rate)
         self.add_modparameters(parameters)
 
-    def npyforward(self) -> np.ndarray:
+    def _npyforward(self) -> np.ndarray:
         assert False
 
 
@@ -609,7 +619,7 @@ class Drum(Synth):
         # Noise
         self.connect_modparameter("noise_ratio", self.noise_module, "ratio")
 
-    def npyforward(self) -> np.ndarray:
+    def _npyforward(self) -> np.ndarray:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on_duration
@@ -862,7 +872,7 @@ class FIR(SynthModule):
             ]
         )
 
-    def npyforward(self, audio: np.ndarray) -> np.ndarray:
+    def _npyforward(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
         TODO: Cutoff frequency modulation, if there is an efficient way to do it
@@ -932,7 +942,7 @@ class MovingAverage(SynthModule):
             ]
         )
 
-    def npyforward(self, audio: np.ndarray) -> np.ndarray:
+    def _npyforward(self, audio: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
 

@@ -390,10 +390,6 @@ kick = svf.npyforward(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
 plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
 
-
-
-
-
 # ## Torch examples
 
 
@@ -446,7 +442,6 @@ err.backward(retain_graph=True)
 for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
-# +
 """
 optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.01, momentum=0.9)
 
@@ -464,10 +459,6 @@ for i in range(10):
     err.backward()
     optimizer.step()
 """
-# -
-
-
-
 from ddspdrum.torchmodule import TorchSineVCO
 
 # SineVCO vs SineVCO with higher midi_f0
