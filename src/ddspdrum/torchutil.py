@@ -76,6 +76,18 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
 
 
+def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
+    """
+    Wrapper for torch.linspace that allows to count to `stop` non-inclusive.
+    """
+    # Need to use `==` rather than `is` for correct behaviour w/ tensors.
+    if endpoint == False:  # noqa: E712
+        temp = stop - start
+        stop = stop - (temp / num)
+
+    return torch.linspace(start, stop, num)
+
+
 def reverse_signal(signal: T) -> T:
     assert signal.ndim == 1
     return torch.flip(signal, (0,))
