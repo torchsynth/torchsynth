@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from ddspdrum.defaults import SAMPLE_RATE, BUFFER_SIZE
+from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
 from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
 

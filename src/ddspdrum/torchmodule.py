@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.tensor as T
 
-from ddspdrum.defaults import SAMPLE_RATE, BUFFER_SIZE
+from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
 from ddspdrum.torchutil import fix_length, midi_to_hz, reverse_signal
 
