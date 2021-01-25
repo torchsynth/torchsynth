@@ -37,6 +37,8 @@ class TestTorchUtil:
                     params[name] = np.random.rand(512)
                 elif ty == "int":
                     params[name] = random.randint(0, 1000)
+                elif ty == "bool":
+                    params[name] = random.choice([True, False])
                 else:
                     assert False
 
@@ -107,4 +109,16 @@ class TestTorchUtil:
             numpyutil.crossfade,
             torchutil.crossfade,
             {"in_1": "signal", "in_2": "signal", "ratio": "pr"},
+        )
+
+    def test_linspace(self):
+        self._compare_values(
+            np.linspace,
+            torchutil.linspace,
+            {
+                "start": "float",
+                "stop": "float",
+                "num": "int",
+                "endpoint": "bool"
+            },
         )

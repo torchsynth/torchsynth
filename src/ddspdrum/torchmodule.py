@@ -12,7 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.torchutil import midi_to_hz, reverse_signal
+from ddspdrum.torchutil import midi_to_hz, reverse_signal, linspace
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -253,9 +253,7 @@ class TorchADSR(TorchSynthModule):
         """
 
         assert duration.ndim == 0
-        # BUG: We originally used endpoint=False,
-        # which torch.linspace doesn't support :(
-        t = torch.linspace(0, duration.item(), self.seconds_to_samples(duration))
+        t = linspace(0, duration.item(), self.seconds_to_samples(duration))
         return (t / duration) ** self.p("alpha")
 
     @property
@@ -324,7 +322,7 @@ class TorchVCO(TorchSynthModule):
     --------
 
     >>> vco = VCO(midi_f0=69.0, mod_depth=24.0)
-    >>> two_8ve_chirp = vco(torch.linspace(0, 1, 1000, endpoint=False))
+    >>> two_8ve_chirp = vco(linspace(0, 1, 1000, endpoint=False))
     """
 
     def __init__(
