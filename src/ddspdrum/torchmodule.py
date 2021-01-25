@@ -10,9 +10,9 @@ import torch
 import torch.nn as nn
 import torch.tensor as T
 
-from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.defaults import SAMPLE_RATE, BUFFER_SIZE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.torchutil import midi_to_hz, reverse_signal
+from ddspdrum.torchutil import midi_to_hz, reverse_signal, fix_length
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -26,7 +26,11 @@ class TorchSynthModule(nn.Module):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE):
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -35,8 +39,12 @@ class TorchSynthModule(nn.Module):
         """
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
+        self.buffer_size = T(buffer_size)
         self.modparameters: Dict[ModParameter] = {}
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+
+    def to_buffer_size(self, signal: T) -> T:
+        return fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
@@ -167,6 +175,7 @@ class TorchADSR(TorchSynthModule):
         r: float = 0.5,
         alpha: float = 3.0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
         """
         Parameters
@@ -180,7 +189,7 @@ class TorchADSR(TorchSynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(sample_rate=sample_rate)
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_modparameters(
             [
                 ModParameter("attack", a, 0.0, 20.0, curve="log"),
@@ -230,7 +239,8 @@ class TorchADSR(TorchSynthModule):
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
 
-        return torch.cat((ADS, R))
+        out_ = torch.cat((ADS, R))
+        return self.to_buffer_size(out_)
 
     def _ramp(self, duration: T):
         """Makes a ramp of a given duration in seconds.
@@ -333,8 +343,13 @@ class TorchVCO(TorchSynthModule):
         mod_depth: float = 50,
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
-        TorchSynthModule.__init__(self, sample_rate=sample_rate)
+        TorchSynthModule.__init__(
+            self,
+            sample_rate=sample_rate,
+            buffer_size=buffer_size
+        )
         self.add_modparameters(
             [
                 ModParameter("pitch", midi_f0, 0.0, 127.0),
@@ -376,7 +391,8 @@ class TorchVCO(TorchSynthModule):
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
-        return self.oscillator(cosine_argument)
+        out_ = self.oscillator(cosine_argument)
+        return self.to_buffer_size(out_)
 
     def make_argument(self, control_as_frequency: T) -> T:
         """

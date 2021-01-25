@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.defaults import SAMPLE_RATE, BUFFER_SIZE
 from ddspdrum.modparameter import ModParameter
 from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
 
@@ -24,7 +24,11 @@ class SynthModule:
     WARNING: For now, SynthModules should be atomic and not contain other SynthModules.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE):
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -32,6 +36,7 @@ class SynthModule:
         the computations will change when the parameters change.
         """
         self.sample_rate = sample_rate
+        self.buffer_size = buffer_size
         self.modparameters: Dict[ModParameter] = {}
 
     def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
@@ -48,6 +53,9 @@ class SynthModule:
         return "{}(sample_rate={}, parameters={})".format(
             self.__class__, repr(self.sample_rate), repr(self.modparameters)
         )
+
+    def to_buffer_size(self, signal: np.ndarray) -> np.ndarray:
+        return fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: float) -> int:
         return int(round(seconds * self.sample_rate))
@@ -155,6 +163,7 @@ class ADSR(SynthModule):
         r: float = 0.5,
         alpha: float = 3.0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
         """
         Parameters
@@ -168,7 +177,7 @@ class ADSR(SynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(sample_rate=sample_rate)
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_modparameters(
             [
                 ModParameter("attack", a, 0, 2, curve="log"),
@@ -218,7 +227,8 @@ class ADSR(SynthModule):
         ADS = self.note_on(num_samples)
         R = self.note_off(ADS[-1])
 
-        return np.concatenate((ADS, R))
+        out_ = np.concatenate((ADS, R))
+        return self.to_buffer_size(out_)
 
     def _ramp(self, duration: float):
         """Makes a ramp of a given duration in seconds.
@@ -309,8 +319,9 @@ class VCO(SynthModule):
         mod_depth: float = 50.0,
         phase: float = 0.0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
-        super().__init__(sample_rate=sample_rate)
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_modparameters(
             [
                 ModParameter("pitch", midi_f0, 0.0, 127.0),
@@ -352,7 +363,8 @@ class VCO(SynthModule):
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
-        return self.oscillator(cosine_argument)
+        out_ = self.oscillator(cosine_argument)
+        return self.to_buffer_size(out_)
 
     def make_argument(self, control_as_frequency: np.array):
         """
@@ -433,14 +445,19 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE):
-        super().__init__(sample_rate=sample_rate)
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
 
     def npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
         control_in = np.clip(control_in, 0, 1)
         audio_in = np.clip(audio_in, -1, 1)
         audio_in = fix_length(audio_in, len(control_in))
-        return control_in * audio_in
+        out_ = control_in * audio_in
+        return self.to_buffer_size(out_)
 
 
 class NoiseModule(SynthModule):
@@ -448,8 +465,13 @@ class NoiseModule(SynthModule):
     Adds noise.
     """
 
-    def __init__(self, ratio: float = 0.25, sample_rate: int = SAMPLE_RATE):
-        super().__init__(sample_rate=sample_rate)
+    def __init__(
+            self,
+            ratio: float = 0.25,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_modparameters(
             [
                 ModParameter("ratio", ratio, 0.0, 1.0),
@@ -458,7 +480,8 @@ class NoiseModule(SynthModule):
 
     def npyforward(self, audio_in: np.ndarray) -> np.ndarray:
         noise = self.noise_of_length(audio_in)
-        return crossfade(audio_in, noise, self.p("ratio"))
+        out_ = crossfade(audio_in, noise, self.p("ratio"))
+        return self.to_buffer_size(out_)
 
     @staticmethod
     def noise_of_length(audio_in: np.ndarray):
