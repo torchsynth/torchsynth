@@ -81,7 +81,7 @@ def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
     Wrapper for torch.linspace that allows to count to `stop` non-inclusive.
     """
     # Need to use `==` rather than `is` for correct behaviour w/ tensors.
-    if endpoint == False: # noqa E712
+    if endpoint == False: # noqa: E712
         temp = stop - start
         stop = stop - (temp / num)
 
