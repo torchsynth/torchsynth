@@ -87,3 +87,9 @@ def linspace(
         stop = stop - (temp / num_steps)
 
     return torch.linspace(start, stop, num_steps)
+ 
+ 
+def reverse_signal(signal: T) -> T:
+    assert signal.ndim == 1
+    return torch.flip(signal, (0,))
+

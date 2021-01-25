@@ -37,14 +37,6 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
     plt.show()
 
 
-# Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.75
-r = 0.5
-alpha = 3
-note_on_duration = 0.5
-
 # ## The Envelope
 # Our module is based on an ADSR envelope, standing for "attack, decay, sustain,
 # release," which is specified by four values:
@@ -80,10 +72,20 @@ note_on_duration = 0.5
 # scenes to make the playing experience feel natural. Alternately, you may
 # specify one-shot mode (see below), which is more typical of drum machines.
 
+# +
+# Synthesis parameters.
+a = 0.1
+d = 0.1
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
 # Envelope test
 adsr = ADSR(a, d, s, r, alpha)
 envelope = adsr.npyforward(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
+# -
 
 # ### One-Shot Mode
 #
@@ -98,7 +100,6 @@ time_plot(envelope, adsr.sample_rate)
 midi_f0 = 12
 sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
 sine_out = sine_vco.npyforward(envelope, phase=0)
-
 stft_plot(sine_out)
 ipd.Audio(sine_out, rate=sine_vco.sample_rate)
 
@@ -390,3 +391,109 @@ plt.plot(kick)
 ipd.Audio(kick, rate=sample_rate)
 
 
+
+
+
+# ## Torch examples
+
+
+import torch
+from ddspdrum.torchmodule import TorchADSR
+
+# Create a simple envelope
+
+# +
+# Synthesis parameters.
+a = 0.1
+d = 0.1
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
+# Envelope test
+adsr = TorchADSR(a, d, s, r, alpha)
+envelope = adsr(note_on_duration)
+time_plot(envelope.detach(), adsr.sample_rate)
+# -
+
+# Create a second envelope, higher decay
+
+# +
+# Synthesis parameters.
+a = 0.1
+d = 0.5
+s = 0.75
+r = 0.5
+alpha = 3.0
+note_on_duration = 0.5
+
+# Envelope test
+adsr2 = TorchADSR(a, d, s, r, alpha)
+envelope2 = adsr2(note_on_duration)
+time_plot(envelope2.detach(), adsr.sample_rate)
+# -
+
+# Here's the l1 error
+
+err = torch.mean(torch.abs(envelope - envelope2))
+print("Error =", err)
+plt.plot(torch.abs(envelope - envelope2).detach())
+
+# And here are the gradients
+
+err.backward(retain_graph=True)
+for p in adsr.torchparameters:
+    print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
+
+# +
+"""
+optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.01, momentum=0.9)
+
+for i in range(10):
+    optimizer.zero_grad()
+    print(list(adsr.parameters()))
+    print(list(adsr2.parameters()))
+    print(note_on_duration)
+    envelope = adsr(note_on_duration)
+    envelope2 = adsr2(note_on_duration)
+    print(envelope.shape)
+    print(envelope2.shape)
+    err = torch.mean(torch.abs(envelope - envelope2))
+    print(err)
+    err.backward()
+    optimizer.step()
+"""
+# -
+
+
+
+from ddspdrum.torchmodule import TorchSineVCO
+
+# SineVCO vs SineVCO with higher midi_f0
+
+# SineVCO test
+sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
+sine_out = sine_vco(envelope, phase=0.0)
+stft_plot(sine_out.detach().numpy())
+ipd.Audio(sine_out.detach().numpy(), rate=sine_vco.sample_rate.item())
+
+# SineVCO test
+midi_f0 = 12.0
+sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0)
+sine_out2 = sine_vco2(envelope, phase=0.0)
+stft_plot(sine_out2.detach().numpy())
+ipd.Audio(sine_out2.detach().numpy(), rate=sine_vco2.sample_rate.item())
+
+# We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
+
+err = torch.mean(torch.abs(sine_out - sine_out2))
+print("Error =", err)
+plt.plot(torch.abs(sine_out - sine_out2).detach())
+
+err.backward(retain_graph=True)
+for p in sine_vco.torchparameters:
+    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={sine_vco2.torchparameters[p].grad.item()}")
+# Both SineVCOs use the sample envelope
+for p in adsr.torchparameters:
+    print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
