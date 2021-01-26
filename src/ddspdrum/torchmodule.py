@@ -12,7 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.parameter import TorchParameter
+from ddspdrum.parameter import ParameterRange, TorchParameter
 from ddspdrum.torchutil import linspace, midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
@@ -41,6 +41,14 @@ class TorchSynthModule(nn.Module):
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
+
+    def add_parameters(self, parameters: List[TorchParameter]):
+        """
+        Add parameters to this SynthModule's torch parameter dictionary.
+        """
+        for parameter in parameters:
+            assert parameter.parameter_name not in self.torchparameters
+            self.torchparameters[parameter.parameter_name] = parameter
 
     def add_modparameters(self, modparameters: List[ModParameter]):
         """
@@ -189,6 +197,35 @@ class TorchADSR(TorchSynthModule):
                 ModParameter("sustain", s, 0.0, 1.0),
                 ModParameter("release", r, 0.0, 20.0, curve="log"),
                 ModParameter("alpha", alpha, 0.0, 10.0),
+            ]
+        )
+        self.add_parameters(
+            [
+                TorchParameter(
+                    T(a),
+                    parameter_name="attack",
+                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                ),
+                TorchParameter(
+                    T(d),
+                    parameter_name="decay",
+                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                ),
+                TorchParameter(
+                    T(s),
+                    parameter_name="sustain",
+                    parameter_range=ParameterRange(0.0, 1.0)
+                ),
+                TorchParameter(
+                    T(r),
+                    parameter_name="release",
+                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                ),
+                TorchParameter(
+                    T(alpha),
+                    parameter_name="alpha",
+                    parameter_range=ParameterRange(0.0, 10.0)
+                )
             ]
         )
 

@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+
 class ParameterRange:
     """
     ParameterRange class is a structure for keeping track of the specific range that a
@@ -87,12 +88,21 @@ class TorchParameter(nn.Parameter):
             cls,
             data: torch.Tensor = None,
             requires_grad: bool = True,
+            parameter_name: str = "",
             parameter_range: ParameterRange = None
 
     ):
-        new_param = super().__new__(cls, data, requires_grad)
-        new_param.parameter_range = parameter_range
-        return new_param
+        self = super().__new__(cls, data, requires_grad)
+
+        # Additional members -- check to make sure they don't exist first
+        # (This is sanity check in case something changes in pytorch in the future)
+        assert 'parameter_range' not in self.__dict__
+        self.parameter_range = parameter_range
+
+        assert 'parameter_name' not in self.__dict__
+        self.parameter_name = parameter_name
+
+        return self
 
     def get_float(self):
         return float(self.item())
