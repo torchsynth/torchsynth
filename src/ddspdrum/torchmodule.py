@@ -12,6 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
+from ddspdrum.parameter import TorchParameter
 from ddspdrum.torchutil import linspace, midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
@@ -59,7 +60,7 @@ class TorchSynthModule(nn.Module):
             # We might also rethink the syntactic sugar, e.g. sometimes
             # we want to expose the raw 0/1 and sometimes we want to expose the
             # clipped one.
-            self.torchparameters[modparameter.name] = nn.Parameter(
+            self.torchparameters[modparameter.name] = TorchParameter(
                 T(modparameter.value)
             )
 
