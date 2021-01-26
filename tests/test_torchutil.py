@@ -20,11 +20,11 @@ class TestTorchUtil:
     Tests for torchutil methods
     """
 
-    def _compare_values(self, numpyf, torchf, param_name_to_type: Dict[str, str]):
+    def _compare_values(self, numpyf, torchf, param_name_to_type: Dict[str, str], rtol=1e-4, atol=0):
         """
         Fuzz tester, for seeing that numpy and torch methods give the same values.
         """
-        for i in range(1000):
+        for i in range(100):
             params = {}
             for name, ty in param_name_to_type.items():
                 if ty == "float":
@@ -37,6 +37,8 @@ class TestTorchUtil:
                     params[name] = np.random.rand(512)
                 elif ty == "int":
                     params[name] = random.randint(0, 1000)
+                elif ty == "bool":
+                    params[name] = random.choice([True, False])
                 else:
                     assert False
 
@@ -56,10 +58,12 @@ class TestTorchUtil:
             if threw:
                 assert ny == ty
                 return
-            print(ny)
-            print(ty)
+            #print(ny)
+            #print(ty)
+            print(ny-ty)
+            print(np.min(ny-ty), np.max(ny-ty))
             print()
-            np.testing.assert_allclose(ny, ty, rtol=1e-4)
+            np.testing.assert_allclose(ny, ty, rtol=rtol, atol=atol)
 
     def test_amplitude_to_db(self):
         self._compare_values(
@@ -107,4 +111,17 @@ class TestTorchUtil:
             numpyutil.crossfade,
             torchutil.crossfade,
             {"in_1": "signal", "in_2": "signal", "ratio": "pr"},
+        )
+
+    def test_linspace(self):
+        self._compare_values(
+            np.linspace,
+            torchutil.linspace,
+            {
+                "start": "float",
+                "stop": "float",
+                "num": "int",
+                "endpoint": "bool"
+            },
+            atol=1e-6
         )
