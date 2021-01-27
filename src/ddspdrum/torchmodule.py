@@ -10,9 +10,10 @@ import torch
 import torch.nn as nn
 import torch.tensor as T
 
-from ddspdrum.defaults import SAMPLE_RATE
+from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import linspace, midi_to_hz, reverse_signal
+from ddspdrum.modparameter import ModParameter
+from ddspdrum.torchutil import fix_length, linspace, midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -26,7 +27,11 @@ class TorchSynthModule(nn.Module):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE):
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -35,29 +40,51 @@ class TorchSynthModule(nn.Module):
         """
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
+        self.buffer_size = T(buffer_size)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+
+    def to_buffer_size(self, signal: T) -> T:
+        return fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
 
-    def forward(self, *inputs: Any) -> T:  # pragma: no cover
+    def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
         Each TorchSynthModule should override this.
         """
         pass
 
-    def npyforward(self, *inputs: Any) -> np.ndarray:  # pragma: no cover
+    def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+        """
+        Wrapper for _forward that ensures a buffer_size length output.
+        """
+        return self.to_buffer_size(self._forward(*args, **kwargs))
+
+    def npyforward(
+            self,
+            *args: Any,
+            **kwargs: Any
+    ) -> np.ndarray:  # pragma: no cover
         """
         This is the numpy version of the torch.nn.Module.forward command.
         All torch.tensor inputs and outputs are cast to ndarrays.
         """
-        npyinput = []
-        for i in inputs:
+        npyargs = []
+        for i in args:
             if isinstance(i, T):
-                npyinput.append(i.numpy())
+                npyargs.append(i.numpy())
             else:
-                npyinput.append(i)
-        return self.forward(*npyinput).numpy()
+                npyargs.append(i)
+
+        npykwargs = {}
+        for key in kwargs.keys():
+            if isinstance(kwargs[key], T):
+                npykwargs[key] = kwargs[key].numpy()
+            else:
+                npykwargs[key] = kwargs[key]
+
+        return self.forward(*npyargs, **npykwargs).numpy()
 
     def add_parameters(self, parameters: List[TorchParameter]):
         """
@@ -131,6 +158,7 @@ class TorchADSR(TorchSynthModule):
         r: float = 0.5,
         alpha: float = 3.0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
         """
         Parameters
@@ -144,7 +172,7 @@ class TorchADSR(TorchSynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(sample_rate=sample_rate)
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_parameters(
             [
                 TorchParameter(
@@ -175,7 +203,7 @@ class TorchADSR(TorchSynthModule):
             ]
         )
 
-    def forward(self, note_on_duration: T = T(0)) -> np.ndarray:
+    def _forward(self, note_on_duration: T = T(0)) -> np.ndarray:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -315,8 +343,13 @@ class TorchVCO(TorchSynthModule):
         mod_depth: float = 50,
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE
     ):
-        TorchSynthModule.__init__(self, sample_rate=sample_rate)
+        TorchSynthModule.__init__(
+            self,
+            sample_rate=sample_rate,
+            buffer_size=buffer_size
+        )
         self.add_parameters(
             [
                 TorchParameter(
@@ -334,7 +367,7 @@ class TorchVCO(TorchSynthModule):
         # TODO: Make this a parameter too?
         self.phase = T(phase)
 
-    def forward(self, mod_signal: T, phase: T = T(0.0)) -> T:
+    def _forward(self, mod_signal: T, phase: T = T(0.0)) -> T:
         """
         Generates audio signal from modulation signal.
 
@@ -392,9 +425,13 @@ class TorchSineVCO(TorchVCO):
     """
 
     def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+        self,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+        **kwargs
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
     def oscillator(self, argument):
         return torch.cos(argument)
