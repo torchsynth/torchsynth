@@ -3,6 +3,7 @@ Parameters for DDSP Modules
 """
 
 import torch
+import torch.tensor as T
 import torch.nn as nn
 import numpy as np
 
@@ -88,10 +89,19 @@ class TorchParameter(nn.Parameter):
             cls,
             data: torch.Tensor = None,
             requires_grad: bool = True,
+            initial_value: float = None,
             parameter_name: str = "",
             parameter_range: ParameterRange = None
 
     ):
+        if initial_value is not None:
+            if parameter_range is not None:
+                data = T(parameter_range.to_0to1(initial_value))
+            else:
+                raise ValueError(
+                    "A parameter range must be specified when using initial_value"
+                )
+
         self = super().__new__(cls, data, requires_grad)
 
         # Additional members -- check to make sure they don't exist first
@@ -104,6 +114,11 @@ class TorchParameter(nn.Parameter):
 
         return self
 
+    def __repr__(self):
+        return "TorchParameter(name={}, value={})".format(
+            self.parameter_name, self.item()
+        )
+
     def get_float(self):
         return float(self.item())
 
@@ -113,3 +128,10 @@ class TorchParameter(nn.Parameter):
             return self.parameter_range.from_0to1(normalised)
 
         return normalised
+
+    def set_with_range(self, new_value):
+        if self.parameter_range is not None:
+            self.data = T(self.parameter_range.to_0to1(new_value))
+        else:
+            assert 0 <= new_value <= 1
+            self.data = T(new_value)

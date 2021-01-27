@@ -39,8 +39,8 @@ class TestTorchSynthModule:
         Randomize numpymod and set torchmod to the same.
         """
         numpymod.randomize()
-        for modparameter_id in numpymod.modparameters:
-            torchmod.set_modparameter(modparameter_id, T(numpymod.p(modparameter_id)))
+        for parameter_id in numpymod.modparameters:
+            torchmod.set_parameter(parameter_id, numpymod.p(parameter_id))
 
     def _compare_values(
         self,

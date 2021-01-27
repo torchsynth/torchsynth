@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum.modparameter import ModParameter
 from ddspdrum.parameter import ParameterRange, TorchParameter
 from ddspdrum.torchutil import linspace, midi_to_hz, reverse_signal
 
@@ -36,41 +35,10 @@ class TorchSynthModule(nn.Module):
         """
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
-        self.modparameters: Dict[ModParameter] = {}
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
-
-    def add_parameters(self, parameters: List[TorchParameter]):
-        """
-        Add parameters to this SynthModule's torch parameter dictionary.
-        """
-        for parameter in parameters:
-            assert parameter.parameter_name not in self.torchparameters
-            self.torchparameters[parameter.parameter_name] = parameter
-
-    def add_modparameters(self, modparameters: List[ModParameter]):
-        """
-        Add parameters to this SynthModule's parameters dictionary.
-        (Since there is inheritance, this might happen several times.)
-        """
-        for modparameter in modparameters:
-            assert modparameter.name not in self.modparameters
-            self.modparameters[modparameter.name] = modparameter
-
-            assert modparameter.name not in self.torchparameters
-            # TODO: I'm not 100% sure it's kosher to add nn.Parameters
-            # outside of __init__, but here we go.
-            # TODO: Internally we want to store all torch modparameter
-            # values using their 0/1 range, not their human-interpretable
-            # range.
-            # We might also rethink the syntactic sugar, e.g. sometimes
-            # we want to expose the raw 0/1 and sometimes we want to expose the
-            # clipped one.
-            self.torchparameters[modparameter.name] = TorchParameter(
-                T(modparameter.value)
-            )
 
     def forward(self, *inputs: Any) -> T:  # pragma: no cover
         """
@@ -91,76 +59,63 @@ class TorchSynthModule(nn.Module):
                 npyinput.append(i)
         return self.forward(*npyinput).numpy()
 
-    # The following is cheesy AF but needed because the
-    # torchparameter is the master variable.
-    # TODO: Remove .value from modparameter
-    def _update_modparameters(self) -> None:
-        for modparameter_id in self.modparameters:
-            self.modparameters[modparameter_id].set_value(
-                float(self.torchparameters[modparameter_id].numpy())
-            )
-
-    # In general, we should consider removing all the following
-    # since we don't want to cast to int and then back to Tensor
-    # Alternately, we should make a SynthParameter which is an nn.Parameter
-    # but decorated with ModParameter stuff.
-
-    def get_modparameter(self, modparameter_id: str) -> ModParameter:
+    def add_parameters(self, parameters: List[TorchParameter]):
         """
-        Get a single modparameter for this module
+        Add parameters to this SynthModule's torch parameter dictionary.
+        """
+        for parameter in parameters:
+            assert parameter.parameter_name not in self.torchparameters
+            self.torchparameters[parameter.parameter_name] = parameter
+
+    def get_parameter(self, parameter_id: str) -> TorchParameter:
+        """
+        Get a single TorchParameter for this module
 
         Parameters
         ----------
-        modparameter_id (str)  :   Id of the modparameter to return
+        parameter_id (str)  :   Id of the parameter to return
         """
-        self._update_modparameters()
-        return self.modparameters[modparameter_id]
+        return self.torchparameters[parameter_id]
 
-    def get_modparameter_0to1(self, modparameter_id: str) -> float:
+    def get_parameter_0to1(self, parameter_id: str) -> float:
         """
-        Get the value of a single modparameter in the range of [0,1]
+        Get the value of a single parameter in the range of [0,1]
 
         Parameters
         ----------
         modparameter_id (str)  :   Id of the modparameter to return the value for
         """
-        self._update_modparameters()
-        return self.modparameters[modparameter_id].get_value_0to1()
+        return float(self.torchparameters[parameter_id].item())
 
-    def set_modparameter(self, modparameter_id: str, value: float):
+    def set_parameter(self, parameter_id: str, value: float):
         """
-        Update a specific modparameter value, ensuring that it is within a specified
+        Update a specific parameter value, ensuring that it is within a specified
         range
 
         Parameters
         ----------
-        modparameter_id (str)  : Id of the modparameter to update
-        value (float)       : Value to update modparameter with
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
         """
-        self.modparameters[modparameter_id].set_value(value)
-        self.torchparameters[modparameter_id].data = T(
-            self.modparameters[modparameter_id].value
-        )
+        self.torchparameters[parameter_id].set_with_range(value)
 
-    def set_modparameter_0to1(self, modparameter_id: str, value: float):
+    def set_parameter_0to1(self, parameter_id: str, value: float):
         """
-        Update a specific modparameter with a value in the range [0,1]
+        Update a specific parameter with a value in the range [0,1]
 
         Parameters
         ----------
-        modparameter_id (str)  : Id of the modparameter to update
-        value (float)       : Value to update modparameter with
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
         """
-        self.modparameters[modparameter_id].set_value_0to1(value)
-        self.torchparameters[modparameter_id].data = T(
-            self.modparameters[modparameter_id].value
-        )
+        assert 0 <= value <= 1
+        self.torchparameters[parameter_id].data = T(value)
 
-    def p(self, modparameter_id: str) -> T:
+    def p(self, parameter_id: str) -> T:
         """
-        Convenience method for getting the modparameter value.
+        Convenience method for getting the parameter value.
         """
-        return self.torchparameters[modparameter_id]
+        return self.torchparameters[parameter_id]
 
 
 class TorchADSR(TorchSynthModule):
@@ -190,41 +145,32 @@ class TorchADSR(TorchSynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate)
-        self.add_modparameters(
-            [
-                ModParameter("attack", a, 0.0, 20.0, curve="log"),
-                ModParameter("decay", d, 0.0, 20.0, curve="log"),
-                ModParameter("sustain", s, 0.0, 1.0),
-                ModParameter("release", r, 0.0, 20.0, curve="log"),
-                ModParameter("alpha", alpha, 0.0, 10.0),
-            ]
-        )
         self.add_parameters(
             [
                 TorchParameter(
-                    T(a),
+                    initial_value=a,
                     parameter_name="attack",
-                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
                 ),
                 TorchParameter(
-                    T(d),
+                    initial_value=d,
                     parameter_name="decay",
-                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
                 ),
                 TorchParameter(
-                    T(s),
+                    initial_value=s,
                     parameter_name="sustain",
                     parameter_range=ParameterRange(0.0, 1.0)
                 ),
                 TorchParameter(
-                    T(r),
+                    initial_value=r,
                     parameter_name="release",
-                    parameter_range=ParameterRange(0.0, 20.0, curve="log")
+                    parameter_range=ParameterRange(0.0, 5.0, curve="log")
                 ),
                 TorchParameter(
-                    T(alpha),
+                    initial_value=alpha,
                     parameter_name="alpha",
-                    parameter_range=ParameterRange(0.0, 10.0)
+                    parameter_range=ParameterRange(0.1, 6.0)
                 )
             ]
         )
@@ -371,10 +317,18 @@ class TorchVCO(TorchSynthModule):
         sample_rate: int = SAMPLE_RATE,
     ):
         TorchSynthModule.__init__(self, sample_rate=sample_rate)
-        self.add_modparameters(
+        self.add_parameters(
             [
-                ModParameter("pitch", midi_f0, 0.0, 127.0),
-                ModParameter("mod_depth", mod_depth, 0.0, 127.0),
+                TorchParameter(
+                    T(midi_f0),
+                    parameter_name="pitch",
+                    parameter_range=ParameterRange(0.0, 127.0)
+                ),
+                TorchParameter(
+                    T(mod_depth),
+                    parameter_name="mod_depth",
+                    parameter_range=ParameterRange(0.0, 127.0)
+                )
             ]
         )
         # TODO: Make this a parameter too?
