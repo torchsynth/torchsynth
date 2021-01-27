@@ -115,7 +115,7 @@ class TorchSynthModule(nn.Module):
         """
         Convenience method for getting the parameter value.
         """
-        return self.torchparameters[parameter_id]
+        return self.torchparameters[parameter_id].get_in_range()
 
 
 class TorchADSR(TorchSynthModule):
