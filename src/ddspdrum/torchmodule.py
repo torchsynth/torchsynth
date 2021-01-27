@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, List
 
 import numpy as np
 import torch
@@ -123,7 +123,7 @@ class TorchSynthModule(nn.Module):
         parameter_id (str)  : Id of the parameter to update
         value (float)       : Value to update parameter with
         """
-        self.torchparameters[parameter_id].set_with_range(value)
+        self.torchparameters[parameter_id].set_with_range(T(value))
 
     def set_parameter_0to1(self, parameter_id: str, value: float):
         """
