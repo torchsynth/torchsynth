@@ -136,7 +136,8 @@ class TorchParameter(nn.Parameter):
 
     def get_in_range(self) -> T:
         """
-        Get the value of this parameter in the user-specified range.
+        Get the value of this parameter in the user-specified range. If no user range
+        was specified, then the original parameter is returned.
         """
         if self.parameter_range is not None:
             return self.parameter_range.from_0to1(self)
