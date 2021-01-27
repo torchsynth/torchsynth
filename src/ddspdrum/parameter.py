@@ -57,8 +57,10 @@ class ParameterRange:
         value (float)   : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
-        assert 0 <= value <= 1
-        if value != 0 and self.curve != 1:
+        assert torch.all(0.0 <= value)
+        assert torch.all(value <= 1.0)
+
+        if self.curve != 1:
             value = torch.exp2(torch.log2(value) / self.curve)
 
         return self.minimum + (self.maximum - self.minimum) * value
@@ -71,7 +73,9 @@ class ParameterRange:
         ----------
         value (float)   : value within the range defined by minimum and maximum
         """
-        assert self.minimum <= value <= self.maximum
+        assert torch.all(self.minimum <= value)
+        assert torch.all(value <= self.maximum)
+
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
         if self.curve != 1:
             normalized = torch.pow(normalized, self.curve)
@@ -130,5 +134,4 @@ class TorchParameter(nn.Parameter):
         if self.parameter_range is not None:
             self.data = self.parameter_range.to_0to1(new_value)
         else:
-            assert 0 <= new_value <= 1
-            self.data = new_value
+            raise RuntimeError("A range was never set for this parameter")
