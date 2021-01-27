@@ -85,7 +85,20 @@ class ParameterRange:
 
 class TorchParameter(nn.Parameter):
     """
-    Parameter class that inherits from pytorch Parameter
+    Parameter class that inherits from pytorch nn.Parameter so it can be used for
+    training. Can use a ParameterRange object to help convert from a 0 to 1 range
+    which is expected internally and an external user specified range.
+
+    Parameters
+    ----------
+    value (float) : initial value of this parameter in the user-specific range.
+        Must pass in a ParameterRange object when using this to provide conversion to
+        and from 0-to-1 range
+    parameter_name (str) : A name for this parameter
+    parameter_range (ParameterRange) : A ParameterRange object that supports conversion
+        to and from 0-to-1 range and a user-specified range.
+    data (Tensor) : directly add data to this parameter without a user-range
+    requires_grad (bool) : whether or not a gradient is required for this parameter
     """
 
     def __new__(
@@ -121,16 +134,24 @@ class TorchParameter(nn.Parameter):
             self.parameter_name, self.item()
         )
 
-    def get_float(self) -> float:
-        return float(self.item())
-
     def get_in_range(self) -> T:
+        """
+        Get the value of this parameter in the user-specified range.
+        """
         if self.parameter_range is not None:
             return self.parameter_range.from_0to1(self)
 
         return self
 
     def set_with_range(self, new_value: T):
+        """
+        Set the value of this parameter using an input that is within the user-specified
+        range. It will be converted to a 0-to-1 range and stored internally.
+
+        Parameters
+        ----------
+        new_value (Tensor) : new value to update this parameter with
+        """
         if self.parameter_range is not None:
             self.data = self.parameter_range.to_0to1(new_value)
         else:

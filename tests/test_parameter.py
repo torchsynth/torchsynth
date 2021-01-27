@@ -131,10 +131,6 @@ class TestTorchParameter:
         )
         assert repr(param) == 'TorchParameter(name=param_1, value=0.5)'
 
-    def test_get_float(self):
-        param = TorchParameter(data=T(0.33))
-        np.testing.assert_almost_equal(param.get_float(), 0.33)
-
     def test_get_in_range(self):
         # Test with no range first -- should get original value back
         param = TorchParameter(data=T(0.45))
