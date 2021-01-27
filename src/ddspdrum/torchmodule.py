@@ -12,7 +12,6 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.modparameter import ModParameter
 from ddspdrum.torchutil import fix_length, linspace, midi_to_hz, reverse_signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
@@ -176,27 +175,27 @@ class TorchADSR(TorchSynthModule):
         self.add_parameters(
             [
                 TorchParameter(
-                    initial_value=a,
+                    value=a,
                     parameter_name="attack",
                     parameter_range=ParameterRange(0.0, 2.0, curve="log")
                 ),
                 TorchParameter(
-                    initial_value=d,
+                    value=d,
                     parameter_name="decay",
                     parameter_range=ParameterRange(0.0, 2.0, curve="log")
                 ),
                 TorchParameter(
-                    initial_value=s,
+                    value=s,
                     parameter_name="sustain",
                     parameter_range=ParameterRange(0.0, 1.0)
                 ),
                 TorchParameter(
-                    initial_value=r,
+                    value=r,
                     parameter_name="release",
                     parameter_range=ParameterRange(0.0, 5.0, curve="log")
                 ),
                 TorchParameter(
-                    initial_value=alpha,
+                    value=alpha,
                     parameter_name="alpha",
                     parameter_range=ParameterRange(0.1, 6.0)
                 )
@@ -353,12 +352,12 @@ class TorchVCO(TorchSynthModule):
         self.add_parameters(
             [
                 TorchParameter(
-                    T(midi_f0),
+                    value=midi_f0,
                     parameter_name="pitch",
                     parameter_range=ParameterRange(0.0, 127.0)
                 ),
                 TorchParameter(
-                    T(mod_depth),
+                    value=mod_depth,
                     parameter_name="mod_depth",
                     parameter_range=ParameterRange(0.0, 127.0)
                 )
@@ -409,7 +408,6 @@ class TorchVCO(TorchSynthModule):
         return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE, dim=0)
 
     @abstractmethod
-    # TODO: Type me!
     def oscillator(self, argument: T) -> T:
         """
         Dummy method. Overridden by child class VCO's.

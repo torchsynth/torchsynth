@@ -5,7 +5,6 @@ Parameters for DDSP Modules
 import torch
 import torch.tensor as T
 import torch.nn as nn
-import numpy as np
 
 
 class ParameterRange:
@@ -49,7 +48,7 @@ class ParameterRange:
             self.minimum, self.maximum, self.curve_type
         )
 
-    def from_0to1(self, value) -> float:
+    def from_0to1(self, value: T) -> T:
         """
         Set value of this parameter using a normalized value in the range [0,1]
 
@@ -60,11 +59,11 @@ class ParameterRange:
         """
         assert 0 <= value <= 1
         if value != 0 and self.curve != 1:
-            value = np.exp2(np.log2(value) / self.curve)
+            value = torch.exp2(torch.log2(value) / self.curve)
 
         return self.minimum + (self.maximum - self.minimum) * value
 
-    def to_0to1(self, value) -> float:
+    def to_0to1(self, value: T) -> T:
         """
         Convert a ranged parameter to a normalized range from 0 to 1
 
@@ -75,7 +74,7 @@ class ParameterRange:
         assert self.minimum <= value <= self.maximum
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
         if self.curve != 1:
-            normalized = np.power(normalized, self.curve)
+            normalized = torch.pow(normalized, self.curve)
 
         return normalized
 
@@ -87,19 +86,18 @@ class TorchParameter(nn.Parameter):
 
     def __new__(
             cls,
+            value: float = None,
+            parameter_name: str = "",
+            parameter_range: ParameterRange = None,
             data: torch.Tensor = None,
             requires_grad: bool = True,
-            initial_value: float = None,
-            parameter_name: str = "",
-            parameter_range: ParameterRange = None
-
     ):
-        if initial_value is not None:
+        if value is not None:
             if parameter_range is not None:
-                data = T(parameter_range.to_0to1(initial_value))
+                data = parameter_range.to_0to1(T(value))
             else:
                 raise ValueError(
-                    "A parameter range must be specified when using initial_value"
+                    "A parameter range must be specified when passing in a value"
                 )
 
         self = super().__new__(cls, data, requires_grad)
@@ -119,19 +117,18 @@ class TorchParameter(nn.Parameter):
             self.parameter_name, self.item()
         )
 
-    def get_float(self):
+    def get_float(self) -> float:
         return float(self.item())
 
-    def get_in_range(self):
-        normalised = self.get_float()
+    def get_in_range(self) -> T:
         if self.parameter_range is not None:
-            return self.parameter_range.from_0to1(normalised)
+            return self.parameter_range.from_0to1(self)
 
-        return normalised
+        return self
 
-    def set_with_range(self, new_value):
+    def set_with_range(self, new_value: T):
         if self.parameter_range is not None:
-            self.data = T(self.parameter_range.to_0to1(new_value))
+            self.data = self.parameter_range.to_0to1(new_value)
         else:
             assert 0 <= new_value <= 1
-            self.data = T(new_value)
+            self.data = new_value
