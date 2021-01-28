@@ -11,6 +11,7 @@ import torch.tensor as T
 
 import ddspdrum.module as numpymodule
 import ddspdrum.torchmodule as torchmodule
+from ddspdrum.parameter import ParameterRange, TorchParameter
 
 random.seed(0)
 
@@ -100,3 +101,69 @@ class TestTorchSynthModule:
                 "phase": _random_uniform(-np.pi, np.pi),
             },
         )
+
+    def test_get_parameter(self):
+        module = torchmodule.TorchSynthModule()
+        param_1 = TorchParameter(data=T(1.0), parameter_name="param_1")
+        module.add_parameters([param_1])
+        assert module.get_parameter("param_1") == param_1
+
+    def test_get_parameter_0to1(self):
+        module = torchmodule.TorchSynthModule()
+        param_1 = TorchParameter(data=T(0.5), parameter_name="param_1")
+        module.add_parameters([param_1])
+        assert module.get_parameter_0to1("param_1") == 0.5
+
+        param_2 = TorchParameter(
+            value=5000.0,
+            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_name="param_2"
+        )
+        module.add_parameters([param_2])
+        assert module.get_parameter_0to1("param_2") == 0.25
+
+    def test_set_parameter(self):
+        module = torchmodule.TorchSynthModule()
+        param_1 = TorchParameter(
+            value=5000.0,
+            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_name="param_1"
+        )
+        module.add_parameters([param_1])
+        assert module.torchparameters["param_1"] == 0.25
+
+        module.set_parameter("param_1", 10000.0)
+        assert module.torchparameters["param_1"] == 0.5
+        assert module.torchparameters["param_1"].get_in_range() == 10000.0
+
+        with pytest.raises(AssertionError):
+            module.set_parameter_0to1("param_1", -100.0)
+
+    def test_set_parameter_0to1(self):
+        module = torchmodule.TorchSynthModule()
+        param_1 = TorchParameter(
+            value=5000.0,
+            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_name="param_1"
+        )
+        module.add_parameters([param_1])
+        assert module.torchparameters["param_1"] == 0.25
+
+        module.set_parameter_0to1("param_1", 0.5)
+        assert module.torchparameters["param_1"] == 0.5
+        assert module.torchparameters["param_1"].get_in_range() == 10000.0
+
+        # Passing a value outside of range should fail
+        with pytest.raises(AssertionError):
+            module.set_parameter_0to1("param_1", 5.0)
+
+    def test_p(self):
+        module = torchmodule.TorchSynthModule()
+        param_1 = TorchParameter(
+            value=5000.0,
+            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_name="param_1"
+        )
+        module.add_parameters([param_1])
+        assert module.torchparameters["param_1"] == 0.25
+        assert module.p("param_1") == 5000.0
