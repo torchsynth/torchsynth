@@ -3,8 +3,8 @@ Parameters for DDSP Modules
 """
 
 import torch
-import torch.tensor as T
 import torch.nn as nn
+import torch.tensor as T
 
 
 class ParameterRange:
