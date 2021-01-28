@@ -331,6 +331,7 @@ class VCO(SynthModule):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
+        fm_mode: bool = False,
         sample_rate: int = SAMPLE_RATE,
         buffer_size: int = BUFFER_SIZE
     ):
@@ -343,6 +344,7 @@ class VCO(SynthModule):
         )
         # TODO: Make this a parameter too?
         self.phase = phase
+        self.fm_mode = fm_mode
 
     def _npyforward(self, mod_signal: np.array, phase: float = 0.0) -> np.ndarray:
         """
@@ -368,13 +370,23 @@ class VCO(SynthModule):
 
         """
 
-        assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
+        assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
-        modulation = self.p("mod_depth") * mod_signal
-        control_as_midi = self.p("pitch") + modulation
-        control_as_frequency = midi_to_hz(control_as_midi)
+        if self.fm_mode:
+            # Calculate modulations in Hz.
+            fm_depth = midi_to_hz(self.p("mod_depth"))
+            modulation_hz = fm_depth * mod_signal
+            f0_hz = midi_to_hz(self.p("pitch"))
+            control_as_frequency = f0_hz + modulation_hz
+        else:
+            # Calculate modulations in midi/pitch.
+            modulation = self.p("mod_depth") * mod_signal
+            control_as_midi = self.p("pitch") + modulation
+            control_as_frequency = midi_to_hz(control_as_midi)
+
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
+        # Store final phase.
         self.phase = cosine_argument[-1]
         return self.oscillator(cosine_argument)
 
@@ -401,9 +413,18 @@ class SineVCO(VCO):
     """
 
     def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
-    ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+            self,
+            midi_f0: float = 10.0,
+            mod_depth: float = 50.0,
+            phase: float = 0.0,
+            fm_mode: bool = False
+        ):
+        super().__init__(
+            midi_f0=midi_f0,
+            mod_depth=mod_depth,
+            phase=phase,
+            fm_mode=fm_mode
+        )
 
     def oscillator(self, argument):
         return np.cos(argument)
@@ -426,8 +447,14 @@ class SquareSawVCO(VCO):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
+        fm_mode: bool = False,
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(
+            midi_f0=midi_f0,
+            mod_depth=mod_depth,
+            phase=phase,
+            fm_mode=fm_mode
+        )
         self.add_modparameters(
             [
                 ModParameter("shape", shape, 0.0, 1.0),

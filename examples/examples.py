@@ -175,6 +175,20 @@ drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
 
+# +
+# FM Example.
+
+modulator = vca.npyforward(envelope, sine_out)
+
+fm_vco = SquareSawVCO(midi_f0=69, mod_depth=100, fm_mode=True)
+fm_out = fm_vco.npyforward(modulator[::-1])
+
+# shaped = vca.npyforward(envelope, fm_out)
+
+stft_plot(fm_out)
+ipd.Audio(fm_out, rate=sine_vco.sample_rate)
+# -
+
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
