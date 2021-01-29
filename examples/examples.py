@@ -420,7 +420,7 @@ time_plot(envelope.detach(), adsr.sample_rate)
 # Synthesis parameters.
 a = 0.1
 d = 0.5
-s = 0.75
+s = 0.5
 r = 0.5
 alpha = 3.0
 note_on_duration = 0.5
@@ -447,7 +447,7 @@ for p in adsr.torchparameters:
 #optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.0001, momentum=0.9)
 optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
 
-for i in range(1000):
+for i in range(100):
     optimizer.zero_grad()
     #print(list(adsr.parameters()))
     #print(list(adsr2.parameters()))
