@@ -109,7 +109,7 @@ class TorchSynthModule(nn.Module):
 
         Parameters
         ----------
-        modparameter_id (str)  :   Id of the modparameter to return the value for
+        parameter_id (str)  :   Id of the parameter to return the value for
         """
         return float(self.torchparameters[parameter_id].item())
 
@@ -123,7 +123,7 @@ class TorchSynthModule(nn.Module):
         parameter_id (str)  : Id of the parameter to update
         value (float)       : Value to update parameter with
         """
-        self.torchparameters[parameter_id].set_with_range(T(value))
+        self.torchparameters[parameter_id].to_0to1(T(value))
 
     def set_parameter_0to1(self, parameter_id: str, value: float):
         """
@@ -141,7 +141,7 @@ class TorchSynthModule(nn.Module):
         """
         Convenience method for getting the parameter value.
         """
-        return self.torchparameters[parameter_id].get_in_range()
+        return self.torchparameters[parameter_id].from_0to1()
 
 
 class TorchADSR(TorchSynthModule):

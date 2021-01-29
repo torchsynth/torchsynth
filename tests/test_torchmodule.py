@@ -134,7 +134,7 @@ class TestTorchSynthModule:
 
         module.set_parameter("param_1", 10000.0)
         assert module.torchparameters["param_1"] == 0.5
-        assert module.torchparameters["param_1"].get_in_range() == 10000.0
+        assert module.torchparameters["param_1"].from_0to1() == 10000.0
 
         with pytest.raises(AssertionError):
             module.set_parameter_0to1("param_1", -100.0)
@@ -151,7 +151,7 @@ class TestTorchSynthModule:
 
         module.set_parameter_0to1("param_1", 0.5)
         assert module.torchparameters["param_1"] == 0.5
-        assert module.torchparameters["param_1"].get_in_range() == 10000.0
+        assert module.torchparameters["param_1"].from_0to1() == 10000.0
 
         # Passing a value outside of range should fail
         with pytest.raises(AssertionError):

@@ -48,22 +48,22 @@ class ParameterRange:
             self.minimum, self.maximum, self.curve_type
         )
 
-    def from_0to1(self, value: T) -> T:
+    def from_0to1(self, normalized: T) -> T:
         """
         Set value of this parameter using a normalized value in the range [0,1]
 
         Parameters
         ----------
-        value (float)   : value within [0,1] range to convert to range defined by
+        normalized (float)   : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
-        assert torch.all(0.0 <= value)
-        assert torch.all(value <= 1.0)
+        assert torch.all(0.0 <= normalized)
+        assert torch.all(normalized <= 1.0)
 
         if self.curve != 1:
-            value = torch.exp2(torch.log2(value) / self.curve)
+            normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
-        return self.minimum + (self.maximum - self.minimum) * value
+        return self.minimum + (self.maximum - self.minimum) * normalized
 
     def to_0to1(self, value: T) -> T:
         """
@@ -134,7 +134,7 @@ class TorchParameter(nn.Parameter):
             self.parameter_name, self.item()
         )
 
-    def get_in_range(self) -> T:
+    def from_0to1(self) -> T:
         """
         Get the value of this parameter in the user-specified range. If no user range
         was specified, then the original parameter is returned.
@@ -144,7 +144,7 @@ class TorchParameter(nn.Parameter):
 
         return self
 
-    def set_with_range(self, new_value: T):
+    def to_0to1(self, new_value: T):
         """
         Set the value of this parameter using an input that is within the user-specified
         range. It will be converted to a 0-to-1 range and stored internally.
