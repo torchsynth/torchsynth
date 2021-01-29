@@ -12,7 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import fix_length, linspace, midi_to_hz, reverse_signal
+from ddspdrum.torchutil import fix_length, midi_to_hz
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
