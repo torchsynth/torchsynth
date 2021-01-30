@@ -1,3 +1,2 @@
-from ddspdrum.module import (
-    ADSR, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO, VCA
-)
+from ddspdrum.module import (ADSR, VCA, Drum, FmVCO, NoiseModule, SineVCO,
+                             SquareSawVCO)
