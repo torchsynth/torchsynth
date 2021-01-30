@@ -13,6 +13,8 @@ cd ddsp-drum
 pip install -e .
 ```
 
+Note that ddsp-drum requires PyTorch version 1.7 or greater.
+
 ### Examples
 
 We recommend that you run examples through Jupyter notebooks, and
