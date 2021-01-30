@@ -469,11 +469,7 @@ class SquareSawVCO(VCO):
         mod_depth: float = 50.0,
         phase: float = 0.0,
     ):
-        super().__init__(
-            midi_f0=midi_f0,
-            mod_depth=mod_depth,
-            phase=phase,
-        )
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_modparameters(
             [
                 ModParameter("shape", shape, 0.0, 1.0),
