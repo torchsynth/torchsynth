@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
+from ddspdrum import ADSR, VCA, Drum, NoiseModule, SineVCO, FmVCO, SquareSawVCO
 
 # -
 
@@ -142,6 +142,22 @@ time_plot(vca_out)
 stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
 
+# What about **FM synthesis**? You bet. Use the `FmVCO` class. It accepts any audio input.
+#
+# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
+
+# +
+# FM Example.
+
+operator = vca.npyforward(envelope, sine_out)
+
+fm_vco = FmVCO(midi_f0=midi_f0 * 2, mod_depth=10)
+fm_out = fm_vco.npyforward(operator)
+
+stft_plot(fm_out)
+ipd.Audio(fm_out, rate=sine_vco.sample_rate)
+# -
+
 # Alternately, you can just use the Drum class that composes all these modules
 # together automatically.
 
@@ -174,20 +190,6 @@ my_drum = Drum(
 drum_out = my_drum.npyforward()
 stft_plot(drum_out)
 ipd.Audio(drum_out, rate=vca.sample_rate)
-
-# +
-# FM Example.
-
-modulator = vca.npyforward(envelope, sine_out)
-
-fm_vco = SquareSawVCO(midi_f0=69, mod_depth=100, fm_mode=True)
-fm_out = fm_vco.npyforward(modulator[::-1])
-
-# shaped = vca.npyforward(envelope, fm_out)
-
-stft_plot(fm_out)
-ipd.Audio(fm_out, rate=sine_vco.sample_rate)
-# -
 
 # ### Parameters
 
