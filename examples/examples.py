@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum import ADSR, VCA, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO
+from ddspdrum import ADSR, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO, VCA
 
 # -
 
