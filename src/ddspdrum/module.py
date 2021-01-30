@@ -406,16 +406,13 @@ class SineVCO(VCO):
     """
 
     def __init__(
-            self,
-            midi_f0: float = 10.0,
-            mod_depth: float = 50.0,
-            phase: float = 0.0,
-        ):
-        super().__init__(
-            midi_f0=midi_f0,
-            mod_depth=mod_depth,
-            phase=phase,
-        )
+        self,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+    ):
+
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def oscillator(self, argument):
         return np.cos(argument)
@@ -435,16 +432,12 @@ class FmVCO(VCO):
     """
 
     def __init__(
-            self,
-            midi_f0: float = 10.0,
-            mod_depth: float = 50.0,
-            phase: float = 0.0
-        ):
-        super().__init__(
-            midi_f0=midi_f0,
-            mod_depth=mod_depth,
-            phase=phase,
-        )
+        self,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0
+    ):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def make_control_as_frequency(self, mod_signal: np.array):
         # Compute modulation in Hz space (rather than midi-space).
