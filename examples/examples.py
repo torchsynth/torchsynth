@@ -474,6 +474,10 @@ for i in range(100):
 # +
 from ddspdrum.torchmodule import TorchSineVCO
 
+# Reset envelope
+adsr = TorchADSR(a, d, s, r, alpha)
+envelope = adsr(note_on_duration)
+
 # SineVCO test
 sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
 sine_out = sine_vco(envelope, phase=0.0)
