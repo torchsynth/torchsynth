@@ -14,7 +14,7 @@ import numpy as np
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz
+from ddspdrum.numpyutil import crossfade, fix_length, midi_to_hz, normalize
 
 
 class SynthModule:
@@ -508,7 +508,9 @@ class VCA(SynthModule):
 
     def _npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
         assert (control_in >= 0).all() and (control_in <= 1).all()
-        assert (audio_in >= -1).all() and (audio_in <= 1).all()
+
+        if (audio_in <= -1).any() or (audio_in >= 1).any():
+            audio_in = normalize(audio_in)
 
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in

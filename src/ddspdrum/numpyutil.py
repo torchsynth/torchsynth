@@ -68,3 +68,9 @@ def crossfade(in_1, in_2, ratio):
     """
     assert 0.0 <= ratio <= 1.0
     return EQ_POW * (np.sqrt(1 - ratio) * in_1 + np.sqrt(ratio) * in_2)
+
+
+def normalize(signal: np.ndarray) -> np.ndarray:
+    max_ = np.max(np.abs(signal))
+    assert max_ != 0
+    return signal / max_

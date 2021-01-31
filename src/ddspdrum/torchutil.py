@@ -91,3 +91,9 @@ def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
 def reverse_signal(signal: T) -> T:
     assert signal.ndim == 1
     return torch.flip(signal, (0,))
+
+
+def normalize(signal: T) -> T:
+    max_ = torch.max(torch.abs(signal))
+    assert max_.item() != 0
+    return signal / max_

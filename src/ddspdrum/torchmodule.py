@@ -12,7 +12,13 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.modparameter import ModParameter
-from ddspdrum.torchutil import fix_length, linspace, midi_to_hz, reverse_signal
+from ddspdrum.torchutil import (
+    fix_length,
+    linspace,
+    midi_to_hz,
+    normalize,
+    reverse_signal
+)
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -475,6 +481,7 @@ class TorchFmVCO(TorchVCO):
         # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
+
 # TODO: TorchSquareSawVCO
 
 
@@ -492,7 +499,9 @@ class TorchVCA(TorchSynthModule):
 
     def _forward(self, control_in: T, audio_in: T) -> T:
         assert (control_in >= 0).all() and (control_in <= 1).all()
-        assert (audio_in >= -1).all() and (audio_in <= 1).all()
+
+        if (audio_in <= -1).any() or (audio_in >= 1).any():
+            normalize(audio_in)
 
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in
