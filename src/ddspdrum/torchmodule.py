@@ -12,7 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import fix_length, linspace, midi_to_hz, reverse_signal
+from ddspdrum.torchutil import fix_length, midi_to_hz
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -243,7 +243,7 @@ class TorchADSR(TorchSynthModule):
 
         return torch.cat((ADS, R))
 
-    def _ramp(self, duration: T):
+    def _ramp(self, duration: T, inverse: bool = False):
         """Makes a ramp of a given duration in seconds.
 
         This function is used for the piece-wise construction of the envelope
@@ -264,8 +264,13 @@ class TorchADSR(TorchSynthModule):
         """
 
         assert duration.ndim == 0
-        t = linspace(0, duration.item(), self.seconds_to_samples(duration))
-        return (t / duration) ** self.p("alpha")
+        t = torch.arange(self.seconds_to_samples(duration).item()) / self.sample_rate
+        ramp = t * (1 / duration)
+
+        if inverse:
+            ramp = 1.0 - ramp
+
+        return torch.pow(ramp, self.p("alpha"))
 
     @property
     def attack(self):
@@ -274,15 +279,13 @@ class TorchADSR(TorchSynthModule):
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self.p("decay")
-        sustain = self.p("sustain")
-        return reverse_signal(self._ramp(decay)) * (1 - sustain) + sustain
+        decay = self._ramp(self.p("decay"), inverse=True)
+        return decay * (1 - self.p("sustain")) + self.p("sustain")
 
     @property
     def release(self):
         # `r`-length reverse ramp, reversed to descend to 0.
-        release = self.p("release")
-        return reverse_signal(self._ramp(release))
+        return self._ramp(self.p("release"), inverse=True)
 
     def note_on(self, num_samples):
         assert self.attack.ndim == 1
@@ -290,14 +293,13 @@ class TorchADSR(TorchSynthModule):
         out_ = torch.cat((self.attack, self.decay), 0)
 
         # Truncate or extend based on sustain duration.
-        if num_samples < len(out_):
+        if num_samples <= len(out_):
             out_ = out_[:num_samples]
-        elif num_samples > len(out_):
+        else:
             hold_samples = num_samples - len(out_)
-            assert hold_samples.ndim == 0
-            out_ = torch.nn.functional.pad(
-                out_, [0, hold_samples], value=out_[-1].item()
-            )
+            sustain = torch.ones(hold_samples) * self.p("sustain")
+            out_ = torch.cat((out_, sustain))
+
         return out_
 
     def note_off(self, last_val):
