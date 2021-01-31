@@ -17,7 +17,6 @@ from ddspdrum.torchutil import (
     linspace,
     midi_to_hz,
     normalize,
-    reverse_signal
 )
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
