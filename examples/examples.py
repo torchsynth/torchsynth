@@ -159,7 +159,7 @@ time_plot(modulator[:22050])
 
 fm_vco = FmVCO(midi_f0=62, mod_depth=3)
 fm_out = fm_vco.npyforward(modulator)
-fm_out = vca.npyforward(modulator, fm_out)
+fm_out = vca.npyforward(envelope, fm_out)
 
 stft_plot(fm_out[:22050])
 time_plot(fm_out[:22050])
@@ -512,3 +512,36 @@ for p in sine_vco.torchparameters:
 # Both SineVCOs use the sample envelope
 for p in adsr.torchparameters:
     print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
+
+# Testing the `TorchVCA` class.
+
+# +
+from ddspdrum.torchmodule import TorchVCA
+
+vca = TorchVCA()
+test_output = vca(envelope, sine_out)
+
+time_plot(test_output.detach().numpy())
+# -
+
+# Torch **FM synthesis.**
+
+# +
+from ddspdrum.torchmodule import TorchFmVCO
+
+# FmVCO test
+midi_f0 = 50.0
+
+# Make steady-pitched sine (no pitch modulation).
+sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0)
+operator_out = sine_operator(envelope)
+
+# Shape the modulation depth.
+operator_out = vca(envelope, operator_out)
+
+# Feed into FM oscillator as modulator signal.
+fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0)
+fm_out = fm_vco(operator_out)
+
+stft_plot(fm_out.detach().numpy())
+ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())

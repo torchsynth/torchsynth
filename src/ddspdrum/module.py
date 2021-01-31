@@ -400,7 +400,7 @@ class VCO(SynthModule):
 
 class SineVCO(VCO):
     """
-    Simple VCO that generates a pitched sinudoid.
+    Simple VCO that generates a pitched sinusoid.
 
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
@@ -507,8 +507,9 @@ class VCA(SynthModule):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
 
     def _npyforward(self, control_in: np.array, audio_in: np.array) -> np.ndarray:
-        control_in = np.clip(control_in, 0, 1)
-        audio_in = np.clip(audio_in, -1, 1)
+        assert (control_in >= 0).all() and (control_in <= 1).all()
+        assert (audio_in >= -1).all() and (audio_in <= 1).all()
+
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in
 

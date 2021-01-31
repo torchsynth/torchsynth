@@ -398,15 +398,19 @@ class TorchVCO(TorchSynthModule):
 
         """
 
-        assert (mod_signal >= 0).all() and (mod_signal <= 1).all()
+        assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
-        modulation = self.p("mod_depth") * mod_signal
-        control_as_midi = self.p("pitch") + modulation
-        control_as_frequency = midi_to_hz(control_as_midi)
+        control_as_frequency = self.make_control_as_frequency(mod_signal)
+
         cosine_argument = self.make_argument(control_as_frequency) + phase
 
         self.phase = cosine_argument[-1]
         return self.oscillator(cosine_argument)
+
+    def make_control_as_frequency(self, mod_signal: T):
+        modulation = self.p("mod_depth") * mod_signal
+        control_as_midi = self.p("pitch") + modulation
+        return midi_to_hz(control_as_midi)
 
     def make_argument(self, control_as_frequency: T) -> T:
         """
@@ -426,7 +430,7 @@ class TorchVCO(TorchSynthModule):
 
 class TorchSineVCO(TorchVCO):
     """
-    Simple VCO that generates a pitched sinudoid.
+    Simple VCO that generates a pitched sinusoid.
 
     Built off the VCO base class, it simply implements a cosine function as oscillator.
     """
@@ -438,3 +442,57 @@ class TorchSineVCO(TorchVCO):
 
     def oscillator(self, argument):
         return torch.cos(argument)
+
+
+class TorchFmVCO(TorchVCO):
+    """
+    Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
+
+    Typical modulation is calculated in pitch-space (midi). For FM to work,
+    we have to change the order of calculations. Here `mod_depth` is interpreted
+    as the "modulation index" which is tied to the fundamental of the oscillator
+    being modulated:
+
+        modulation_index = frequency_deviation / modulation_frequency
+
+    """
+
+    def __init__(
+            self,
+            midi_f0: float = 10.0,
+            mod_depth: float = 50.0,
+            phase: float = 0.0):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+
+    def make_control_as_frequency(self, mod_signal: T):
+        # Compute modulation in Hz space (rather than midi-space).
+        f0_hz = midi_to_hz(self.p("pitch"))
+        fm_depth = self.p("mod_depth") * f0_hz
+        modulation_hz = fm_depth * mod_signal
+        return f0_hz + modulation_hz
+
+    def oscillator(self, argument):
+        # Classically, FM operators are sine waves.
+        return torch.cos(argument)
+
+# TODO: TorchSquareSawVCO
+
+
+class TorchVCA(TorchSynthModule):
+    """
+    Voltage controlled amplifier.
+    """
+
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+
+    def _forward(self, control_in: T, audio_in: T) -> T:
+        assert (control_in >= 0).all() and (control_in <= 1).all()
+        assert (audio_in >= -1).all() and (audio_in <= 1).all()
+
+        audio_in = fix_length(audio_in, len(control_in))
+        return control_in * audio_in
