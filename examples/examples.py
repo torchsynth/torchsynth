@@ -21,12 +21,13 @@ from ddspdrum import ADSR, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO, VCA
 # -
 
 
-def time_plot(signal, sample_rate=SAMPLE_RATE):
+def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
     t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
     plt.plot(t, signal)
     plt.xlabel("Time")
     plt.ylabel("Amplitude")
-    plt.show()
+    if show:
+        plt.show()
 
 
 def stft_plot(signal, sample_rate=SAMPLE_RATE):
@@ -443,7 +444,7 @@ time_plot(envelope.detach(), adsr.sample_rate)
 # Synthesis parameters.
 a = 0.1
 d = 0.5
-s = 0.75
+s = 0.5
 r = 0.5
 alpha = 3.0
 note_on_duration = 0.5
@@ -466,32 +467,47 @@ err.backward(retain_graph=True)
 for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
-"""
-optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.01, momentum=0.9)
+# +
+#optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.0001, momentum=0.9)
+optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
 
-for i in range(10):
+for i in range(100):
     optimizer.zero_grad()
-    print(list(adsr.parameters()))
-    print(list(adsr2.parameters()))
-    print(note_on_duration)
+    #print(list(adsr.parameters()))
+    #print(list(adsr2.parameters()))
+    #print(note_on_duration)
     envelope = adsr(note_on_duration)
     envelope2 = adsr2(note_on_duration)
-    print(envelope.shape)
-    print(envelope2.shape)
+    
+    if i % 10 == 0:
+        time_plot(envelope.detach(), adsr.sample_rate, show=False)
+        time_plot(envelope2.detach(), adsr.sample_rate, show=False)
+        plt.show()
+    
+    #print(envelope.shape)
+    #print(envelope2.shape)
     err = torch.mean(torch.abs(envelope - envelope2))
     print(err)
     err.backward()
     optimizer.step()
-"""
-from ddspdrum.torchmodule import TorchSineVCO
+
+# -
 
 # SineVCO vs SineVCO with higher midi_f0
+
+# +
+from ddspdrum.torchmodule import TorchSineVCO
+
+# Reset envelope
+adsr = TorchADSR(a, d, s, r, alpha)
+envelope = adsr(note_on_duration)
 
 # SineVCO test
 sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
 sine_out = sine_vco(envelope, phase=0.0)
 stft_plot(sine_out.detach().numpy())
 ipd.Audio(sine_out.detach().numpy(), rate=sine_vco.sample_rate.item())
+# -
 
 # SineVCO test
 midi_f0 = 12.0

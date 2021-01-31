@@ -6,7 +6,7 @@ import random
 from typing import Dict
 
 import numpy as np
-import pytest
+import torch
 import torch.tensor as T
 
 import ddspdrum.numpyutil as numpyutil
@@ -125,3 +125,9 @@ class TestTorchUtil:
             },
             atol=1e-6
         )
+
+    def test_reverse_signal(self):
+        signal = np.arange(10)
+        tensor_signal = T(signal)
+        tensor_reversed = torchutil.reverse_signal(tensor_signal)
+        assert torch.all(tensor_reversed.eq(T([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])))

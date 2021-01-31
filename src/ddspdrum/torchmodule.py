@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, List
 
 import numpy as np
 import torch
@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
-from ddspdrum.modparameter import ModParameter
+from ddspdrum.parameter import ParameterRange, TorchParameter
 from ddspdrum.torchutil import (
     fix_length,
     linspace,
@@ -46,7 +46,6 @@ class TorchSynthModule(nn.Module):
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
-        self.modparameters: Dict[ModParameter] = {}
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
@@ -54,28 +53,6 @@ class TorchSynthModule(nn.Module):
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
-
-    def add_modparameters(self, modparameters: List[ModParameter]):
-        """
-        Add parameters to this SynthModule's parameters dictionary.
-        (Since there is inheritance, this might happen several times.)
-        """
-        for modparameter in modparameters:
-            assert modparameter.name not in self.modparameters
-            self.modparameters[modparameter.name] = modparameter
-
-            assert modparameter.name not in self.torchparameters
-            # TODO: I'm not 100% sure it's kosher to add nn.Parameters
-            # outside of __init__, but here we go.
-            # TODO: Internally we want to store all torch modparameter
-            # values using their 0/1 range, not their human-interpretable
-            # range.
-            # We might also rethink the syntactic sugar, e.g. sometimes
-            # we want to expose the raw 0/1 and sometimes we want to expose the
-            # clipped one.
-            self.torchparameters[modparameter.name] = nn.Parameter(
-                T(modparameter.value)
-            )
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
@@ -114,76 +91,63 @@ class TorchSynthModule(nn.Module):
 
         return self.forward(*npyargs, **npykwargs).numpy()
 
-    # The following is cheesy AF but needed because the
-    # torchparameter is the master variable.
-    # TODO: Remove .value from modparameter
-    def _update_modparameters(self) -> None:
-        for modparameter_id in self.modparameters:
-            self.modparameters[modparameter_id].set_value(
-                float(self.torchparameters[modparameter_id].numpy())
-            )
-
-    # In general, we should consider removing all the following
-    # since we don't want to cast to int and then back to Tensor
-    # Alternately, we should make a SynthParameter which is an nn.Parameter
-    # but decorated with ModParameter stuff.
-
-    def get_modparameter(self, modparameter_id: str) -> ModParameter:
+    def add_parameters(self, parameters: List[TorchParameter]):
         """
-        Get a single modparameter for this module
+        Add parameters to this SynthModule's torch parameter dictionary.
+        """
+        for parameter in parameters:
+            assert parameter.parameter_name not in self.torchparameters
+            self.torchparameters[parameter.parameter_name] = parameter
+
+    def get_parameter(self, parameter_id: str) -> TorchParameter:
+        """
+        Get a single TorchParameter for this module
 
         Parameters
         ----------
-        modparameter_id (str)  :   Id of the modparameter to return
+        parameter_id (str)  :   Id of the parameter to return
         """
-        self._update_modparameters()
-        return self.modparameters[modparameter_id]
+        return self.torchparameters[parameter_id]
 
-    def get_modparameter_0to1(self, modparameter_id: str) -> float:
+    def get_parameter_0to1(self, parameter_id: str) -> float:
         """
-        Get the value of a single modparameter in the range of [0,1]
+        Get the value of a single parameter in the range of [0,1]
 
         Parameters
         ----------
-        modparameter_id (str)  :   Id of the modparameter to return the value for
+        parameter_id (str)  :   Id of the parameter to return the value for
         """
-        self._update_modparameters()
-        return self.modparameters[modparameter_id].get_value_0to1()
+        return float(self.torchparameters[parameter_id].item())
 
-    def set_modparameter(self, modparameter_id: str, value: float):
+    def set_parameter(self, parameter_id: str, value: float):
         """
-        Update a specific modparameter value, ensuring that it is within a specified
+        Update a specific parameter value, ensuring that it is within a specified
         range
 
         Parameters
         ----------
-        modparameter_id (str)  : Id of the modparameter to update
-        value (float)       : Value to update modparameter with
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
         """
-        self.modparameters[modparameter_id].set_value(value)
-        self.torchparameters[modparameter_id].data = T(
-            self.modparameters[modparameter_id].value
-        )
+        self.torchparameters[parameter_id].to_0to1(T(value))
 
-    def set_modparameter_0to1(self, modparameter_id: str, value: float):
+    def set_parameter_0to1(self, parameter_id: str, value: float):
         """
-        Update a specific modparameter with a value in the range [0,1]
+        Update a specific parameter with a value in the range [0,1]
 
         Parameters
         ----------
-        modparameter_id (str)  : Id of the modparameter to update
-        value (float)       : Value to update modparameter with
+        parameter_id (str)  : Id of the parameter to update
+        value (float)       : Value to update parameter with
         """
-        self.modparameters[modparameter_id].set_value_0to1(value)
-        self.torchparameters[modparameter_id].data = T(
-            self.modparameters[modparameter_id].value
-        )
+        assert 0 <= value <= 1
+        self.torchparameters[parameter_id].data = T(value)
 
-    def p(self, modparameter_id: str) -> T:
+    def p(self, parameter_id: str) -> T:
         """
-        Convenience method for getting the modparameter value.
+        Convenience method for getting the parameter value.
         """
-        return self.torchparameters[modparameter_id]
+        return self.torchparameters[parameter_id].from_0to1()
 
 
 class TorchADSR(TorchSynthModule):
@@ -214,13 +178,33 @@ class TorchADSR(TorchSynthModule):
                                 exponential.
         """
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
-        self.add_modparameters(
+        self.add_parameters(
             [
-                ModParameter("attack", a, 0.0, 20.0, curve="log"),
-                ModParameter("decay", d, 0.0, 20.0, curve="log"),
-                ModParameter("sustain", s, 0.0, 1.0),
-                ModParameter("release", r, 0.0, 20.0, curve="log"),
-                ModParameter("alpha", alpha, 0.0, 10.0),
+                TorchParameter(
+                    value=a,
+                    parameter_name="attack",
+                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
+                ),
+                TorchParameter(
+                    value=d,
+                    parameter_name="decay",
+                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
+                ),
+                TorchParameter(
+                    value=s,
+                    parameter_name="sustain",
+                    parameter_range=ParameterRange(0.0, 1.0)
+                ),
+                TorchParameter(
+                    value=r,
+                    parameter_name="release",
+                    parameter_range=ParameterRange(0.0, 5.0, curve="log")
+                ),
+                TorchParameter(
+                    value=alpha,
+                    parameter_name="alpha",
+                    parameter_range=ParameterRange(0.1, 6.0)
+                )
             ]
         )
 
@@ -265,7 +249,7 @@ class TorchADSR(TorchSynthModule):
 
         return torch.cat((ADS, R))
 
-    def _ramp(self, duration: T):
+    def _ramp(self, duration: T, inverse: bool = False):
         """Makes a ramp of a given duration in seconds.
 
         This function is used for the piece-wise construction of the envelope
@@ -286,8 +270,13 @@ class TorchADSR(TorchSynthModule):
         """
 
         assert duration.ndim == 0
-        t = linspace(0, duration.item(), self.seconds_to_samples(duration))
-        return (t / duration) ** self.p("alpha")
+        t = torch.arange(self.seconds_to_samples(duration).item()) / self.sample_rate
+        ramp = t * (1 / duration)
+
+        if inverse:
+            ramp = 1.0 - ramp
+
+        return torch.pow(ramp, self.p("alpha"))
 
     @property
     def attack(self):
@@ -296,15 +285,13 @@ class TorchADSR(TorchSynthModule):
     @property
     def decay(self):
         # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self.p("decay")
-        sustain = self.p("sustain")
-        return reverse_signal(self._ramp(decay)) * (1 - sustain) + sustain
+        decay = self._ramp(self.p("decay"), inverse=True)
+        return decay * (1 - self.p("sustain")) + self.p("sustain")
 
     @property
     def release(self):
         # `r`-length reverse ramp, reversed to descend to 0.
-        release = self.p("release")
-        return reverse_signal(self._ramp(release))
+        return self._ramp(self.p("release"), inverse=True)
 
     def note_on(self, num_samples):
         assert self.attack.ndim == 1
@@ -312,14 +299,13 @@ class TorchADSR(TorchSynthModule):
         out_ = torch.cat((self.attack, self.decay), 0)
 
         # Truncate or extend based on sustain duration.
-        if num_samples < len(out_):
+        if num_samples <= len(out_):
             out_ = out_[:num_samples]
-        elif num_samples > len(out_):
+        else:
             hold_samples = num_samples - len(out_)
-            assert hold_samples.ndim == 0
-            out_ = torch.nn.functional.pad(
-                out_, [0, hold_samples], value=out_[-1].item()
-            )
+            sustain = torch.ones(hold_samples) * self.p("sustain")
+            out_ = torch.cat((out_, sustain))
+
         return out_
 
     def note_off(self, last_val):
@@ -371,10 +357,18 @@ class TorchVCO(TorchSynthModule):
             sample_rate=sample_rate,
             buffer_size=buffer_size
         )
-        self.add_modparameters(
+        self.add_parameters(
             [
-                ModParameter("pitch", midi_f0, 0.0, 127.0),
-                ModParameter("mod_depth", mod_depth, 0.0, 127.0),
+                TorchParameter(
+                    value=midi_f0,
+                    parameter_name="pitch",
+                    parameter_range=ParameterRange(0.0, 127.0)
+                ),
+                TorchParameter(
+                    value=mod_depth,
+                    parameter_name="mod_depth",
+                    parameter_range=ParameterRange(0.0, 127.0)
+                )
             ]
         )
         # TODO: Make this a parameter too?
@@ -426,7 +420,6 @@ class TorchVCO(TorchSynthModule):
         return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE, dim=0)
 
     @abstractmethod
-    # TODO: Type me!
     def oscillator(self, argument: T) -> T:
         """
         Dummy method. Overridden by child class VCO's.
@@ -442,9 +435,13 @@ class TorchSineVCO(TorchVCO):
     """
 
     def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+        self,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+        **kwargs
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
     def oscillator(self, argument):
         return torch.cos(argument)
