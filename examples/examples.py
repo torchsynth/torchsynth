@@ -149,12 +149,20 @@ ipd.Audio(vca_out, rate=vca.sample_rate)
 # +
 # FM Example.
 
-operator = vca.npyforward(envelope, sine_out)
+# Create operator that doesn't modulate in pitch.
+op_osc = SineVCO(midi_f0=50, mod_depth=0)
+op_raw = op_osc.npyforward(envelope)
 
-fm_vco = FmVCO(midi_f0=midi_f0 * 2, mod_depth=10)
-fm_out = fm_vco.npyforward(operator)
+# Shape "amplitude" of modulator.
+modulator = vca.npyforward(envelope, op_raw)
+time_plot(modulator[:22050])
 
-stft_plot(fm_out)
+fm_vco = FmVCO(midi_f0=62, mod_depth=3)
+fm_out = fm_vco.npyforward(modulator)
+fm_out = vca.npyforward(modulator, fm_out)
+
+stft_plot(fm_out[:22050])
+time_plot(fm_out[:22050])
 ipd.Audio(fm_out, rate=sine_vco.sample_rate)
 # -
 
