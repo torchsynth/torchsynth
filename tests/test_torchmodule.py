@@ -26,6 +26,10 @@ def _random_envelope():
     return adsr.npyforward(note_on_duration=random.uniform(-1, 10))
 
 
+def _random_signal():
+    return np.random.rand(44100)
+
+
 class TestTorchSynthModule:
     """
     Tests for TorchSynthModules
@@ -100,6 +104,17 @@ class TestTorchSynthModule:
                 "envelope": _random_envelope,
                 "phase": _random_uniform(-np.pi, np.pi),
             },
+        )
+
+    def test_TorchFmVCO(self):
+        numpymod = numpymodule.FmVCO()
+        torchmod = torchmodule.TorchSineVCO()
+        self._compare_values(
+            numpymod,
+            torchmod,
+            param_name_to_randfn={
+                "mod_signal": _random_signal
+            }
         )
 
     def test_get_parameter(self):
