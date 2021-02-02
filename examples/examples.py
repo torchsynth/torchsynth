@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum import ADSR, VCA, Drum, NoiseModule, SineVCO, SquareSawVCO
+from ddspdrum import ADSR, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO, VCA
 
 # -
 
@@ -142,6 +142,30 @@ vca_out = vca.npyforward(envelope, noisey_out)
 time_plot(vca_out)
 stft_plot(vca_out)
 ipd.Audio(vca_out, rate=vca.sample_rate)
+
+# What about **FM synthesis**? You bet. Use the `FmVCO` class. It accepts any audio input.
+#
+# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
+
+# +
+# FM Example.
+
+# Create operator that doesn't modulate in pitch.
+op_osc = SineVCO(midi_f0=50, mod_depth=0)
+op_raw = op_osc.npyforward(envelope)
+
+# Shape "amplitude" of modulator.
+modulator = vca.npyforward(envelope, op_raw)
+time_plot(modulator[:22050])
+
+fm_vco = FmVCO(midi_f0=62, mod_depth=3)
+fm_out = fm_vco.npyforward(modulator)
+fm_out = vca.npyforward(envelope, fm_out)
+
+stft_plot(fm_out[:22050])
+time_plot(fm_out[:22050])
+ipd.Audio(fm_out, rate=sine_vco.sample_rate)
+# -
 
 # Alternately, you can just use the Drum class that composes all these modules
 # together automatically.
@@ -504,3 +528,36 @@ for p in sine_vco.torchparameters:
 # Both SineVCOs use the sample envelope
 for p in adsr.torchparameters:
     print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
+
+# Testing the `TorchVCA` class.
+
+# +
+from ddspdrum.torchmodule import TorchVCA
+
+vca = TorchVCA()
+test_output = vca(envelope, sine_out)
+
+time_plot(test_output.detach().numpy())
+# -
+
+# Torch **FM synthesis.**
+
+# +
+from ddspdrum.torchmodule import TorchFmVCO
+
+# FmVCO test
+midi_f0 = 50.0
+
+# Make steady-pitched sine (no pitch modulation).
+sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0)
+operator_out = sine_operator(envelope)
+
+# Shape the modulation depth.
+operator_out = vca(envelope, operator_out)
+
+# Feed into FM oscillator as modulator signal.
+fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0)
+fm_out = fm_vco(operator_out)
+
+stft_plot(fm_out.detach().numpy())
+ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())

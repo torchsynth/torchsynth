@@ -131,3 +131,12 @@ class TestTorchUtil:
         tensor_signal = T(signal)
         tensor_reversed = torchutil.reverse_signal(tensor_signal)
         assert torch.all(tensor_reversed.eq(T([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])))
+
+    def test_normalize(self):
+        self._compare_values(
+            numpyutil.normalize,
+            torchutil.normalize,
+            {
+                "signal": "signal"
+            }
+        )
