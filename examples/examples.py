@@ -88,14 +88,7 @@ envelope = adsr.npyforward(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
 # -
 
-# ### One-Shot Mode
-#
-# Alternately, you can specify a sustain time of "0" which will switch the
-# envelope to one-shot mode. In this case, the envelope moves through the entire
-# attack, decay, and release.
-
-envelope = adsr.npyforward(note_on_duration = 0)
-time_plot(envelope, adsr.sample_rate)
+# ## Oscillators
 
 # SineVCO test
 midi_f0 = 12
