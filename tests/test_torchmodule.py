@@ -117,6 +117,19 @@ class TestTorchSynthModule:
             }
         )
 
+    def test_TorchSquareSawVCO(self):
+        numpymod = numpymodule.SquareSawVCO()
+        torchmod = torchmodule.TorchSquareSawVCO()
+        self._compare_values(
+            numpymod,
+            torchmod,
+            param_name_to_randfn={
+                "envelope": _random_envelope,
+                "phase": _random_uniform(-np.pi, np.pi),
+                "shape": _random_uniform(0, 1)
+            }
+        )
+
     def test_get_parameter(self):
         module = torchmodule.TorchSynthModule()
         param_1 = TorchParameter(data=T(1.0), parameter_name="param_1")

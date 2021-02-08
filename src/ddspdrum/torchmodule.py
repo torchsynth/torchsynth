@@ -473,7 +473,47 @@ class TorchFmVCO(TorchVCO):
         return torch.cos(argument)
 
 
-# TODO: TorchSquareSawVCO
+class TorchSquareSawVCO(TorchVCO):
+    """
+    VCO that can be either a square or a sawtooth waveshape.
+    Tweak with the shape parameter. (0 is square.)
+
+    With apologies to:
+
+    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
+        virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+    """
+
+    def __init__(
+        self,
+        shape: float = 0.0,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+     ):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        self.add_parameters(
+            [
+                TorchParameter("shape", shape, 0.0, 1.0),
+            ]
+        )
+
+    def oscillator(self, argument):
+        square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
+        shape = self.p("shape")
+        return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
+
+    @property
+    def partials_constant(self):
+        """
+        Constant value that determines the number of partials in the resulting
+        square / saw wave in order to keep aliasing at an acceptable level.
+        Higher frequencies require fewer partials whereas lower frequency sounds
+        can safely have more partials without causing audible aliasing.
+        """
+        max_pitch = self.p("pitch") + self.p("mod_depth")
+        max_f0 = midi_to_hz(max_pitch)
+        return 12000 / (max_f0 * np.log10(max_f0))
 
 
 class TorchVCA(TorchSynthModule):
@@ -496,3 +536,17 @@ class TorchVCA(TorchSynthModule):
 
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in
+
+# TODO: TorchNoiseModule
+#       - tests
+
+# TODO: TorchDummyModule
+#       - tests
+
+# TODO: TorchSynth
+#       - tests
+
+# TODO: TorchDrum
+#       - tests
+
+# TODO: -- filters --

@@ -561,3 +561,16 @@ fm_out = fm_vco(operator_out)
 
 stft_plot(fm_out.detach().numpy())
 ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())
+
+# +
+from ddspdrum.torchmodule import TorchSquareSawVCO
+
+# SineVCO test
+midi_f0 = 12.0
+square_saw = TorchSquareSawVCO(midi_f0=30.0, mod_depth=50.0, shape=0.5)
+square_saw_out = square_saw(envelope, phase=0.0)
+stft_plot(square_saw_out.detach().numpy())
+ipd.Audio(square_saw_out.detach().numpy(), rate=square_saw.sample_rate.item())
+# -
+
+
