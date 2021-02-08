@@ -494,14 +494,18 @@ class TorchSquareSawVCO(TorchVCO):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
             [
-                TorchParameter("shape", shape, 0.0, 1.0),
+                TorchParameter(
+                    value=shape,
+                    parameter_name="shape",
+                    parameter_range=ParameterRange(0.0, 1.0)
+                )
             ]
         )
 
     def oscillator(self, argument):
-        square = np.tanh(np.pi * self.partials_constant * np.sin(argument) / 2)
+        square = torch.tanh(torch.pi * self.partials_constant * torch.sin(argument) / 2)
         shape = self.p("shape")
-        return (1 - shape / 2) * square * (1 + shape * np.cos(argument))
+        return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
 
     @property
     def partials_constant(self):
@@ -513,7 +517,7 @@ class TorchSquareSawVCO(TorchVCO):
         """
         max_pitch = self.p("pitch") + self.p("mod_depth")
         max_f0 = midi_to_hz(max_pitch)
-        return 12000 / (max_f0 * np.log10(max_f0))
+        return 12000 / (max_f0 * torch.log10(max_f0))
 
 
 class TorchVCA(TorchSynthModule):
