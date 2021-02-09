@@ -496,3 +496,43 @@ class TorchVCA(TorchSynthModule):
 
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in
+
+
+class TorchMovingAverage(TorchSynthModule):
+    """
+    A finite impulse response moving average filter.
+
+    Parameters
+    ----------
+
+    filter_length (int) :   Length of filter and number of samples to take average over.
+                            Must be greater than 0. Defaults to 32.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(1.0, 4096.0),
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+        length = self.p("length")
+        impulse = torch.ones((1, 1, int(length.item()))) / torch.floor(length)
+        audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
+        y = nn.functional.conv1d(audio_resized, impulse, padding=int(length / 2))
+        return y[0][0]

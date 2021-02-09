@@ -987,7 +987,7 @@ class MovingAverage(SynthModule):
             ]
         )
 
-    def _npyforward(self, audio: np.ndarray) -> np.ndarray:
+    def _npyforward(self, audio_in: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
 
@@ -996,7 +996,7 @@ class MovingAverage(SynthModule):
 
         audio (np.ndarray)  :   audio samples to filter
         """
-        length = self.p("length")
+        length = int(self.p("length"))
         impulse = np.ones(length) / length
-        y = np.convolve(audio, impulse)
+        y = np.convolve(audio_in, impulse)
         return y
