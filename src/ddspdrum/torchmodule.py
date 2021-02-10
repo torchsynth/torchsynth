@@ -539,7 +539,11 @@ class TorchFIR(TorchSynthModule):
         impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
         impulse = torch.reshape(impulse, (1, 1, impulse.size()[0]))
         audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
-        y = nn.functional.conv1d(audio_resized, impulse, padding=int(self.p("length") / 2))
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(self.p("length") / 2)
+        )
         return y[0][0]
 
     def windowed_sinc(self, cutoff: T, filter_length: T) -> T:
@@ -626,5 +630,9 @@ class TorchMovingAverage(TorchSynthModule):
             impulse = torch.cat((impulse, additional), dim=2)
 
         audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
-        y = nn.functional.conv1d(audio_resized, impulse, padding=int(impulse.size()[0] / 2))
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(impulse.size()[0] / 2)
+        )
         return y[0][0]
