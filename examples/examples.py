@@ -88,14 +88,7 @@ envelope = adsr.npyforward(note_on_duration)
 time_plot(envelope, adsr.sample_rate)
 # -
 
-# ### One-Shot Mode
-#
-# Alternately, you can specify a sustain time of "0" which will switch the
-# envelope to one-shot mode. In this case, the envelope moves through the entire
-# attack, decay, and release.
-
-envelope = adsr.npyforward(note_on_duration = 0)
-time_plot(envelope, adsr.sample_rate)
+# ## Oscillators
 
 # SineVCO test
 midi_f0 = 12
@@ -561,3 +554,78 @@ fm_out = fm_vco(operator_out)
 
 stft_plot(fm_out.detach().numpy())
 ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())
+# -
+
+# ### Filters
+
+# +
+from ddspdrum.torchmodule import TorchMovingAverage, TorchFIR
+
+# Create some noise to filter
+noise = torch.rand(88200)
+stft_plot(noise.detach().numpy())
+# -
+
+# **Moving Average Filter**
+#
+# A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
+
+# +
+ma_filter = TorchMovingAverage(filter_length=32.)
+filtered = ma_filter(noise)
+
+stft_plot(filtered.detach().numpy())
+ipd.Audio(filtered.detach().numpy(), rate=44100)
+
+# +
+# Second example with a longer filter -- notice that the filter length can be fractional
+ma_filter2 = TorchMovingAverage(filter_length=64.25)
+filtered2 = ma_filter2(noise)
+
+stft_plot(filtered2.detach().numpy())
+ipd.Audio(filtered2.detach().numpy(), rate=44100)
+# -
+
+# Compute the error between the two examples and get the gradient for the filter length
+
+# +
+err = torch.mean(torch.abs(filtered - filtered2))
+print("Error =", err)
+
+err.backward(retain_graph=True)
+for p in ma_filter.torchparameters:
+    print(f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}")
+# -
+
+# **FIR Lowpass**
+#
+# The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
+
+# +
+fir1 = TorchFIR(cutoff=1024, filter_length=128.0)
+filtered1 = fir1(noise)
+
+stft_plot(filtered1.detach().numpy())
+ipd.Audio(filtered1.detach().numpy(), rate=44100)
+
+# +
+# Second filter with a lower cutoff and a longer filter
+fir2 = TorchFIR(cutoff=512., filter_length=243.45)
+filtered2 = fir2(noise)
+
+stft_plot(filtered2.detach().numpy())
+ipd.Audio(filtered2.detach().numpy(), rate=44100)
+# -
+
+# Compute the error between the two examples and check the gradient
+
+# +
+err = torch.mean(torch.abs(filtered1 - filtered2))
+print("Error =", err)
+
+err.backward(retain_graph=True)
+for p in fir1.torchparameters:
+    print(f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}")
+# -
+
+
