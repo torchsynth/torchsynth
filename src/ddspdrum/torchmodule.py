@@ -498,6 +498,103 @@ class TorchVCA(TorchSynthModule):
         return control_in * audio_in
 
 
+class TorchFIR(TorchSynthModule):
+    """
+    A finite impulse response low-pass filter. Uses convolution with a windowed
+    sinc function.
+
+    Parameters
+    ----------
+
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
+                            half the sampling rate. Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will
+                            result in a steeper filter cutoff. Should be greater than 4.
+                            Defaults to 512 samples.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000.0,
+        filter_length: int = 512,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=cutoff,
+                    parameter_name="cutoff",
+                    parameter_range=ParameterRange(5.0, sample_rate / 2.0, "log")
+                ),
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(4.0, 4096.)
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+        TODO: Cutoff frequency modulation, if there is an efficient way to do it
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+
+        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
+        impulse = torch.reshape(impulse, (1, 1, impulse.size()[0]))
+        audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
+        y = nn.functional.conv1d(audio_resized, impulse, padding=int(self.p("length") / 2))
+        return y[0][0]
+
+    def windowed_sinc(self, cutoff: T, filter_length: T) -> T:
+        """
+        Calculates the impulse response for FIR low-pass filter using the
+        windowed sinc function method. Updated to allow for a fractional filter length.
+
+        Parameters
+        ----------
+
+        cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
+                                half the sampling rate.
+        filter_length (T) :   Length of the filter impulse response to create.
+        """
+
+        # Normalized frequency
+        omega = 2 * torch.pi * cutoff / self.sample_rate
+
+        # Create a sinc function -- creates a sinc function that is the length
+        # of the next largest even number. This allows for a smooth transition
+        # between filter lengths, as well as avoids symmetric odd length sinc
+        # functions which have a divide by zero issue that is weird to differentiate
+        odd_length = torch.floor(filter_length / 2) * 2 + 1
+        half_length = odd_length / 2
+        t = torch.arange(odd_length.detach() + 1) - half_length
+        ir = torch.sin(t * omega) / t
+
+        # Create a fractional length blackman window that is centered
+        diff = len(ir) - filter_length
+        n = torch.arange(len(ir)) - (diff / 2)
+        cos_a = torch.cos(2 * torch.pi * n / (filter_length - 1))
+        cos_b = torch.cos(4 * torch.pi * n / (filter_length - 1))
+        window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
+
+        # Linearly interpolate the ends of the window to achieve fractional length
+        window = torch.cat((
+            T([0.0 * diff + window[1] * (1.0 - diff)]),
+            window[1:-1],
+            T([0.0 * diff + window[-2] * (1.0 - diff)])
+        ))
+
+        return ir * window
+
+
 class TorchMovingAverage(TorchSynthModule):
     """
     A finite impulse response moving average filter.
@@ -532,7 +629,13 @@ class TorchMovingAverage(TorchSynthModule):
         audio (T)  :   audio samples to filter
         """
         length = self.p("length")
-        impulse = torch.ones((1, 1, int(length.item()))) / torch.floor(length)
+        impulse = torch.ones((1, 1, int(length))) / length
+
+        # For non-integer impulse lengths
+        if torch.sum(impulse) < 1.0:
+            additional = torch.ones(1, 1, 1) * (1.0 - torch.sum(impulse))
+            impulse = torch.cat((impulse, additional), dim=2)
+
         audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
-        y = nn.functional.conv1d(audio_resized, impulse, padding=int(length / 2))
+        y = nn.functional.conv1d(audio_resized, impulse, padding=int(impulse.size()[0] / 2))
         return y[0][0]
