@@ -253,8 +253,11 @@ class TorchADSR(TorchSynthModule):
         """
 
         assert duration.ndim == 0
-        t = torch.arange(self.seconds_to_samples(duration).item()) / self.sample_rate
-        ramp = t * (1 / duration)
+        t = torch.arange(
+            self.seconds_to_samples(duration).item(),
+            device=duration.device
+        )
+        ramp = t * (1 / duration) / self.sample_rate
 
         if inverse:
             ramp = 1.0 - ramp
@@ -286,7 +289,8 @@ class TorchADSR(TorchSynthModule):
             out_ = out_[:num_samples]
         else:
             hold_samples = num_samples - len(out_)
-            sustain = torch.ones(hold_samples) * self.p("sustain")
+            sustain = torch.ones(hold_samples, device=self.p("sustain").device)
+            sustain = sustain * self.p("sustain")
             out_ = torch.cat((out_, sustain))
 
         return out_

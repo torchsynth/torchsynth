@@ -411,8 +411,15 @@ ipd.Audio(kick, rate=sample_rate)
 # ## Torch examples
 
 
+# +
 import torch
 from ddspdrum.torchmodule import TorchADSR
+
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
+# -
 
 # Create a simple envelope
 
@@ -426,9 +433,9 @@ alpha = 3.0
 note_on_duration = 0.5
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha)
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.detach(), adsr.sample_rate)
+time_plot(envelope.detach().cpu(), adsr.sample_rate)
 # -
 
 # Create a second envelope, higher decay
@@ -443,16 +450,16 @@ alpha = 3.0
 note_on_duration = 0.5
 
 # Envelope test
-adsr2 = TorchADSR(a, d, s, r, alpha)
+adsr2 = TorchADSR(a, d, s, r, alpha).to(device)
 envelope2 = adsr2(note_on_duration)
-time_plot(envelope2.detach(), adsr.sample_rate)
+time_plot(envelope2.detach().cpu(), adsr.sample_rate)
 # -
 
 # Here's the l1 error
 
 err = torch.mean(torch.abs(envelope - envelope2))
 print("Error =", err)
-plt.plot(torch.abs(envelope - envelope2).detach())
+plt.plot(torch.abs(envelope - envelope2).detach().cpu())
 
 # And here are the gradients
 
@@ -473,8 +480,8 @@ for i in range(100):
     envelope2 = adsr2(note_on_duration)
     
     if i % 10 == 0:
-        time_plot(envelope.detach(), adsr.sample_rate, show=False)
-        time_plot(envelope2.detach(), adsr.sample_rate, show=False)
+        time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
+        time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
         plt.show()
     
     #print(envelope.shape)
@@ -492,28 +499,28 @@ for i in range(100):
 from ddspdrum.torchmodule import TorchSineVCO
 
 # Reset envelope
-adsr = TorchADSR(a, d, s, r, alpha)
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr(note_on_duration)
 
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
+sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0).to(device)
 sine_out = sine_vco(envelope, phase=0.0)
-stft_plot(sine_out.detach().numpy())
-ipd.Audio(sine_out.detach().numpy(), rate=sine_vco.sample_rate.item())
+stft_plot(sine_out.detach().cpu().numpy())
+ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 # -
 
 # SineVCO test
 midi_f0 = 12.0
-sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0)
+sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0).to(device)
 sine_out2 = sine_vco2(envelope, phase=0.0)
-stft_plot(sine_out2.detach().numpy())
-ipd.Audio(sine_out2.detach().numpy(), rate=sine_vco2.sample_rate.item())
+stft_plot(sine_out2.detach().cpu().numpy())
+ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
 
 # We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
 
 err = torch.mean(torch.abs(sine_out - sine_out2))
 print("Error =", err)
-plt.plot(torch.abs(sine_out - sine_out2).detach())
+plt.plot(torch.abs(sine_out - sine_out2).detach().cpu())
 
 err.backward(retain_graph=True)
 for p in sine_vco.torchparameters:
@@ -530,7 +537,7 @@ from ddspdrum.torchmodule import TorchVCA
 vca = TorchVCA()
 test_output = vca(envelope, sine_out)
 
-time_plot(test_output.detach().numpy())
+time_plot(test_output.detach().cpu())
 # -
 
 # Torch **FM synthesis.**
@@ -552,5 +559,5 @@ operator_out = vca(envelope, operator_out)
 fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0)
 fm_out = fm_vco(operator_out)
 
-stft_plot(fm_out.detach().numpy())
-ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())
+stft_plot(fm_out.detach().cpu().numpy())
+ipd.Audio(fm_out.detach().cpu().numpy(), rate=fm_vco.sample_rate.item())
