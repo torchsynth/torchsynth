@@ -7,9 +7,10 @@ and rename this to util.py.
 TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
+import math
+
 import torch
 import torch.tensor as T
-import math
 
 from ddspdrum.defaults import EPSILON, EQ_POW
 
@@ -115,9 +116,9 @@ def blackman(length: T) -> T:
 
     # Linearly interpolate the ends of the window to achieve fractional length
     window = torch.cat((
-        T([0.0 * diff + window[1] * (1.0 - diff)], device=length.device),
+        T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
         window[1:-1],
-        T([0.0 * diff + window[-2] * (1.0 - diff)], device=length.device)
+        T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device)
     ))
 
     return window

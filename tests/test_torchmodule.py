@@ -109,7 +109,7 @@ class TestTorchSynthModule:
     def test_TorchFmVCO(self):
         # Is this correct?
         numpymod = numpymodule.FmVCO()
-        torchmod = torchmodule.TorchSineVCO()
+        torchmod = torchmodule.TorchFmVCO()
         self._compare_values(
             numpymod,
             torchmod,
@@ -117,18 +117,6 @@ class TestTorchSynthModule:
                 "mod_signal": _random_signal
             }
         )
-
-    # Fuzzy test doesn't work for filtering
-    # def test_TorchMovingAverage(self):
-    #     numpymod = numpymodule.MovingAverage()
-    #     torchmod = torchmodule.TorchMovingAverage()
-    #     self._compare_values(
-    #         numpymod,
-    #         torchmod,
-    #         param_name_to_randfn={
-    #             "audio_in": _random_signal
-    #         }
-    #     )
 
     def test_get_parameter(self):
         module = torchmodule.TorchSynthModule()
