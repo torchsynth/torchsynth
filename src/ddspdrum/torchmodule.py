@@ -538,8 +538,8 @@ class FIRLowPass(TorchSynthModule):
         """
 
         impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
-        impulse = torch.reshape(impulse, (1, 1, impulse.size()[0]))
-        audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
+        impulse = impulse.view(1, 1, impulse.size()[0])
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
         y = nn.functional.conv1d(
             audio_resized,
             impulse,
@@ -613,7 +613,7 @@ class TorchMovingAverage(TorchSynthModule):
             additional = torch.ones(1, 1, 1) * (1.0 - torch.sum(impulse))
             impulse = torch.cat((impulse, additional), dim=2)
 
-        audio_resized = torch.reshape(audio_in, (1, 1, audio_in.size()[0]))
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
         y = nn.functional.conv1d(
             audio_resized,
             impulse,
