@@ -602,33 +602,6 @@ for p in ma_filter.torchparameters:
     print(f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}")
 # -
 
-# Try to optimze the parameters of the second filter to match the first. **This isn't working**
-
-# +
-optimizer = torch.optim.Adam(list(ma_filter2.parameters()), lr=0.01)
-
-print(list(ma_filter.parameters()))
-print(list(ma_filter2.parameters()))
-
-for i in range(100):
-    optimizer.zero_grad()
-    
-    filtered1 = ma_filter(noise)
-    filtered2 = ma_filter2(noise)
-    
-    fft1 = torch.abs(torch.fft.fft(filtered1))
-    fft2 = torch.abs(torch.fft.fft(filtered2))
-    
-    err = torch.mean(torch.abs(fft1 - fft2))
-    
-    print(err)
-    err.backward()
-    optimizer.step()
-
-print(list(ma_filter.parameters()))
-print(list(ma_filter2.parameters()))
-# -
-
 # **FIR Lowpass**
 #
 # The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
