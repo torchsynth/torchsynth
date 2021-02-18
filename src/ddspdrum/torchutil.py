@@ -9,6 +9,7 @@ TODO: These should operate on vectors, many of these assume scalar Tensors.
 
 import torch
 import torch.tensor as T
+import math
 
 from ddspdrum.defaults import EPSILON, EQ_POW
 
@@ -98,3 +99,25 @@ def normalize(signal: T) -> T:
     max_ = torch.max(torch.abs(signal))
     assert max_.item() != 0
     return signal / max_
+
+
+def sinc(x: T) -> T:
+    return torch.where(x == 0, T(1., device=x.device), torch.sin(x) / x)
+
+
+def blackman(length: T) -> T:
+    num_samples = torch.ceil(length)
+    diff = num_samples - length
+    n = torch.arange(num_samples.detach() - (diff.detach() / 2), device=length.device)
+    cos_a = torch.cos(2 * math.pi * n / (length - 1))
+    cos_b = torch.cos(4 * math.pi * n / (length - 1))
+    window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
+
+    # Linearly interpolate the ends of the window to achieve fractional length
+    window = torch.cat((
+        T([0.0 * diff + window[1] * (1.0 - diff)], device=length.device),
+        window[1:-1],
+        T([0.0 * diff + window[-2] * (1.0 - diff)], device=length.device)
+    ))
+
+    return window

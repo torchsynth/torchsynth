@@ -12,7 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import fix_length, midi_to_hz, normalize
+from ddspdrum.torchutil import blackman, fix_length, midi_to_hz, normalize, sinc
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -487,7 +487,7 @@ class TorchVCA(TorchSynthModule):
         return control_in * audio_in
 
 
-class TorchFIR(TorchSynthModule):
+class FIRLowPass(TorchSynthModule):
     """
     A finite impulse response low-pass filter. Uses convolution with a windowed
     sinc function.
@@ -546,7 +546,7 @@ class TorchFIR(TorchSynthModule):
         )
         return y[0][0]
 
-    def windowed_sinc(self, cutoff: T, filter_length: T) -> T:
+    def windowed_sinc(self, cutoff: T, length: T) -> T:
         """
         Calculates the impulse response for FIR low-pass filter using the
         windowed sinc function method. Updated to allow for a fractional filter length.
@@ -556,36 +556,19 @@ class TorchFIR(TorchSynthModule):
 
         cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
                                 half the sampling rate.
-        filter_length (T) :   Length of the filter impulse response to create.
+        length (T) :   Length of the filter impulse response to create.
         """
 
         # Normalized frequency
         omega = 2 * torch.pi * cutoff / self.sample_rate
 
-        # Create a sinc function -- creates a sinc function that is the length
-        # of the next largest even number. This allows for a smooth transition
-        # between filter lengths, as well as avoids symmetric odd length sinc
-        # functions which have a divide by zero issue that is weird to differentiate
-        odd_length = torch.floor(filter_length / 2) * 2 + 1
-        half_length = odd_length / 2
-        t = torch.arange(odd_length.detach() + 1) - half_length
-        ir = torch.sin(t * omega) / t
+        # Create a sinc function
+        num_samples = torch.ceil(length)
+        half_length = (length - 1.) / 2.
+        t = torch.arange(num_samples.detach(), device=length.device)
+        ir = sinc((t - half_length) * omega)
 
-        # Create a fractional length blackman window that is centered
-        diff = len(ir) - filter_length
-        n = torch.arange(len(ir)) - (diff / 2)
-        cos_a = torch.cos(2 * torch.pi * n / (filter_length - 1))
-        cos_b = torch.cos(4 * torch.pi * n / (filter_length - 1))
-        window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
-
-        # Linearly interpolate the ends of the window to achieve fractional length
-        window = torch.cat((
-            T([0.0 * diff + window[1] * (1.0 - diff)]),
-            window[1:-1],
-            T([0.0 * diff + window[-2] * (1.0 - diff)])
-        ))
-
-        return ir * window
+        return ir * blackman(length)
 
 
 class TorchMovingAverage(TorchSynthModule):
