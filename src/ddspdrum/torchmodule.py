@@ -555,8 +555,7 @@ class TorchSVF(TorchSynthModule):
                                         cutoff. Values must be in range [0,1]
         """
 
-        h0 = T(0.0, device=audio_in.device)
-        h1 = T(0.0, device=audio_in.device)
+        h = torch.zeros(2, device=audio_in.device)
         y = torch.zeros_like(audio_in, device=audio_in.device)
 
         if control_in is None:
@@ -566,7 +565,7 @@ class TorchSVF(TorchSynthModule):
 
         cutoff = self.p("cutoff")
         mod_depth = self.p("mod_depth")
-        resonance = self.p("resonance")
+        res_coefficient = 1.0 / self.p("resonance")
 
         # Processing loop
         for i in range(len(audio_in)):
@@ -574,18 +573,17 @@ class TorchSVF(TorchSynthModule):
             cutoff_val = cutoff + control_in[i] * mod_depth
             coeff0, coeff1, rho = TorchSVF.svf_coefficients(
                 cutoff_val,
-                resonance,
+                res_coefficient,
                 self.sample_rate
             )
 
             # Calculate each of the filter components
-            hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
-            bpf = coeff1 * hpf + h0
-            lpf = coeff1 * bpf + h1
+            hpf = coeff0 * (audio_in[i] - rho * h[0] - h[1])
+            bpf = coeff1 * hpf + h[0]
+            lpf = coeff1 * bpf + h[1]
 
             # Feedback samples
-            h0 = coeff1 * hpf + bpf
-            h1 = coeff1 * bpf + lpf
+            h = torch.cat((T([coeff1 * hpf + bpf]), T([coeff1 * bpf + lpf])))
 
             if self.mode == "LPF":
                 y[i] = lpf
@@ -599,7 +597,7 @@ class TorchSVF(TorchSynthModule):
         return y
 
     @staticmethod
-    def svf_coefficients(cutoff, resonance, sample_rate):
+    def svf_coefficients(cutoff, res_coefficient, sample_rate):
         """
         Calculates the filter coefficients for SVF.
 
@@ -611,9 +609,7 @@ class TorchSVF(TorchSynthModule):
         """
 
         g = torch.tan(torch.pi * cutoff / sample_rate)
-        R = 1.0 / (2.0 * resonance)
-        coeff0 = 1.0 / (1.0 + 2.0 * R * g + g * g)
-        coeff1 = g
-        rho = 2.0 * R + g
+        coeff0 = 1.0 / (1.0 + res_coefficient * g + g * g)
+        rho = res_coefficient + g
 
-        return coeff0, coeff1, rho
+        return coeff0, g, rho
