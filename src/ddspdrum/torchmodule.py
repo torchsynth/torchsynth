@@ -532,7 +532,7 @@ class TorchSVF(TorchSynthModule):
                 ),
                 TorchParameter(
                     value=resonance,
-                    parameter_range=ParameterRange(0.5, 1000.0, "log"),
+                    parameter_range=ParameterRange(0.01, 1000.0, "log"),
                     parameter_name="resonance"
                 ),
                 TorchParameter(
@@ -559,7 +559,8 @@ class TorchSVF(TorchSynthModule):
                                         cutoff. Values must be in range [0,1]
         """
 
-        h = torch.zeros(2, device=audio_in.device)
+        h0 = 0.0
+        h1 = 0.0
         y = torch.zeros_like(audio_in, device=audio_in.device)
 
         if control_in is None:
@@ -582,12 +583,13 @@ class TorchSVF(TorchSynthModule):
             )
 
             # Calculate each of the filter components
-            hpf = coeff0 * (audio_in[i] - rho * h[0] - h[1])
-            bpf = coeff1 * hpf + h[0]
-            lpf = coeff1 * bpf + h[1]
+            hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
+            bpf = coeff1 * hpf + h0
+            lpf = coeff1 * bpf + h1
 
             # Feedback samples
-            h = torch.cat((T([coeff1 * hpf + bpf]), T([coeff1 * bpf + lpf])))
+            h0 = coeff1 * hpf + bpf
+            h1 = coeff1 * bpf + lpf
 
             if self.mode == "lpf":
                 y[i] = lpf
