@@ -517,8 +517,12 @@ class TorchSVF(TorchSynthModule):
         **kwargs
     ):
         super().__init__(**kwargs)
+
+        # Set the filter type
+        self.mode = mode.lower()
+        assert mode in ['lpf', 'hpf', 'bpf', 'bsf']
+
         nyquist = self.sample_rate / 2.0
-        self.mode = mode
         self.add_parameters(
             [
                 TorchParameter(
@@ -585,11 +589,11 @@ class TorchSVF(TorchSynthModule):
             # Feedback samples
             h = torch.cat((T([coeff1 * hpf + bpf]), T([coeff1 * bpf + lpf])))
 
-            if self.mode == "LPF":
+            if self.mode == "lpf":
                 y[i] = lpf
-            elif self.mode == "BPF":
+            elif self.mode == "bpf":
                 y[i] = bpf
-            elif self.mode == "BSF":
+            elif self.mode == "bsf":
                 y[i] = hpf + lpf
             else:
                 y[i] = hpf
@@ -613,3 +617,55 @@ class TorchSVF(TorchSynthModule):
         rho = res_coefficient + g
 
         return coeff0, g, rho
+
+
+class TorchLowPassSVF(TorchSVF):
+    """
+    IIR Low-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('lpf', **kwargs)
+
+
+class TorchHighPassSVF(TorchSVF):
+    """
+    IIR High-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('hpf', **kwargs)
+
+
+class TorchBandPassSVF(TorchSVF):
+    """
+    IIR Band-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('bpf', **kwargs)
+
+
+class TorchBandStopSVF(TorchSVF):
+    """
+    IIR Band-stop using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('bsf', **kwargs)
