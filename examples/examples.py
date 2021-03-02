@@ -561,3 +561,109 @@ fm_out = fm_vco(operator_out)
 
 stft_plot(fm_out.detach().cpu().numpy())
 ipd.Audio(fm_out.detach().cpu().numpy(), rate=fm_vco.sample_rate.item())
+# -
+
+# ### Filters
+
+# +
+from ddspdrum.torchmodule import TorchMovingAverage, FIRLowPass
+
+# Create some noise to filter
+duration = 2
+noise = torch.tensor(np.random.rand(int(44100 * duration)) * 2 - 1).float()
+stft_plot(noise.detach().numpy())
+# -
+
+# **Moving Average Filter**
+#
+# A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
+
+# +
+ma_filter = TorchMovingAverage(filter_length=32.)
+filtered = ma_filter(noise)
+
+stft_plot(filtered.detach().numpy())
+ipd.Audio(filtered.detach().numpy(), rate=44100)
+
+# +
+# Second example with a longer filter -- notice that the filter length can be fractional
+ma_filter2 = TorchMovingAverage(filter_length=64.25)
+filtered2 = ma_filter2(noise)
+
+stft_plot(filtered2.detach().numpy())
+ipd.Audio(filtered2.detach().numpy(), rate=44100)
+# -
+
+# Compute the error between the two examples and get the gradient for the filter length
+
+# +
+import torch.fft
+fft1 = torch.abs(torch.fft.fft(filtered))
+fft2 = torch.abs(torch.fft.fft(filtered2))
+
+err = torch.mean(torch.abs(fft1 - fft2))
+print("Error =", err)
+
+err.backward(retain_graph=True)
+for p in ma_filter.torchparameters:
+    print(f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}")
+# -
+
+# **FIR Lowpass**
+#
+# The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
+
+# +
+fir1 = FIRLowPass(cutoff=1024, filter_length=128.0)
+filtered1 = fir1(noise)
+
+stft_plot(filtered1.detach().numpy())
+ipd.Audio(filtered1.detach().numpy(), rate=44100)
+
+# +
+# Second filter with a lower cutoff and a longer filter
+fir2 = FIRLowPass(cutoff=256., filter_length=1024)
+filtered2 = fir2(noise)
+
+stft_plot(filtered2.detach().numpy())
+ipd.Audio(filtered2.detach().numpy(), rate=44100)
+# -
+
+# Compute the error between the two examples and check the gradient
+
+# +
+fft1 = torch.abs(torch.fft.fft(filtered1))
+fft2 = torch.abs(torch.fft.fft(filtered2))
+err = torch.mean(torch.abs(fft1 - fft2))
+print("Error =", err)
+
+err.backward(retain_graph=True)
+for p in fir1.torchparameters:
+    print(f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}")
+# -
+# Check that we can optimize towards the parameters of one of the filters using spectral loss
+
+# +
+optimizer = torch.optim.Adam(list(fir2.parameters()), lr=0.01)
+
+print(list(fir1.parameters()))
+print(list(fir2.parameters()))
+
+for i in range(100):
+    optimizer.zero_grad()
+
+    filtered1 = fir1(noise)
+    filtered2 = fir2(noise)
+    
+    fft1 = torch.abs(torch.fft.fft(filtered1))
+    fft2 = torch.abs(torch.fft.fft(filtered2))
+    
+    err = torch.mean(torch.abs(fft1 - fft2))
+        
+    print(err)
+    err.backward()
+    optimizer.step()
+
+print(list(fir1.parameters()))
+print(list(fir2.parameters()))
+# -

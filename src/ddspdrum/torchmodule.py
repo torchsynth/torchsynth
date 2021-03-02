@@ -12,7 +12,8 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import fix_length, midi_to_hz, normalize
+from ddspdrum.torchutil import (blackman, fix_length, midi_to_hz, normalize,
+                                sinc)
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -489,3 +490,137 @@ class TorchVCA(TorchSynthModule):
 
         audio_in = fix_length(audio_in, len(control_in))
         return control_in * audio_in
+
+
+class FIRLowPass(TorchSynthModule):
+    """
+    A finite impulse response low-pass filter. Uses convolution with a windowed
+    sinc function.
+
+    Parameters
+    ----------
+
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
+                            half the sampling rate. Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will
+                            result in a steeper filter cutoff. Should be greater than 4.
+                            Defaults to 512 samples.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000.0,
+        filter_length: int = 512,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=cutoff,
+                    parameter_name="cutoff",
+                    parameter_range=ParameterRange(5.0, sample_rate / 2.0, "log")
+                ),
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(4.0, 4096.)
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+        TODO: Cutoff frequency modulation, if there is an efficient way to do it
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+
+        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
+        impulse = impulse.view(1, 1, impulse.size()[0])
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(self.p("length") / 2)
+        )
+        return y[0][0]
+
+    def windowed_sinc(self, cutoff: T, length: T) -> T:
+        """
+        Calculates the impulse response for FIR low-pass filter using the
+        windowed sinc function method. Updated to allow for a fractional filter length.
+
+        Parameters
+        ----------
+
+        cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
+                                half the sampling rate.
+        length (T) :   Length of the filter impulse response to create.
+        """
+
+        # Normalized frequency
+        omega = 2 * torch.pi * cutoff / self.sample_rate
+
+        # Create a sinc function
+        num_samples = torch.ceil(length)
+        half_length = (length - 1.) / 2.
+        t = torch.arange(num_samples.detach(), device=length.device)
+        ir = sinc((t - half_length) * omega)
+
+        return ir * blackman(length)
+
+
+class TorchMovingAverage(TorchSynthModule):
+    """
+    A finite impulse response moving average filter.
+
+    Parameters
+    ----------
+
+    filter_length (int) :   Length of filter and number of samples to take average over.
+                            Must be greater than 0. Defaults to 32.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(1.0, 4096.0),
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+        length = self.p("length")
+        impulse = torch.ones((1, 1, int(length))) / length
+
+        # For non-integer impulse lengths
+        if torch.sum(impulse) < 1.0:
+            additional = torch.ones(1, 1, 1) * (1.0 - torch.sum(impulse))
+            impulse = torch.cat((impulse, additional), dim=2)
+
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(impulse.size()[0] / 2)
+        )
+        return y[0][0]
