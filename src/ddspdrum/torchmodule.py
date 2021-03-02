@@ -12,8 +12,7 @@ import torch.tensor as T
 
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import (blackman, fix_length, midi_to_hz, normalize,
-                                sinc)
+import ddspdrum.torchutil as util
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -44,7 +43,7 @@ class TorchSynthModule(nn.Module):
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
-        return fix_length(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
@@ -394,7 +393,7 @@ class TorchVCO(TorchSynthModule):
     def make_control_as_frequency(self, mod_signal: T):
         modulation = self.p("mod_depth") * mod_signal
         control_as_midi = self.p("pitch") + modulation
-        return midi_to_hz(control_as_midi)
+        return util.midi_to_hz(control_as_midi)
 
     def make_argument(self, control_as_frequency: T) -> T:
         """
@@ -453,7 +452,7 @@ class TorchFmVCO(TorchVCO):
 
     def make_control_as_frequency(self, mod_signal: T):
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = midi_to_hz(self.p("pitch"))
+        f0_hz = util.midi_to_hz(self.p("pitch"))
         fm_depth = self.p("mod_depth") * f0_hz
         modulation_hz = fm_depth * mod_signal
         return f0_hz + modulation_hz
@@ -506,7 +505,7 @@ class TorchSquareSawVCO(TorchVCO):
         can safely have more partials without causing audible aliasing.
         """
         max_pitch = self.p("pitch") + self.p("mod_depth")
-        max_f0 = midi_to_hz(max_pitch)
+        max_f0 = util.midi_to_hz(max_pitch)
         return 12000 / (max_f0 * torch.log10(max_f0))
 
 
@@ -526,13 +525,41 @@ class TorchVCA(TorchSynthModule):
         assert (control_in >= 0).all() and (control_in <= 1).all()
 
         if (audio_in <= -1).any() or (audio_in >= 1).any():
-            normalize(audio_in)
+            util.normalize(audio_in)
 
-        audio_in = fix_length(audio_in, len(control_in))
+        audio_in = util.fix_length(audio_in, len(control_in))
         return control_in * audio_in
 
-# TODO: TorchNoiseModule
-#       - tests
+
+class TorchNoise(TorchSynthModule):
+    """
+    Adds noise.
+    """
+
+    def __init__(
+            self,
+            ratio: float = 0.25,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=ratio,
+                    parameter_name="ratio",
+                    parameter_range=ParameterRange()
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        noise = self.noise_of_length(audio_in)
+        return util.crossfade(audio_in, noise, self.p("ratio"))
+
+    @staticmethod
+    def noise_of_length(audio_in: T) -> T:
+        return torch.rand_like(audio_in) * 2 - 1
 
 # TODO: TorchDummyModule
 #       - tests
@@ -542,6 +569,7 @@ class TorchVCA(TorchSynthModule):
 
 # TODO: TorchDrum
 #       - tests
+
 
 class FIRLowPass(TorchSynthModule):
     """
@@ -622,9 +650,9 @@ class FIRLowPass(TorchSynthModule):
         num_samples = torch.ceil(length)
         half_length = (length - 1.) / 2.
         t = torch.arange(num_samples.detach(), device=length.device)
-        ir = sinc((t - half_length) * omega)
+        ir = util.sinc((t - half_length) * omega)
 
-        return ir * blackman(length)
+        return ir * util.blackman(length)
 
 
 class TorchMovingAverage(TorchSynthModule):
