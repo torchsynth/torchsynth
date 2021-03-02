@@ -67,7 +67,7 @@ class TestTorchSynthModule:
                 ny = str(type(e))
                 threw = True
             for name in params:
-                params[name] = T(params[name])
+                params[name] = T(params[name]).float()
             try:
                 ty = torchmod(**params).detach().numpy()
             except Exception as e:
@@ -107,8 +107,9 @@ class TestTorchSynthModule:
         )
 
     def test_TorchFmVCO(self):
+        # Is this correct?
         numpymod = numpymodule.FmVCO()
-        torchmod = torchmodule.TorchSineVCO()
+        torchmod = torchmodule.TorchFmVCO()
         self._compare_values(
             numpymod,
             torchmod,

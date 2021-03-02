@@ -140,3 +140,15 @@ class TestTorchUtil:
                 "signal": "signal"
             }
         )
+
+    def test_sinc(self):
+        x = np.linspace(-4, 4, 41)
+        numpy_sinc = np.sinc(x / np.pi)
+        torch_sinc = torchutil.sinc(T(x).float())
+        assert np.allclose(numpy_sinc, torch_sinc.numpy())
+
+    def test_blackman(self):
+        length = 128
+        torch_blackman = torch.blackman_window(length, False)
+        blackman_2 = torchutil.blackman(T(length).float())
+        assert np.allclose(blackman_2.numpy(), torch_blackman.numpy(), atol=1e-07)
