@@ -566,6 +566,83 @@ stft_plot(square_saw_out.detach().numpy())
 ipd.Audio(square_saw_out.detach().numpy(), rate=square_saw.sample_rate.item())
 # -
 
+# **Noise Module**
+#
+# Mixes white noise into a signal
+
+# +
+from ddspdrum.torchmodule import TorchNoise
+
+# Create 1 second of white noise
+signal = torch.zeros(44100)
+noise_generator = TorchNoise(ratio=0.5, buffer_size=44100)
+noise = noise_generator(signal)
+
+stft_plot(noise.detach().numpy())
+ipd.Audio(noise.detach().numpy(), rate=noise_generator.sample_rate.item())
+
+# +
+N = 44100
+
+env1 = torch.zeros(N)
+vco1 = TorchSineVCO(midi_f0=60, buffer_size=N)
+noise1 = TorchNoise(ratio=0.75, buffer_size=N)
+
+noisy_sine_1 = noise1(vco1(env1))
+
+env2 = torch.zeros(N)
+vco2 = TorchSineVCO(midi_f0=60, buffer_size=N)
+noise2 = TorchNoise(ratio=0.25, buffer_size=N)
+
+noisy_sine_2 = noise2(vco2(env2))
+
+stft_plot(noisy_sine_1.detach().numpy())
+ipd.display(ipd.Audio(noisy_sine_1.detach().numpy(), rate=vco1.sample_rate.item()))
+
+stft_plot(noisy_sine_2.detach().numpy())
+ipd.display(ipd.Audio(noisy_sine_2.detach().numpy(), rate=vco2.sample_rate.item()))
+
+# +
+# Compute the error on the difference between the RMS level of the signals
+rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
+rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
+err = torch.abs(rms2 - rms1)
+print(err)
+
+err.backward(retain_graph=True)
+for p in noise1.torchparameters:
+    print(f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}")
+
+# +
+optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
+
+print("Parameters before optimization:")
+print(list(noise1.parameters()))
+print(list(noise2.parameters()))
+
+error_hist = []
+
+for i in range(100):
+    optimizer.zero_grad()
+
+    noisy_sine_1 = noise1(vco1(env1))
+    noisy_sine_2 = noise2(vco2(env2))
+
+    rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
+    rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
+    err = torch.abs(rms2 - rms1)
+
+    error_hist.append(err.item())
+    err.backward()
+    optimizer.step()
+
+plt.plot(error_hist)
+plt.ylabel("Error")
+plt.xlabel("Optimization steps")
+
+print("Parameters after optimization:")
+print(list(noise1.parameters()))
+print(list(noise2.parameters()))
 # -
 
 # ### Filters
@@ -671,4 +748,3 @@ for i in range(100):
 
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
-# -
