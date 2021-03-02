@@ -219,22 +219,11 @@ class ADSR(SynthModule):
         attack-and-decay (specifically, it will execute the entire attack, and
         only .25 seconds of the decay).
 
-        Alternately, you can specify a `note_on_duration` of "0" which will
-        switch the envelope to one-shot mode. In this case, the envelope moves
-        through the entire attack, decay, and release, with no held "sustain"
-        value.
-
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
 
         """
-
-        assert note_on_duration >= 0
-
-        # If sustain is "0" go to one-shot mode (moves through ADR sections).
-        if note_on_duration == 0:
-            note_on_duration = self.p("attack") + self.p("decay")
-
+        assert note_on_duration > 0
         num_samples = self.seconds_to_samples(note_on_duration)
 
         # Release decays from the last value of the attack-and-decay sections.
@@ -987,7 +976,7 @@ class MovingAverage(SynthModule):
             ]
         )
 
-    def _npyforward(self, audio: np.ndarray) -> np.ndarray:
+    def _npyforward(self, audio_in: np.ndarray) -> np.ndarray:
         """
         Filter audio samples
 
@@ -996,7 +985,7 @@ class MovingAverage(SynthModule):
 
         audio (np.ndarray)  :   audio samples to filter
         """
-        length = self.p("length")
+        length = int(self.p("length"))
         impulse = np.ones(length) / length
-        y = np.convolve(audio, impulse)
+        y = np.convolve(audio_in, impulse)
         return y
