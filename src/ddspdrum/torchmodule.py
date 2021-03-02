@@ -610,11 +610,12 @@ class TorchMovingAverage(TorchSynthModule):
         audio (T)  :   audio samples to filter
         """
         length = self.p("length")
-        impulse = torch.ones((1, 1, int(length))) / length
+        impulse = torch.ones((1, 1, int(length)), device=length.device) / length
 
         # For non-integer impulse lengths
         if torch.sum(impulse) < 1.0:
-            additional = torch.ones(1, 1, 1) * (1.0 - torch.sum(impulse))
+            additional = torch.ones(1, 1, 1, device=length.device)
+            additional *= (1.0 - torch.sum(impulse))
             impulse = torch.cat((impulse, additional), dim=2)
 
         audio_resized = audio_in.view(1, 1, audio_in.size()[0])
