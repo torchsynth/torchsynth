@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, List
+from typing import Any, List, Dict
 
 import numpy as np
 import torch
@@ -567,8 +567,100 @@ class TorchNoise(TorchSynthModule):
 # TODO: TorchSynth
 #       - tests
 
-# TODO: TorchDrum
-#       - tests
+
+class TorchSynth(nn.Module):
+    """
+
+    """
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        nn.Module.__init__(self)
+        self.sample_rate = T(sample_rate)
+        self.buffer_size = T(buffer_size)
+
+    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+
+        for name in modules:
+            if not isinstance(modules[name], TorchSynthModule):
+                raise TypeError(f"{modules[name]} is not a TorchSynthModule")
+
+            if modules[name].sample_rate != self.sample_rate:
+                raise ValueError(f"{modules[name]} sample rate does not match")
+
+            if modules[name].buffer_size != self.buffer_size:
+                raise ValueError(f"{modules[name]} buffer size does not match")
+
+            self.add_module(name, modules[name])
+
+
+class TorchDrum(TorchSynth):
+    """
+    A package of modules that makes one drum hit.
+    """
+
+    def __init__(
+        self,
+        note_on_duration: float,
+        vco_ratio: float = 0.5,
+        pitch_adsr: TorchADSR = TorchADSR(),
+        amp_adsr: TorchADSR = TorchADSR(),
+        vco_1: TorchVCO = TorchSineVCO(),
+        vco_2: TorchVCO = TorchSquareSawVCO(),
+        noise: TorchNoise = TorchNoise(),
+        vca: TorchVCA = TorchVCA(),
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        assert note_on_duration >= 0
+
+        # We assume that sustain duration is a hyper-parameter,
+        # with the mindset that if you are trying to learn to
+        # synthesize a sound, you won't be adjusting the note_on_duration.
+        # However, this is easily changed if desired.
+        self.note_on_duration = T(note_on_duration)
+
+        # Setup a dummy global parameter module
+        global_params = TorchSynthModule(
+            self.sample_rate.item(),
+            self.buffer_size.item()
+        )
+        global_params.add_parameters([
+            TorchParameter(vco_ratio, "vco_ratio", ParameterRange())
+        ])
+
+        # Register all modules as children
+        self.add_synth_modules({
+            'global_params': global_params,
+            'pitch_adsr': pitch_adsr,
+            'amp_adsr': amp_adsr,
+            'vco_1': vco_1,
+            'vco_2': vco_2,
+            'noise': noise,
+            'vca': vca
+        })
+
+    def forward(self) -> T:
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr(note_on_duration)
+        amp_envelope = self.amp_adsr(note_on_duration)
+
+        vco_1_out = self.vco_1(pitch_envelope)
+        vco_2_out = self.vco_2(pitch_envelope)
+
+        audio_out = util.crossfade(
+            vco_1_out,
+            vco_2_out,
+            self.global_params.p("vco_ratio")
+        )
+
+        audio_out = self.noise(audio_out)
+
+        return self.vca(amp_envelope, audio_out)
 
 
 class FIRLowPass(TorchSynthModule):
