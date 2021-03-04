@@ -586,7 +586,7 @@ class TorchSynth(nn.Module):
             sample_rate: int = SAMPLE_RATE,
             buffer_size: int = BUFFER_SIZE
     ):
-        nn.Module.__init__(self)
+        super().__init__()
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
 
