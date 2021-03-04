@@ -533,16 +533,20 @@ class TorchVCA(TorchSynthModule):
 
 class TorchNoise(TorchSynthModule):
     """
-    Adds noise.
+    Adds noise to a signal
+
+    Parameters
+    ----------
+    ratio (float): mix ratio between the incoming signal and the produced noise
+    **kwargs: see TorchSynthModule
     """
 
     def __init__(
             self,
             ratio: float = 0.25,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
+            **kwargs
     ):
-        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+        super().__init__(**kwargs)
         self.add_parameters(
             [
                 TorchParameter(
@@ -561,17 +565,18 @@ class TorchNoise(TorchSynthModule):
     def noise_of_length(audio_in: T) -> T:
         return torch.rand_like(audio_in) * 2 - 1
 
-# TODO: TorchDummyModule
-#       - tests
-
-# TODO: TorchSynth
-#       - tests
-
 
 class TorchSynth(nn.Module):
     """
+    Base class for synthesizers that combine one or more TorchSynthModules
+    to create a full synth architecture.
 
+    Parameters
+    ----------
+    sample_rate (int): sample rate to run this synth at
+    buffer_size (int): number of samples expected at output of child modules
     """
+
     def __init__(
             self,
             sample_rate: int = SAMPLE_RATE,
@@ -582,6 +587,14 @@ class TorchSynth(nn.Module):
         self.buffer_size = T(buffer_size)
 
     def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+        """
+        Add a set of named children TorchSynthModules to this synth. Registers them
+        with the torch nn.Module so that all parameters are recognized.
+
+        Parameters
+        ----------
+        modules (Dict): A dictionary of TorchSynthModule
+        """
 
         for name in modules:
             if not isinstance(modules[name], TorchSynthModule):
@@ -594,6 +607,13 @@ class TorchSynth(nn.Module):
                 raise ValueError(f"{modules[name]} buffer size does not match")
 
             self.add_module(name, modules[name])
+
+    def randomize(self):
+        """
+        Randomize all parameters
+        """
+        for parameter in self.parameters():
+            parameter.data = torch.rand_like(parameter)
 
 
 class TorchDrum(TorchSynth):
