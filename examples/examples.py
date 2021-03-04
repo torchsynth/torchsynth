@@ -411,8 +411,15 @@ ipd.Audio(kick, rate=sample_rate)
 # ## Torch examples
 
 
+# +
 import torch
 from ddspdrum.torchmodule import TorchADSR
+
+if torch.cuda.is_available():
+    device = "cuda:0"
+else:
+    device = "cpu"
+# -
 
 # Create a simple envelope
 
@@ -426,9 +433,9 @@ alpha = 3.0
 note_on_duration = 0.5
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha)
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.detach(), adsr.sample_rate)
+time_plot(envelope.detach().cpu(), adsr.sample_rate)
 # -
 
 # Create a second envelope, higher decay
@@ -443,16 +450,16 @@ alpha = 3.0
 note_on_duration = 0.5
 
 # Envelope test
-adsr2 = TorchADSR(a, d, s, r, alpha)
+adsr2 = TorchADSR(a, d, s, r, alpha).to(device)
 envelope2 = adsr2(note_on_duration)
-time_plot(envelope2.detach(), adsr.sample_rate)
+time_plot(envelope2.detach().cpu(), adsr.sample_rate)
 # -
 
 # Here's the l1 error
 
 err = torch.mean(torch.abs(envelope - envelope2))
 print("Error =", err)
-plt.plot(torch.abs(envelope - envelope2).detach())
+plt.plot(torch.abs(envelope - envelope2).detach().cpu())
 
 # And here are the gradients
 
@@ -473,8 +480,8 @@ for i in range(100):
     envelope2 = adsr2(note_on_duration)
     
     if i % 10 == 0:
-        time_plot(envelope.detach(), adsr.sample_rate, show=False)
-        time_plot(envelope2.detach(), adsr.sample_rate, show=False)
+        time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
+        time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
         plt.show()
     
     #print(envelope.shape)
@@ -492,28 +499,28 @@ for i in range(100):
 from ddspdrum.torchmodule import TorchSineVCO
 
 # Reset envelope
-adsr = TorchADSR(a, d, s, r, alpha)
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr(note_on_duration)
 
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0)
+sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0).to(device)
 sine_out = sine_vco(envelope, phase=0.0)
-stft_plot(sine_out.detach().numpy())
-ipd.Audio(sine_out.detach().numpy(), rate=sine_vco.sample_rate.item())
+stft_plot(sine_out.detach().cpu().numpy())
+ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 # -
 
 # SineVCO test
 midi_f0 = 12.0
-sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0)
+sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0).to(device)
 sine_out2 = sine_vco2(envelope, phase=0.0)
-stft_plot(sine_out2.detach().numpy())
-ipd.Audio(sine_out2.detach().numpy(), rate=sine_vco2.sample_rate.item())
+stft_plot(sine_out2.detach().cpu().numpy())
+ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
 
 # We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
 
 err = torch.mean(torch.abs(sine_out - sine_out2))
 print("Error =", err)
-plt.plot(torch.abs(sine_out - sine_out2).detach())
+plt.plot(torch.abs(sine_out - sine_out2).detach().cpu())
 
 err.backward(retain_graph=True)
 for p in sine_vco.torchparameters:
@@ -530,7 +537,7 @@ from ddspdrum.torchmodule import TorchVCA
 vca = TorchVCA()
 test_output = vca(envelope, sine_out)
 
-time_plot(test_output.detach().numpy())
+time_plot(test_output.detach().cpu())
 # -
 
 # Torch **FM synthesis.**
@@ -552,8 +559,8 @@ operator_out = vca(envelope, operator_out)
 fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0)
 fm_out = fm_vco(operator_out)
 
-stft_plot(fm_out.detach().numpy())
-ipd.Audio(fm_out.detach().numpy(), rate=fm_vco.sample_rate.item())
+stft_plot(fm_out.detach().cpu().numpy())
+ipd.Audio(fm_out.detach().cpu().numpy(), rate=fm_vco.sample_rate.item())
 # -
 
 # ### Filters
@@ -563,8 +570,8 @@ from ddspdrum.torchmodule import TorchMovingAverage, FIRLowPass
 
 # Create some noise to filter
 duration = 2
-noise = torch.tensor(np.random.rand(int(44100 * duration)) * 2 - 1).float()
-stft_plot(noise.detach().numpy())
+noise = torch.tensor(np.random.rand(int(44100 * duration)) * 2 - 1, device=device).float()
+stft_plot(noise.cpu().detach().numpy())
 # -
 
 # **Moving Average Filter**
@@ -572,19 +579,19 @@ stft_plot(noise.detach().numpy())
 # A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
 
 # +
-ma_filter = TorchMovingAverage(filter_length=32.)
+ma_filter = TorchMovingAverage(filter_length=32.).to(device)
 filtered = ma_filter(noise)
 
-stft_plot(filtered.detach().numpy())
-ipd.Audio(filtered.detach().numpy(), rate=44100)
+stft_plot(filtered.cpu().detach().numpy())
+ipd.Audio(filtered.cpu().detach().numpy(), rate=44100)
 
 # +
 # Second example with a longer filter -- notice that the filter length can be fractional
-ma_filter2 = TorchMovingAverage(filter_length=64.25)
+ma_filter2 = TorchMovingAverage(filter_length=64.25).to(device)
 filtered2 = ma_filter2(noise)
 
-stft_plot(filtered2.detach().numpy())
-ipd.Audio(filtered2.detach().numpy(), rate=44100)
+stft_plot(filtered2.cpu().detach().numpy())
+ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
 # -
 
 # Compute the error between the two examples and get the gradient for the filter length
@@ -607,19 +614,19 @@ for p in ma_filter.torchparameters:
 # The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
 
 # +
-fir1 = FIRLowPass(cutoff=1024, filter_length=128.0)
+fir1 = FIRLowPass(cutoff=1024, filter_length=128.0).to(device)
 filtered1 = fir1(noise)
 
-stft_plot(filtered1.detach().numpy())
-ipd.Audio(filtered1.detach().numpy(), rate=44100)
+stft_plot(filtered1.cpu().detach().numpy())
+ipd.Audio(filtered1.cpu().detach().numpy(), rate=44100)
 
 # +
 # Second filter with a lower cutoff and a longer filter
-fir2 = FIRLowPass(cutoff=256., filter_length=1024)
+fir2 = FIRLowPass(cutoff=256., filter_length=1024).to(device)
 filtered2 = fir2(noise)
 
-stft_plot(filtered2.detach().numpy())
-ipd.Audio(filtered2.detach().numpy(), rate=44100)
+stft_plot(filtered2.cpu().detach().numpy())
+ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
 # -
 
 # Compute the error between the two examples and check the gradient
@@ -660,6 +667,5 @@ for i in range(100):
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
 # -
-
 
 
