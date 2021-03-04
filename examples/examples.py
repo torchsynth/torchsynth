@@ -413,6 +413,7 @@ ipd.Audio(kick, rate=sample_rate)
 
 # +
 import torch
+import torch.fft
 from ddspdrum.torchmodule import TorchADSR
 
 if torch.cuda.is_available():
@@ -565,13 +566,28 @@ ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
 # +
 from ddspdrum.torchmodule import TorchSquareSawVCO
 
+square_saw1 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=0.0).to(device)
+env1 = torch.zeros(square_saw1.buffer_size, device=device)
+
+square_saw_out1 = square_saw1(env1, phase=0.0)
+stft_plot(square_saw_out1.cpu().detach().numpy())
+ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.item())
+
+# +
 # SquareSawVCO test
-midi_f0 = 12.0
-square_saw = TorchSquareSawVCO(midi_f0=30.0, mod_depth=50.0, shape=0.5).to(device)
-square_saw_out = square_saw(envelope, phase=0.0)
-stft_plot(square_saw_out.cpu().detach().numpy())
-ipd.Audio(square_saw_out.cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+square_saw2 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=1.0).to(device)
+env2 = torch.zeros(square_saw2.buffer_size, device=device)
+
+square_saw_out2 = square_saw2(env2, phase=0.0)
+stft_plot(square_saw_out2.cpu().detach().numpy())
+ipd.Audio(square_saw_out2.cpu().detach().numpy(), rate=square_saw2.sample_rate.item())
 # -
+
+err = torch.mean(torch.abs(square_saw_out2 - square_saw_out1))
+print(err)
+err.backward(retain_graph=True)
+for p in square_saw1.torchparameters:
+    print(f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}")
 
 # **Noise Module**
 #
@@ -762,7 +778,6 @@ ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
 # Compute the error between the two examples and get the gradient for the filter length
 
 # +
-import torch.fft
 fft1 = torch.abs(torch.fft.fft(filtered))
 fft2 = torch.abs(torch.fft.fft(filtered2))
 
