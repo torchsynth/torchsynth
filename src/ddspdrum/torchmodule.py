@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, List, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
