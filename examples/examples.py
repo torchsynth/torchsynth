@@ -728,8 +728,11 @@ for p in fir1.torchparameters:
 # +
 optimizer = torch.optim.Adam(list(fir2.parameters()), lr=0.01)
 
+print("Parameters before optimization:")
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
+
+error_hist = []
 
 for i in range(100):
     optimizer.zero_grad()
@@ -742,9 +745,87 @@ for i in range(100):
     
     err = torch.mean(torch.abs(fft1 - fft2))
         
-    print(err)
+    error_hist.append(err.item())
     err.backward()
     optimizer.step()
 
+plt.plot(error_hist)
+plt.ylabel("Error")
+plt.xlabel("Optimization steps")
+
+print("Parameters after optimization:")
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
+# -
+
+# ### Drum Module
+
+# +
+from ddspdrum.torchmodule import TorchDrum
+
+drum1 = TorchDrum(
+    pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
+    vco_1=TorchSineVCO(midi_f0=69, mod_depth=12),
+    noise=TorchNoise(ratio=0.5),
+    note_on_duration=1.0,
+)
+
+drum_out1 = drum1()
+stft_plot(drum_out1.detach().numpy())
+ipd.Audio(drum_out1.detach().numpy(), rate=drum.sample_rate.item())
+# -
+
+# Additionally, the Drum class can take two oscillators.
+
+# +
+drum2 = TorchDrum(
+    pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
+    amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
+    vco_1=TorchSineVCO(midi_f0=40, mod_depth=12),
+    vco_2=TorchSquareSawVCO(midi_f0=40, mod_depth=12, shape=0.5),
+    noise=TorchNoise(ratio=0.01),
+    note_on_duration=1.0,
+)
+
+drum_out2 = drum2()
+stft_plot(drum_out2.detach().numpy())
+ipd.Audio(drum_out2.detach().numpy(), rate=drum.sample_rate.item())
+# -
+
+# Test gradients on entire drum
+
+err = torch.mean(torch.abs(drum_out1 - drum_out2))
+print(err)
+
+err.backward(retain_graph=True)
+for (p1, p2) in zip(drum1.parameters(), drum2.parameters()):
+    print(f"{p1.parameter_name} grad1={p1.grad.item()} grad2={p2.grad.item()}")
+
+# ### Parameters
+# The list of available parameters and the modules they are associated with can be viewed by printing the module. TODO include explanation of the ranging.
+
+print(drum1)
+
+# Parameters of individual modules can be accessed in several ways.
+
+# +
+# Get the full TorchParameter object by name from the module
+print(drum1.vco_1.get_parameter("pitch"))
+
+# Access the value as a Tensor in the full value human range
+print(drum1.vco_1.p("pitch"))
+
+# Access the value as a float in the range from 0 to 1
+print(drum1.vco_1.get_parameter_0to1("pitch"))
+# -
+
+# ### Generating Random Patches
+
+drum = TorchDrum(note_on_duration=1.0)
+for i in range(10):
+    drum.randomize()
+    drum_out = drum()
+    display(ipd.Audio(drum_out.detach().numpy(), rate=drum.sample_rate.item()))
+
+
