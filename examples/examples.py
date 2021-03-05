@@ -856,4 +856,74 @@ print(list(fir1.parameters()))
 print(list(fir2.parameters()))
 # -
 
+# #### IIR Filters
+#
+# A set of IIR filters using a SVF filter design approach are shown here, included filters are a lowpass, highpass, bandpass, and bandstop (or notch).
+#
+# IIR filters are really slow in Torch, so we're only testing with a shorter buffer
 
+# +
+from ddspdrum.torchmodule import TorchLowPassSVF, TorchHighPassSVF, TorchBandPassSVF, TorchBandStopSVF
+import torch.fft
+
+# Noise for testing
+buffer = 4096
+noise = torch.tensor(np.random.random(buffer) * 2 - 1, device=device).float()
+stft_plot(noise.cpu().numpy())
+# -
+
+# We'll create two lowpass filters with different cutoffs and filter resonance to compare. The second filter has higher resonance at the filter cutoff, this causes the filter to ring at that frequency. This can be seen in the spectrogram as a darker line at the cutoff.
+
+# +
+lpf1 = TorchLowPassSVF(cutoff=500, resonance=1.0, buffer_size=buffer).to(device)
+filtered1 = lpf1(noise)
+
+stft_plot(filtered1.cpu().detach().numpy())
+
+# +
+lpf2 = TorchLowPassSVF(cutoff=1000, resonance=10, buffer_size=buffer).to(device)
+filtered2 = lpf2(noise)
+
+stft_plot(filtered2.cpu().detach().numpy())
+# -
+
+# Error and gradients for the two lowpass filters
+
+# +
+spectrum1 = torch.abs(torch.fft.fft(filtered1))
+spectrum2 = torch.abs(torch.fft.fft(filtered2))
+
+err = torch.mean(torch.abs(spectrum1 - spectrum2))
+print(err)
+# -
+
+err.backward(retain_graph=True)
+for p in lpf1.torchparameters:
+    print(f"{p} grad1={lpf1.torchparameters[p].grad.item()} grad2={lpf2.torchparameters[p].grad.item()}")
+
+# Let's checkout some other SVF filters
+
+# +
+# Highpass
+hpf = TorchHighPassSVF(cutoff=2048, buffer_size=buffer)
+filtered = hpf(noise)
+
+stft_plot(filtered.cpu().detach().numpy())
+# -
+
+# We can also apply an envelope to the filter frequency. The mod_depth parameter determines how much effect the envelope will have on the cutoff. In this example a simple decay envelope is applied to the cutoff frequency, which has a base value of 20Hz, and has a duration of 100ms. The mod_depth is 10,000Hz, which means that as the envelope travels from 1 to 0, the cutoff will go from 10,020Hz down to 20Hz. The envelope is passed in as an extra argument to the call function on the filter.
+
+# +
+# Bandpass with envelope
+env = TorchADSR(a=0, d=0.1, s=0.0, r=0.0, buffer_size=buffer)(0.1)
+bpf = TorchBandPassSVF(cutoff=20, resonance=30, mod_depth=10000, buffer_size=buffer)
+
+filtered = bpf(noise, env)
+stft_plot(filtered.cpu().detach().numpy())
+
+# +
+# Bandstop
+bsf = TorchBandStopSVF(cutoff=2000, resonance=0.05, buffer_size=buffer)
+filtered = bsf(noise)
+
+stft_plot(filtered.cpu().detach().numpy())
