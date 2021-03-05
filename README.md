@@ -3,6 +3,9 @@
 torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
 
+[![PyPI](https://img.shields.io/pypi/v/torchsynth)](https://pypi.org/project/torchsynth/)
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/torchsynth)
+![PyPI - License](https://img.shields.io/pypi/l/torchsynth)
 [![codecov.io](https://codecov.io/gh/turian/torchsynth/branch/main/graphs/badge.svg?logoWidth=18)](https://codecov.io/github/turian/torchsynth?branch=master)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
