@@ -3,16 +3,16 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, List
+from typing import Any, Dict, List
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.tensor as T
 
+import ddspdrum.torchutil as util
 from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
 from ddspdrum.parameter import ParameterRange, TorchParameter
-from ddspdrum.torchutil import fix_length, midi_to_hz, normalize
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -43,7 +43,7 @@ class TorchSynthModule(nn.Module):
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
-        return fix_length(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         return torch.round(seconds * self.sample_rate).int()
@@ -52,7 +52,7 @@ class TorchSynthModule(nn.Module):
         """
         Each TorchSynthModule should override this.
         """
-        pass
+        raise NotImplementedError("Derived classes must override this method")
 
     def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
@@ -253,8 +253,11 @@ class TorchADSR(TorchSynthModule):
         """
 
         assert duration.ndim == 0
-        t = torch.arange(self.seconds_to_samples(duration).item()) / self.sample_rate
-        ramp = t * (1 / duration)
+        t = torch.arange(
+            self.seconds_to_samples(duration).item(),
+            device=duration.device
+        )
+        ramp = t * (1 / duration) / self.sample_rate
 
         if inverse:
             ramp = 1.0 - ramp
@@ -286,7 +289,8 @@ class TorchADSR(TorchSynthModule):
             out_ = out_[:num_samples]
         else:
             hold_samples = num_samples - len(out_)
-            sustain = torch.ones(hold_samples) * self.p("sustain")
+            sustain = torch.ones(hold_samples, device=self.p("sustain").device)
+            sustain = sustain * self.p("sustain")
             out_ = torch.cat((out_, sustain))
 
         return out_
@@ -393,7 +397,7 @@ class TorchVCO(TorchSynthModule):
     def make_control_as_frequency(self, mod_signal: T):
         modulation = self.p("mod_depth") * mod_signal
         control_as_midi = self.p("pitch") + modulation
-        return midi_to_hz(control_as_midi)
+        return util.midi_to_hz(control_as_midi)
 
     def make_argument(self, control_as_frequency: T) -> T:
         """
@@ -452,7 +456,7 @@ class TorchFmVCO(TorchVCO):
 
     def make_control_as_frequency(self, mod_signal: T):
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = midi_to_hz(self.p("pitch"))
+        f0_hz = util.midi_to_hz(self.p("pitch"))
         fm_depth = self.p("mod_depth") * f0_hz
         modulation_hz = fm_depth * mod_signal
         return f0_hz + modulation_hz
@@ -462,7 +466,51 @@ class TorchFmVCO(TorchVCO):
         return torch.cos(argument)
 
 
-# TODO: TorchSquareSawVCO
+class TorchSquareSawVCO(TorchVCO):
+    """
+    VCO that can be either a square or a sawtooth waveshape.
+    Tweak with the shape parameter. (0 is square.)
+
+    With apologies to:
+
+    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
+        virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+    """
+
+    def __init__(
+        self,
+        shape: float = 0.0,
+        midi_f0: float = 10.0,
+        mod_depth: float = 50.0,
+        phase: float = 0.0,
+     ):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=shape,
+                    parameter_name="shape",
+                    parameter_range=ParameterRange(0.0, 1.0)
+                )
+            ]
+        )
+
+    def oscillator(self, argument):
+        square = torch.tanh(torch.pi * self.partials_constant * torch.sin(argument) / 2)
+        shape = self.p("shape")
+        return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
+
+    @property
+    def partials_constant(self):
+        """
+        Constant value that determines the number of partials in the resulting
+        square / saw wave in order to keep aliasing at an acceptable level.
+        Higher frequencies require fewer partials whereas lower frequency sounds
+        can safely have more partials without causing audible aliasing.
+        """
+        max_pitch = self.p("pitch") + self.p("mod_depth")
+        max_f0 = util.midi_to_hz(max_pitch)
+        return 12000 / (max_f0 * torch.log10(max_f0))
 
 
 class TorchVCA(TorchSynthModule):
@@ -481,10 +529,311 @@ class TorchVCA(TorchSynthModule):
         assert (control_in >= 0).all() and (control_in <= 1).all()
 
         if (audio_in <= -1).any() or (audio_in >= 1).any():
-            normalize(audio_in)
+            util.normalize(audio_in)
 
-        audio_in = fix_length(audio_in, len(control_in))
+        audio_in = util.fix_length(audio_in, len(control_in))
         return control_in * audio_in
+
+
+class TorchNoise(TorchSynthModule):
+    """
+    Adds noise to a signal
+
+    Parameters
+    ----------
+    ratio (float): mix ratio between the incoming signal and the produced noise
+    **kwargs: see TorchSynthModule
+    """
+
+    def __init__(
+            self,
+            ratio: float = 0.25,
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=ratio,
+                    parameter_name="ratio",
+                    parameter_range=ParameterRange(0.0, 1.0)
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        noise = self.noise_of_length(audio_in)
+        return util.crossfade(audio_in, noise, self.p("ratio"))
+
+    @staticmethod
+    def noise_of_length(audio_in: T) -> T:
+        return torch.rand_like(audio_in) * 2 - 1
+
+
+class TorchSynthParameters(TorchSynthModule):
+    """
+    A SynthModule that is strictly for managing parameters
+    """
+
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate, buffer_size)
+
+    def _forward(self, *args: Any, **kwargs: Any) -> T:
+        raise RuntimeError("TorchSynthParameters cannot be called")
+
+
+class TorchSynth(nn.Module):
+    """
+    Base class for synthesizers that combine one or more TorchSynthModules
+    to create a full synth architecture.
+
+    Parameters
+    ----------
+    sample_rate (int): sample rate to run this synth at
+    buffer_size (int): number of samples expected at output of child modules
+    """
+
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__()
+        self.sample_rate = T(sample_rate)
+        self.buffer_size = T(buffer_size)
+
+        # Global Parameter Module
+        self.global_params = TorchSynthParameters(sample_rate, buffer_size)
+
+    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+        """
+        Add a set of named children TorchSynthModules to this synth. Registers them
+        with the torch nn.Module so that all parameters are recognized.
+
+        Parameters
+        ----------
+        modules (Dict): A dictionary of TorchSynthModule
+        """
+
+        for name in modules:
+            if not isinstance(modules[name], TorchSynthModule):
+                raise TypeError(f"{modules[name]} is not a TorchSynthModule")
+
+            if modules[name].sample_rate != self.sample_rate:
+                raise ValueError(f"{modules[name]} sample rate does not match")
+
+            if modules[name].buffer_size != self.buffer_size:
+                raise ValueError(f"{modules[name]} buffer size does not match")
+
+            self.add_module(name, modules[name])
+
+    def randomize(self):
+        """
+        Randomize all parameters
+        """
+        for parameter in self.parameters():
+            parameter.data = torch.rand_like(parameter)
+
+
+class TorchDrum(TorchSynth):
+    """
+    A package of modules that makes one drum hit.
+    """
+
+    def __init__(
+        self,
+        note_on_duration: float,
+        vco_ratio: float = 0.5,
+        pitch_adsr: TorchADSR = TorchADSR(),
+        amp_adsr: TorchADSR = TorchADSR(),
+        vco_1: TorchVCO = TorchSineVCO(),
+        vco_2: TorchVCO = TorchSquareSawVCO(),
+        noise: TorchNoise = TorchNoise(),
+        vca: TorchVCA = TorchVCA(),
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        assert note_on_duration >= 0
+
+        # We assume that sustain duration is a hyper-parameter,
+        # with the mindset that if you are trying to learn to
+        # synthesize a sound, you won't be adjusting the note_on_duration.
+        # However, this is easily changed if desired.
+        self.note_on_duration = T(note_on_duration)
+
+        # Add required global parameters
+        self.global_params.add_parameters([
+            TorchParameter(vco_ratio, "vco_ratio", ParameterRange(0.0, 1.0))
+        ])
+
+        # Register all modules as children
+        self.add_synth_modules({
+            'pitch_adsr': pitch_adsr,
+            'amp_adsr': amp_adsr,
+            'vco_1': vco_1,
+            'vco_2': vco_2,
+            'noise': noise,
+            'vca': vca
+        })
+
+    def forward(self) -> T:
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr(note_on_duration)
+        amp_envelope = self.amp_adsr(note_on_duration)
+
+        vco_1_out = self.vco_1(pitch_envelope)
+        vco_2_out = self.vco_2(pitch_envelope)
+
+        audio_out = util.crossfade(
+            vco_1_out,
+            vco_2_out,
+            self.global_params.p("vco_ratio")
+        )
+
+        audio_out = self.noise(audio_out)
+
+        return self.vca(amp_envelope, audio_out)
+
+
+class FIRLowPass(TorchSynthModule):
+    """
+    A finite impulse response low-pass filter. Uses convolution with a windowed
+    sinc function.
+
+    Parameters
+    ----------
+
+    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
+                            half the sampling rate. Defaults to 1000Hz.
+    filter_length (int) :   The length of the filter in samples. A longer filter will
+                            result in a steeper filter cutoff. Should be greater than 4.
+                            Defaults to 512 samples.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(
+        self,
+        cutoff: float = 1000.0,
+        filter_length: int = 512,
+        sample_rate: int = SAMPLE_RATE,
+    ):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=cutoff,
+                    parameter_name="cutoff",
+                    parameter_range=ParameterRange(5.0, sample_rate / 2.0, "log")
+                ),
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(4.0, 4096.)
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+        TODO: Cutoff frequency modulation, if there is an efficient way to do it
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+
+        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
+        impulse = impulse.view(1, 1, impulse.size()[0])
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(self.p("length") / 2)
+        )
+        return y[0][0]
+
+    def windowed_sinc(self, cutoff: T, length: T) -> T:
+        """
+        Calculates the impulse response for FIR low-pass filter using the
+        windowed sinc function method. Updated to allow for a fractional filter length.
+
+        Parameters
+        ----------
+
+        cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
+                                half the sampling rate.
+        length (T) :   Length of the filter impulse response to create.
+        """
+
+        # Normalized frequency
+        omega = 2 * torch.pi * cutoff / self.sample_rate
+
+        # Create a sinc function
+        num_samples = torch.ceil(length)
+        half_length = (length - 1.) / 2.
+        t = torch.arange(num_samples.detach(), device=length.device)
+        ir = util.sinc((t - half_length) * omega)
+
+        return ir * util.blackman(length)
+
+
+class TorchMovingAverage(TorchSynthModule):
+    """
+    A finite impulse response moving average filter.
+
+    Parameters
+    ----------
+
+    filter_length (int) :   Length of filter and number of samples to take average over.
+                            Must be greater than 0. Defaults to 32.
+    sample_rate (int)   :   Sampling rate to run processing at.
+    """
+
+    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=filter_length,
+                    parameter_name="length",
+                    parameter_range=ParameterRange(1.0, 4096.0),
+                )
+            ]
+        )
+
+    def _forward(self, audio_in: T) -> T:
+        """
+        Filter audio samples
+
+        Parameters
+        ----------
+
+        audio (T)  :   audio samples to filter
+        """
+        length = self.p("length")
+        impulse = torch.ones((1, 1, int(length)), device=length.device) / length
+
+        # For non-integer impulse lengths
+        if torch.sum(impulse) < 1.0:
+            additional = torch.ones(1, 1, 1, device=length.device)
+            additional *= (1.0 - torch.sum(impulse))
+            impulse = torch.cat((impulse, additional), dim=2)
+
+        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
+        y = nn.functional.conv1d(
+            audio_resized,
+            impulse,
+            padding=int(impulse.size()[0] / 2)
+        )
+        return y[0][0]
 
 
 class TorchSVF(TorchSynthModule):
@@ -509,12 +858,12 @@ class TorchSVF(TorchSynthModule):
     """
 
     def __init__(
-        self,
-        mode: str,
-        cutoff: float = 1000.0,
-        resonance: float = 0.707,
-        mod_depth: float = 0.0,
-        **kwargs
+            self,
+            mode: str,
+            cutoff: float = 1000.0,
+            resonance: float = 0.707,
+            mod_depth: float = 0.0,
+            **kwargs
     ):
         super().__init__(**kwargs)
 
