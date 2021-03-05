@@ -1,6 +1,6 @@
-# # ddsp-drum examples
+# # torchsynth examples
 #
-# We walk through basic functionality of `ddsp-drum` in this Jupyter notebook.
+# We walk through basic functionality of `torchsynth` in this Jupyter notebook.
 # Just note that all ipd.Audio play widgets normalize the audio.
 
 # +
@@ -14,11 +14,19 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torch.fft
 
+from ddspdrum.torchmodule import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
 from ddspdrum.defaults import SAMPLE_RATE
-from ddspdrum import ADSR, Drum, FmVCO, NoiseModule, SineVCO, SquareSawVCO, VCA
-
 # -
+
+
+# Run examples on GPU if available
+if torch.cuda.is_available():
+    device = "cuda"
+else:
+    device = "cpu"
 
 
 def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
@@ -83,357 +91,6 @@ alpha = 3.0
 note_on_duration = 0.5
 
 # Envelope test
-adsr = ADSR(a, d, s, r, alpha)
-envelope = adsr.npyforward(note_on_duration)
-time_plot(envelope, adsr.sample_rate)
-# -
-
-# ## Oscillators
-
-# SineVCO test
-midi_f0 = 12
-sine_vco = SineVCO(midi_f0=midi_f0, mod_depth=50)
-sine_out = sine_vco.npyforward(envelope, phase=0)
-stft_plot(sine_out)
-ipd.Audio(sine_out, rate=sine_vco.sample_rate)
-
-# Check this out, it's a square / saw oscillator. Use the shape parameter to
-# interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
-
-# +
-# SquareSawVCO test: shape 0 --> square, 1 --> saw.
-
-shape = 0
-midi_f0 = 24
-sqs = SquareSawVCO(shape=shape, midi_f0=midi_f0, mod_depth=6)
-sqs_out = sqs.npyforward(envelope, phase=0)
-# -
-
-stft_plot(sqs_out)
-ipd.Audio(sqs_out, rate=sqs.sample_rate)
-
-# Add noise with the NoiseModule class.
-
-# +
-# NoiseModule test.
-
-noiser = NoiseModule(ratio=0.5)
-noisey_out = noiser.npyforward(sqs_out)
-# -
-
-time_plot(noisey_out)
-stft_plot(noisey_out)
-ipd.Audio(noisey_out, rate=sqs.sample_rate)
-
-# Notice that this sound is rather clicky. We'll add an envelope to the
-# amplitude to smooth it out.
-
-# VCA test
-vca = VCA()
-vca_out = vca.npyforward(envelope, noisey_out)
-
-time_plot(vca_out)
-stft_plot(vca_out)
-ipd.Audio(vca_out, rate=vca.sample_rate)
-
-# What about **FM synthesis**? You bet. Use the `FmVCO` class. It accepts any audio input.
-#
-# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
-
-# +
-# FM Example.
-
-# Create operator that doesn't modulate in pitch.
-op_osc = SineVCO(midi_f0=50, mod_depth=0)
-op_raw = op_osc.npyforward(envelope)
-
-# Shape "amplitude" of modulator.
-modulator = vca.npyforward(envelope, op_raw)
-time_plot(modulator[:22050])
-
-fm_vco = FmVCO(midi_f0=62, mod_depth=3)
-fm_out = fm_vco.npyforward(modulator)
-fm_out = vca.npyforward(envelope, fm_out)
-
-stft_plot(fm_out[:22050])
-time_plot(fm_out[:22050])
-ipd.Audio(fm_out, rate=sine_vco.sample_rate)
-# -
-
-# Alternately, you can just use the Drum class that composes all these modules
-# together automatically.
-
-# +
-my_drum = Drum(
-    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
-    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco_1=SineVCO(midi_f0=69, mod_depth=12),
-    noise_module=NoiseModule(ratio=0.5),
-    note_on_duration=1,
-)
-
-drum_out = my_drum.npyforward()
-
-stft_plot(drum_out)
-
-ipd.Audio(drum_out, rate=vca.sample_rate)
-# -
-# Additionally, the Drum class can take two oscillators.
-
-my_drum = Drum(
-    pitch_adsr=ADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
-    amp_adsr=ADSR(0.25, 0.25, 0.25, 0.25),
-    vco_1=SquareSawVCO(shape=0, midi_f0=23.95, mod_depth=12),
-    vco_2=SquareSawVCO(shape=0, midi_f0=24.05, mod_depth=12),
-    noise_module=NoiseModule(ratio=0.1),
-    note_on_duration=1,
-)
-
-drum_out = my_drum.npyforward()
-stft_plot(drum_out)
-ipd.Audio(drum_out, rate=vca.sample_rate)
-
-# ### Parameters
-
-# All synth modules and synth classes have named parameters which can be quered
-# and updated. Let's look at the parameters for the Drum we just created. Each
-# of these parameters shows the current value, minimum, maximum, and scale. The
-# min and max refer to the smallest and largest values that parameter can take
-# on. The scale value controls conversion between a range of 0 and 1. Let's look
-# at that more below.
-
-my_drum.modparameters
-
-# Can also look at parameters by printing the object
-# TODO: this looks a little messy. I know it gets tricky with nested repr. But... just saying.
-print(my_drum)
-
-# Setting a parameter with a range of [0,1]
-
-my_drum.set_modparameter_0to1("pitch_attack", 0.25)
-print(my_drum.modparameters['pitch_attack'])
-
-drum_out = my_drum.npyforward()
-stft_plot(drum_out)
-ipd.Audio(drum_out, rate=vca.sample_rate)
-
-# Setting a parameter with regular range
-
-# +
-my_drum.set_modparameter("amp_attack", 1.25)
-print(my_drum.modparameters['amp_attack'])
-
-# Get the value in the range 0 to 1
-print("Value in 0 to 1 range: ", my_drum.get_modparameter_0to1('amp_attack'))
-# -
-
-drum_out = my_drum.npyforward()
-stft_plot(drum_out)
-ipd.Audio(drum_out, rate=vca.sample_rate)
-
-# # Random synths
-#
-# Let's generate some random synths
-
-drum = Drum(note_on_duration=1.0)
-for i in range(10):
-    drum.randomize()
-    drum_out = drum.npyforward()
-    stft_plot(drum_out)
-    display(ipd.Audio(drum_out, rate=vca.sample_rate))
-
-# # Filter Examples
-#
-# Example usage of three types of filters. Two finite impulse
-# response (FIR) lowpasses and an infinite impulse response (IIR)
-# state variable filter.
-
-from ddspdrum.module import (
-    FIR,
-    BandPassSVF,
-    BandRejectSVF,
-    HighPassSVF,
-    LowPassSVF,
-    MovingAverage,
-)
-
-# Create some white noise to perform filtering on -- **Watch out it is loud!**
-
-# +
-sample_rate = 44100
-duration = 2.0
-noise = np.random.rand(int(sample_rate * duration)) * 2 - 1
-ipd.display(ipd.Audio(noise, rate=sample_rate))
-
-# Spectrogram
-plt.specgram(noise, Fs=sample_rate)
-plt.show()
-# -
-
-# **FIR - Windowed Sinc**
-#
-# Finite Impulse Response (FIR) lowpass with a cutoff frequency of 5000Hz.
-# Filter length controls the slope of the cutoff. A longer filter will have a
-# sharper cutoff.
-
-# +
-lpf = FIR(cutoff=5000, filter_length=1024)
-filtered_fir = lpf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_fir, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_fir, Fs=sample_rate)
-plt.show()
-# -
-
-# Now with a shorter filter of length 32
-
-# +
-lpf = FIR(cutoff=5000, filter_length=32)
-filtered_fir = lpf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_fir, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_fir, Fs=sample_rate)
-plt.show()
-# -
-
-# **FIR - Moving Average**
-
-# +
-ma_lpf = MovingAverage()
-filtered_ma = ma_lpf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_ma, Fs=sample_rate)
-plt.show()
-# -
-
-# Moving average with a longer filter
-
-# +
-ma_lpf = MovingAverage(filter_length=64)
-filtered_ma = ma_lpf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_ma, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_ma, Fs=sample_rate)
-plt.show()
-# -
-
-# **IIR -State Variable Filter**
-#
-# State variable filter with the same cutoff -- the slope is much more relaxed
-# with this filter
-
-# +
-svf = LowPassSVF(cutoff=5000)
-filtered_svf = svf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_svf, Fs=sample_rate)
-plt.show()
-# -
-
-# With an SVF we can resonate at the cutoff frequency
-
-# +
-svf = LowPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_svf, Fs=sample_rate)
-plt.show()
-# -
-
-# SVF as a high-pass filter
-
-# +
-svf = HighPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_svf, Fs=sample_rate)
-plt.show()
-# -
-
-# SVF as a band-pass filter
-
-# +
-svf = BandPassSVF(cutoff=5000, resonance=20.0)
-filtered_svf = svf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_svf, Fs=sample_rate)
-plt.show()
-# -
-
-# SVF as a band-reject / band-stop filter (no resonance now)
-
-# +
-svf = BandRejectSVF(cutoff=5000)
-filtered_svf = svf.npyforward(noise)
-ipd.display(ipd.Audio(filtered_svf, rate=sample_rate))
-
-# Plot Spectrogram
-plt.specgram(filtered_svf, Fs=sample_rate)
-plt.show()
-# -
-
-# **Kick drum with SVF**
-#
-# With high resonance and an envelope applied to the cutoff frequency we can get
-# something like a kick drum. To get the filter resonating we can use a short
-# burst of noise.
-
-duration = 1.0
-signal = np.zeros(int(sample_rate * duration))
-click = np.random.rand(int(sample_rate * 0.001)) * 2 - 1
-signal[: len(click)] = click
-plt.plot(signal)
-ipd.Audio(signal, rate=sample_rate)
-
-# Envelope to apply to the cutoff frequency
-cutoff_mod = np.linspace(1, 0, len(signal)) ** 12.0
-plt.plot(cutoff_mod)
-
-# Apply filter and listen to results
-svf = LowPassSVF(cutoff=45, resonance=50)
-kick = svf.npyforward(signal, cutoff_mod=cutoff_mod, cutoff_mod_amount=150)
-plt.plot(kick)
-ipd.Audio(kick, rate=sample_rate)
-
-# ## Torch examples
-
-
-# +
-import torch
-import torch.fft
-from ddspdrum.torchmodule import TorchADSR
-
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
-# -
-
-# Create a simple envelope
-
-# +
-# Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.75
-r = 0.5
-alpha = 3.0
-note_on_duration = 0.5
-
-# Envelope test
 adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr(note_on_duration)
 time_plot(envelope.detach().cpu(), adsr.sample_rate)
@@ -456,7 +113,7 @@ envelope2 = adsr2(note_on_duration)
 time_plot(envelope2.detach().cpu(), adsr.sample_rate)
 # -
 
-# Here's the l1 error
+# Here's the l1 error between the two envelopes
 
 err = torch.mean(torch.abs(envelope - envelope2))
 print("Error =", err)
@@ -468,36 +125,42 @@ err.backward(retain_graph=True)
 for p in adsr.torchparameters:
     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
 
+# We can also use an optimizer to match the parameters of the two ADSRs
+
 # +
-#optimizer = torch.optim.SGD(list(adsr.parameters()) + list(adsr2.parameters()), lr=0.0001, momentum=0.9)
+# %matplotlib notebook
+
 optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
+
+fig, ax = plt.subplots()
+time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
+time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
+plt.show()
 
 for i in range(100):
     optimizer.zero_grad()
-    #print(list(adsr.parameters()))
-    #print(list(adsr2.parameters()))
-    #print(note_on_duration)
+
     envelope = adsr(note_on_duration)
     envelope2 = adsr2(note_on_duration)
-    
-    if i % 10 == 0:
-        time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
-        time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
-        plt.show()
-    
-    #print(envelope.shape)
-    #print(envelope2.shape)
     err = torch.mean(torch.abs(envelope - envelope2))
-    print(err)
+        
+    if i % 10 == 0:
+        ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
+        ax.lines[0].set_ydata(envelope.detach().cpu())
+        ax.lines[1].set_ydata(envelope2.detach().cpu())
+        fig.canvas.draw()
+    
     err.backward()
     optimizer.step()
 
 # -
 
-# SineVCO vs SineVCO with higher midi_f0
+# ## Oscillators
+#
+# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`TorchSineVCO`, a square/saw oscillator: `TorchSquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `TorchNoise`.
 
 # +
-from ddspdrum.torchmodule import TorchSineVCO
+# %matplotlib inline
 
 # Reset envelope
 adsr = TorchADSR(a, d, s, r, alpha).to(device)
@@ -509,6 +172,8 @@ sine_out = sine_vco(envelope, phase=0.0)
 stft_plot(sine_out.detach().cpu().numpy())
 ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 # -
+
+# SineVCO vs SineVCO with higher midi_f0
 
 # SineVCO test
 midi_f0 = 12.0
@@ -530,38 +195,10 @@ for p in sine_vco.torchparameters:
 for p in adsr.torchparameters:
     print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
 
-# Testing the `TorchVCA` class.
-
-# +
-from ddspdrum.torchmodule import TorchVCA
-
-vca = TorchVCA()
-test_output = vca(envelope, sine_out)
-
-time_plot(test_output.detach().cpu())
-# -
-
-# Torch **FM synthesis.**
-
-# +
-from ddspdrum.torchmodule import TorchFmVCO
-
-# FmVCO test
-midi_f0 = 50.0
-
-# Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0).to(device)
-operator_out = sine_operator(envelope)
-
-# Shape the modulation depth.
-operator_out = vca(envelope, operator_out)
-
-# Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0).to(device)
-fm_out = fm_vco(operator_out)
-
-stft_plot(fm_out.cpu().detach().numpy())
-ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
+# ### SquareSaw Oscillator
+#
+# Check this out, it's a square / saw oscillator. Use the shape parameter to
+# interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
 # +
 from ddspdrum.torchmodule import TorchSquareSawVCO
@@ -589,12 +226,50 @@ err.backward(retain_graph=True)
 for p in square_saw1.torchparameters:
     print(f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}")
 
-# **Noise Module**
+# ### VCA
 #
-# Mixes white noise into a signal
+# Notice that this sound is rather clicky. We'll add an envelope to the
+# amplitude to smooth it out.
 
 # +
-from ddspdrum.torchmodule import TorchNoise
+vca = TorchVCA()
+test_output = vca(envelope, sine_out)
+
+time_plot(test_output.detach().cpu())
+# -
+
+# ### FM Synthesis
+#
+# What about FM? You bet. Use the `TorchFmVCO` class. It accepts any audio input.
+#
+# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
+
+# +
+from ddspdrum.torchmodule import TorchFmVCO
+
+# FmVCO test
+midi_f0 = 50.0
+
+# Make steady-pitched sine (no pitch modulation).
+sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0).to(device)
+operator_out = sine_operator(envelope)
+
+# Shape the modulation depth.
+operator_out = vca(envelope, operator_out)
+
+# Feed into FM oscillator as modulator signal.
+fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0).to(device)
+fm_out = fm_vco(operator_out)
+
+stft_plot(fm_out.cpu().detach().numpy())
+ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
+# -
+
+# ### Noise
+#
+# The noise generator mixes white noise into a signal
+
+# +
 N = 44100
 
 env1 = torch.zeros(N)
@@ -658,13 +333,12 @@ print(list(noise1.parameters()))
 print(list(noise2.parameters()))
 # -
 
-# ### Drum Module
+# ## Drum Module
 #
-# The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
+# Alternately, you can just use the Drum class that composes all these modules
+# together automatically. The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
 
 # +
-from ddspdrum.torchmodule import TorchDrum
-
 drum1 = TorchDrum(
     pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
@@ -700,14 +374,22 @@ ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
 err = torch.mean(torch.abs(drum_out1 - drum_out2))
 print(err)
 
+# Print out the gradients for all the paramters
+
+# +
 err.backward(retain_graph=True)
-for (p1, p2) in zip(drum1.parameters(), drum2.parameters()):
-    print(f"{p1.parameter_name} grad1={p1.grad.item()} grad2={p2.grad.item()}")
+
+for ((n1, p1), p2) in zip(drum1.named_parameters(), drum2.parameters()):
+    print(f"{n1:40} Drum1: {p1.grad.item()} \tDrum2: {p2.grad.item()}")
+# -
 
 # ### Parameters
-# The list of available parameters and the modules they are associated with can be viewed by printing the module.
 
-print(drum1)
+# All synth modules and synth classes have named parameters which can be quered
+# and updated. Let's look at the parameters for the Drum we just created.
+
+for n, p in drum1.named_parameters():
+    print(f"{n:40} Normalized = {p:.2f} Human Range = {p.from_0to1():.2f}")
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
 #
@@ -736,13 +418,15 @@ drum1.vco_1.set_parameter_0to1("pitch", 0.5433)
 print(drum1.vco_1.p("pitch"))
 # -
 
-# ### Generating Random Patches
+# ## Random synths
+#
+# Let's generate some random synths
 
-drum = TorchDrum(note_on_duration=1.0)
+drum = TorchDrum(note_on_duration=1.0).to(device)
 for i in range(10):
     drum.randomize()
     drum_out = drum()
-    display(ipd.Audio(drum_out.detach().numpy(), rate=drum.sample_rate.item()))
+    display(ipd.Audio(drum_out.cpu().detach().numpy(), rate=drum.sample_rate.item()))
 
 # ### Filters
 
@@ -821,41 +505,6 @@ err.backward(retain_graph=True)
 for p in fir1.torchparameters:
     print(f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}")
 # -
-# Check that we can optimize towards the parameters of one of the filters using spectral loss
-
-# +
-optimizer = torch.optim.Adam(list(fir2.parameters()), lr=0.01)
-
-print("Parameters before optimization:")
-print(list(fir1.parameters()))
-print(list(fir2.parameters()))
-
-error_hist = []
-
-for i in range(100):
-    optimizer.zero_grad()
-
-    filtered1 = fir1(noise)
-    filtered2 = fir2(noise)
-    
-    fft1 = torch.abs(torch.fft.fft(filtered1))
-    fft2 = torch.abs(torch.fft.fft(filtered2))
-    
-    err = torch.mean(torch.abs(fft1 - fft2))
-        
-    error_hist.append(err.item())
-    err.backward()
-    optimizer.step()
-
-plt.plot(error_hist)
-plt.ylabel("Error")
-plt.xlabel("Optimization steps")
-
-print("Parameters after optimization:")
-print(list(fir1.parameters()))
-print(list(fir2.parameters()))
-# -
-
 # #### IIR Filters
 #
 # A set of IIR filters using a SVF filter design approach are shown here, included filters are a lowpass, highpass, bandpass, and bandstop (or notch).
@@ -927,3 +576,6 @@ bsf = TorchBandStopSVF(cutoff=2000, resonance=0.05, buffer_size=buffer)
 filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
+# -
+
+
