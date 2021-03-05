@@ -46,7 +46,7 @@ jobs:
         verbose: true
     - name: Generate coverage report with tests
       run: |
-        pytest --cov-report=xml --cov=./src tests/
+        pytest --cov-report=xml --cov=./torchsynth tests/
     - name: Upload pytest coverage to Codecov
       uses: codecov/codecov-action@v1.2.0
       with:

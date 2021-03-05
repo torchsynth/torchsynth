@@ -57,6 +57,6 @@ pytest
 
 To run tests with a coverage report:
 ```
-pytest --cov=./src
+pytest --cov=./torchsynth
 ```
 
