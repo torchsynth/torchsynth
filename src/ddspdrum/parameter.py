@@ -130,8 +130,8 @@ class TorchParameter(nn.Parameter):
         return self
 
     def __repr__(self):
-        return "TorchParameter(name={}, value={})".format(
-            self.parameter_name, self.item()
+        return "TorchParameter(name={}, value={}, range={})".format(
+            self.parameter_name, self.item(), repr(self.parameter_range)
         )
 
     def from_0to1(self) -> T:
