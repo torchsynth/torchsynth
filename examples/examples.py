@@ -413,6 +413,7 @@ ipd.Audio(kick, rate=sample_rate)
 
 # +
 import torch
+import torch.fft
 from ddspdrum.torchmodule import TorchADSR
 
 if torch.cuda.is_available():
@@ -549,19 +550,199 @@ from ddspdrum.torchmodule import TorchFmVCO
 midi_f0 = 50.0
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0)
+sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0).to(device)
 operator_out = sine_operator(envelope)
 
 # Shape the modulation depth.
 operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0)
+fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0).to(device)
 fm_out = fm_vco(operator_out)
 
-stft_plot(fm_out.detach().cpu().numpy())
-ipd.Audio(fm_out.detach().cpu().numpy(), rate=fm_vco.sample_rate.item())
+stft_plot(fm_out.cpu().detach().numpy())
+ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
+
+# +
+from ddspdrum.torchmodule import TorchSquareSawVCO
+
+square_saw1 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=0.0).to(device)
+env1 = torch.zeros(square_saw1.buffer_size, device=device)
+
+square_saw_out1 = square_saw1(env1, phase=0.0)
+stft_plot(square_saw_out1.cpu().detach().numpy())
+ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.item())
+
+# +
+# SquareSawVCO test
+square_saw2 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=1.0).to(device)
+env2 = torch.zeros(square_saw2.buffer_size, device=device)
+
+square_saw_out2 = square_saw2(env2, phase=0.0)
+stft_plot(square_saw_out2.cpu().detach().numpy())
+ipd.Audio(square_saw_out2.cpu().detach().numpy(), rate=square_saw2.sample_rate.item())
 # -
+
+err = torch.mean(torch.abs(square_saw_out2 - square_saw_out1))
+print(err)
+err.backward(retain_graph=True)
+for p in square_saw1.torchparameters:
+    print(f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}")
+
+# **Noise Module**
+#
+# Mixes white noise into a signal
+
+# +
+from ddspdrum.torchmodule import TorchNoise
+N = 44100
+
+env1 = torch.zeros(N)
+vco1 = TorchSineVCO(midi_f0=60, buffer_size=N)
+noise1 = TorchNoise(ratio=0.75, buffer_size=N)
+
+noisy_sine_1 = noise1(vco1(env1))
+
+env2 = torch.zeros(N)
+vco2 = TorchSineVCO(midi_f0=60, buffer_size=N)
+noise2 = TorchNoise(ratio=0.25, buffer_size=N)
+
+noisy_sine_2 = noise2(vco2(env2))
+
+stft_plot(noisy_sine_1.detach().numpy())
+ipd.display(ipd.Audio(noisy_sine_1.detach().numpy(), rate=vco1.sample_rate.item()))
+
+stft_plot(noisy_sine_2.detach().numpy())
+ipd.display(ipd.Audio(noisy_sine_2.detach().numpy(), rate=vco2.sample_rate.item()))
+
+# +
+# Compute the error on the difference between the RMS level of the signals
+rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
+rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
+err = torch.abs(rms2 - rms1)
+print(err)
+
+err.backward(retain_graph=True)
+for p in noise1.torchparameters:
+    print(f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}")
+
+# +
+optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
+
+print("Parameters before optimization:")
+print(list(noise1.parameters()))
+print(list(noise2.parameters()))
+
+error_hist = []
+
+for i in range(100):
+    optimizer.zero_grad()
+
+    noisy_sine_1 = noise1(vco1(env1))
+    noisy_sine_2 = noise2(vco2(env2))
+
+    rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
+    rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
+    err = torch.abs(rms2 - rms1)
+
+    error_hist.append(err.item())
+    err.backward()
+    optimizer.step()
+
+plt.plot(error_hist)
+plt.ylabel("Error")
+plt.xlabel("Optimization steps")
+
+print("Parameters after optimization:")
+print(list(noise1.parameters()))
+print(list(noise2.parameters()))
+# -
+
+# ### Drum Module
+#
+# The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
+
+# +
+from ddspdrum.torchmodule import TorchDrum
+
+drum1 = TorchDrum(
+    pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+    amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
+    vco_1=TorchSineVCO(midi_f0=69, mod_depth=12),
+    noise=TorchNoise(ratio=0.5),
+    note_on_duration=1.0,
+)
+
+drum_out1 = drum1()
+stft_plot(drum_out1.detach().numpy())
+ipd.Audio(drum_out1.detach().numpy(), rate=drum1.sample_rate.item())
+# -
+
+# Additionally, the Drum class can take two oscillators.
+
+# +
+drum2 = TorchDrum(
+    pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
+    amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
+    vco_1=TorchSineVCO(midi_f0=40, mod_depth=12),
+    vco_2=TorchSquareSawVCO(midi_f0=40, mod_depth=12, shape=0.5),
+    noise=TorchNoise(ratio=0.01),
+    note_on_duration=1.0,
+)
+
+drum_out2 = drum2()
+stft_plot(drum_out2.detach().numpy())
+ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
+# -
+
+# Test gradients on entire drum
+
+err = torch.mean(torch.abs(drum_out1 - drum_out2))
+print(err)
+
+err.backward(retain_graph=True)
+for (p1, p2) in zip(drum1.parameters(), drum2.parameters()):
+    print(f"{p1.parameter_name} grad1={p1.grad.item()} grad2={p2.grad.item()}")
+
+# ### Parameters
+# The list of available parameters and the modules they are associated with can be viewed by printing the module.
+
+print(drum1)
+
+# Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
+#
+# Parameters of individual modules can be accessed in several ways:
+
+# +
+# Get the full TorchParameter object by name from the module
+print(drum1.vco_1.get_parameter("pitch"))
+
+# Access the value as a Tensor in the full value human range
+print(drum1.vco_1.p("pitch"))
+
+# Access the value as a float in the range from 0 to 1
+print(drum1.vco_1.get_parameter_0to1("pitch"))
+# -
+
+# Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
+
+# +
+# Set the vco pitch using the human range, which is MIDI note number
+drum1.vco_1.set_parameter("pitch", 64)
+print(drum1.vco_1.p("pitch"))
+
+# Set the vco pitch using a normalized range between 0 and 1
+drum1.vco_1.set_parameter_0to1("pitch", 0.5433)
+print(drum1.vco_1.p("pitch"))
+# -
+
+# ### Generating Random Patches
+
+drum = TorchDrum(note_on_duration=1.0)
+for i in range(10):
+    drum.randomize()
+    drum_out = drum()
+    display(ipd.Audio(drum_out.detach().numpy(), rate=drum.sample_rate.item()))
 
 # ### Filters
 
@@ -570,7 +751,7 @@ from ddspdrum.torchmodule import TorchMovingAverage, FIRLowPass
 
 # Create some noise to filter
 duration = 2
-noise = torch.tensor(np.random.rand(int(44100 * duration)) * 2 - 1, device=device).float()
+noise = torch.rand(2 * 44100, device=device) * 2 - 1
 stft_plot(noise.cpu().detach().numpy())
 # -
 
@@ -597,7 +778,6 @@ ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
 # Compute the error between the two examples and get the gradient for the filter length
 
 # +
-import torch.fft
 fft1 = torch.abs(torch.fft.fft(filtered))
 fft2 = torch.abs(torch.fft.fft(filtered2))
 
@@ -646,8 +826,11 @@ for p in fir1.torchparameters:
 # +
 optimizer = torch.optim.Adam(list(fir2.parameters()), lr=0.01)
 
+print("Parameters before optimization:")
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
+
+error_hist = []
 
 for i in range(100):
     optimizer.zero_grad()
@@ -660,10 +843,15 @@ for i in range(100):
     
     err = torch.mean(torch.abs(fft1 - fft2))
         
-    print(err)
+    error_hist.append(err.item())
     err.backward()
     optimizer.step()
 
+plt.plot(error_hist)
+plt.ylabel("Error")
+plt.xlabel("Optimization steps")
+
+print("Parameters after optimization:")
 print(list(fir1.parameters()))
 print(list(fir2.parameters()))
 # -
