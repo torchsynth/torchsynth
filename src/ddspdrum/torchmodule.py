@@ -52,7 +52,7 @@ class TorchSynthModule(nn.Module):
         """
         Each TorchSynthModule should override this.
         """
-        pass
+        raise NotImplementedError("Derived classes must override this method")
 
     def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
@@ -556,7 +556,7 @@ class TorchNoise(TorchSynthModule):
                 TorchParameter(
                     value=ratio,
                     parameter_name="ratio",
-                    parameter_range=ParameterRange()
+                    parameter_range=ParameterRange(0.0, 1.0)
                 )
             ]
         )
@@ -568,6 +568,22 @@ class TorchNoise(TorchSynthModule):
     @staticmethod
     def noise_of_length(audio_in: T) -> T:
         return torch.rand_like(audio_in) * 2 - 1
+
+
+class TorchSynthParameters(TorchSynthModule):
+    """
+    A SynthModule that is strictly for managing parameters
+    """
+
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate, buffer_size)
+
+    def _forward(self, *args: Any, **kwargs: Any) -> T:
+        raise RuntimeError("TorchSynthParameters cannot be called")
 
 
 class TorchSynth(nn.Module):
@@ -589,6 +605,9 @@ class TorchSynth(nn.Module):
         super().__init__()
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
+
+        # Global Parameter Module
+        self.global_params = TorchSynthParameters(sample_rate, buffer_size)
 
     def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
         """
@@ -646,18 +665,13 @@ class TorchDrum(TorchSynth):
         # However, this is easily changed if desired.
         self.note_on_duration = T(note_on_duration)
 
-        # Setup a dummy global parameter module
-        global_params = TorchSynthModule(
-            self.sample_rate.item(),
-            self.buffer_size.item()
-        )
-        global_params.add_parameters([
-            TorchParameter(vco_ratio, "vco_ratio", ParameterRange())
+        # Add required global parameters
+        self.global_params.add_parameters([
+            TorchParameter(vco_ratio, "vco_ratio", ParameterRange(0.0, 1.0))
         ])
 
         # Register all modules as children
         self.add_synth_modules({
-            'global_params': global_params,
             'pitch_adsr': pitch_adsr,
             'amp_adsr': amp_adsr,
             'vco_1': vco_1,
@@ -820,3 +834,189 @@ class TorchMovingAverage(TorchSynthModule):
             padding=int(impulse.size()[0] / 2)
         )
         return y[0][0]
+
+
+class TorchSVF(TorchSynthModule):
+    """
+    A State Variable Filter that can do low-pass, high-pass, band-pass, and
+    band-reject filtering. Allows modulation of the cutoff frequency and an
+    adjustable resonance parameter. Can self-oscillate to make a sinusoid
+    oscillator.
+
+    Parameters
+    ----------
+
+    mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
+    cutoff (float)          :   cutoff frequency in Hz must be between 5 and
+                                half the sample rate. Defaults to 1000Hz.
+    resonance (float)       :   filter resonance, or "Quality Factor". Higher
+                                values cause the filter to resonate more. Must
+                                be greater than 0.5. Defaults to 0.707.
+    mod_depth (float)       :   Amount of modulation to apply to the cutoff from
+                                the control input during processing. Can be negative
+                                or positive in Hertz. Defaults to zero.
+    """
+
+    def __init__(
+            self,
+            mode: str,
+            cutoff: float = 1000.0,
+            resonance: float = 0.707,
+            mod_depth: float = 0.0,
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        # Set the filter type
+        self.mode = mode.lower()
+        assert mode in ['lpf', 'hpf', 'bpf', 'bsf']
+
+        nyquist = self.sample_rate / 2.0
+        self.add_parameters(
+            [
+                TorchParameter(
+                    value=cutoff,
+                    parameter_range=ParameterRange(5.0, nyquist, "log"),
+                    parameter_name="cutoff"
+                ),
+                TorchParameter(
+                    value=resonance,
+                    parameter_range=ParameterRange(0.01, 1000.0, "log"),
+                    parameter_name="resonance"
+                ),
+                TorchParameter(
+                    value=mod_depth,
+                    parameter_range=ParameterRange(-nyquist, nyquist, "log"),
+                    parameter_name="mod_depth"
+                )
+            ]
+        )
+
+    def _forward(
+        self,
+        audio_in: T,
+        control_in: T = None,
+    ) -> T:
+        """
+        Process audio samples and return filtered results.
+
+        Parameters
+        ----------
+
+        audio (torch.tensor)          :   Audio samples to filter
+        cutoff_mod (torch.tensor)     :   Control signal used to modulate the filter
+                                        cutoff. Values must be in range [0,1]
+        """
+
+        h0 = 0.0
+        h1 = 0.0
+        y = torch.zeros_like(audio_in, device=audio_in.device)
+
+        if control_in is None:
+            control_in = torch.zeros_like(audio_in, device=audio_in.device)
+        else:
+            assert control_in.size() == audio_in.size()
+
+        cutoff = self.p("cutoff")
+        mod_depth = self.p("mod_depth")
+        res_coefficient = 1.0 / self.p("resonance")
+
+        # Processing loop
+        for i in range(len(audio_in)):
+            # If there is a cutoff modulation envelope, update coefficients
+            cutoff_val = cutoff + control_in[i] * mod_depth
+            coeff0, coeff1, rho = TorchSVF.svf_coefficients(
+                cutoff_val,
+                res_coefficient,
+                self.sample_rate
+            )
+
+            # Calculate each of the filter components
+            hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
+            bpf = coeff1 * hpf + h0
+            lpf = coeff1 * bpf + h1
+
+            # Feedback samples
+            h0 = coeff1 * hpf + bpf
+            h1 = coeff1 * bpf + lpf
+
+            if self.mode == "lpf":
+                y[i] = lpf
+            elif self.mode == "bpf":
+                y[i] = bpf
+            elif self.mode == "bsf":
+                y[i] = hpf + lpf
+            else:
+                y[i] = hpf
+
+        return y
+
+    @staticmethod
+    def svf_coefficients(cutoff, res_coefficient, sample_rate):
+        """
+        Calculates the filter coefficients for SVF.
+
+        Parameters
+        ----------
+        cutoff (T)  :   Filter cutoff frequency in Hz.
+        resonance (T) : Filter resonance
+        sample_rate (T) : Sample rate to process at
+        """
+
+        g = torch.tan(torch.pi * cutoff / sample_rate)
+        coeff0 = 1.0 / (1.0 + res_coefficient * g + g * g)
+        rho = res_coefficient + g
+
+        return coeff0, g, rho
+
+
+class TorchLowPassSVF(TorchSVF):
+    """
+    IIR Low-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('lpf', **kwargs)
+
+
+class TorchHighPassSVF(TorchSVF):
+    """
+    IIR High-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('hpf', **kwargs)
+
+
+class TorchBandPassSVF(TorchSVF):
+    """
+    IIR Band-pass using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('bpf', **kwargs)
+
+
+class TorchBandStopSVF(TorchSVF):
+    """
+    IIR Band-stop using SVF architecture
+
+    Parameters
+    ----------
+    kwargs: see TorchSVF
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__('bsf', **kwargs)
