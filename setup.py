@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 __version__ = "0.0.1"
-__author__ = ""
+__author__ = "Joseph Turian, Jordie Shier, Max Henry"
 __contact__ = ""
 __url__ = ""
 __license__ = "Apache-2.0"
