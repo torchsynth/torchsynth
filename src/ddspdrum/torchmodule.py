@@ -52,7 +52,7 @@ class TorchSynthModule(nn.Module):
         """
         Each TorchSynthModule should override this.
         """
-        pass
+        raise NotImplementedError("Derived classes must override this method")
 
     def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
@@ -556,7 +556,7 @@ class TorchNoise(TorchSynthModule):
                 TorchParameter(
                     value=ratio,
                     parameter_name="ratio",
-                    parameter_range=ParameterRange()
+                    parameter_range=ParameterRange(0.0, 1.0)
                 )
             ]
         )
@@ -568,6 +568,22 @@ class TorchNoise(TorchSynthModule):
     @staticmethod
     def noise_of_length(audio_in: T) -> T:
         return torch.rand_like(audio_in) * 2 - 1
+
+
+class TorchSynthParameters(TorchSynthModule):
+    """
+    A SynthModule that is strictly for managing parameters
+    """
+
+    def __init__(
+            self,
+            sample_rate: int = SAMPLE_RATE,
+            buffer_size: int = BUFFER_SIZE
+    ):
+        super().__init__(sample_rate, buffer_size)
+
+    def _forward(self, *args: Any, **kwargs: Any) -> T:
+        raise RuntimeError("TorchSynthParameters cannot be called")
 
 
 class TorchSynth(nn.Module):
@@ -589,6 +605,9 @@ class TorchSynth(nn.Module):
         super().__init__()
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
+
+        # Global Parameter Module
+        self.global_params = TorchSynthParameters(sample_rate, buffer_size)
 
     def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
         """
@@ -646,18 +665,13 @@ class TorchDrum(TorchSynth):
         # However, this is easily changed if desired.
         self.note_on_duration = T(note_on_duration)
 
-        # Setup a dummy global parameter module
-        global_params = TorchSynthModule(
-            self.sample_rate.item(),
-            self.buffer_size.item()
-        )
-        global_params.add_parameters([
-            TorchParameter(vco_ratio, "vco_ratio", ParameterRange())
+        # Add required global parameters
+        self.global_params.add_parameters([
+            TorchParameter(vco_ratio, "vco_ratio", ParameterRange(0.0, 1.0))
         ])
 
         # Register all modules as children
         self.add_synth_modules({
-            'global_params': global_params,
             'pitch_adsr': pitch_adsr,
             'amp_adsr': amp_adsr,
             'vco_1': vco_1,
