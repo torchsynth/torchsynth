@@ -13,11 +13,11 @@ with open("README.md", "r", encoding="utf-8") as f:
     readme = f.read()
 
 setup(
-    name="ddsp-drum",
+    name="torchsynth",
     version=__version__,
     author=__author__,
     author_email=__contact__,
-    description="A DDSP Drum Synthesizer",
+    description="A modular synthesizer in pytorch, GPU-optional and differentiable",
     long_description=readme,
     long_description_content_type="text/markdown",
     url=__url__,

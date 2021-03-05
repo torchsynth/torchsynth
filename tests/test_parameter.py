@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.tensor as T
 
-from ddspdrum.parameter import ParameterRange, TorchParameter
+from torchsynth.parameter import ParameterRange, TorchParameter
 
 
 class TestParameterRange:

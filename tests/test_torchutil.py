@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.tensor as T
 
-import ddspdrum.torchutil as torchutil
+import torchsynth.torchutil as torchutil
 
 
 class TestTorchUtil:

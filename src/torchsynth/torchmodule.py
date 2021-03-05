@@ -10,9 +10,9 @@ import torch
 import torch.nn as nn
 import torch.tensor as T
 
-import ddspdrum.torchutil as util
-from ddspdrum.defaults import BUFFER_SIZE, SAMPLE_RATE
-from ddspdrum.parameter import ParameterRange, TorchParameter
+import torchsynth.torchutil as util
+from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
+from torchsynth.parameter import ParameterRange, TorchParameter
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 

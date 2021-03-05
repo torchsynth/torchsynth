@@ -12,7 +12,7 @@ import math
 import torch
 import torch.tensor as T
 
-from ddspdrum.defaults import EPSILON, EQ_POW
+from torchsynth.defaults import EPSILON, EQ_POW
 
 
 # What is amin here? And maybe we should convert it to a value in defaults?

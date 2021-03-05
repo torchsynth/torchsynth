@@ -6,9 +6,9 @@ import pytest
 import torch.nn
 import torch.tensor as T
 
-import ddspdrum.torchmodule as torchmodule
-from ddspdrum.parameter import ParameterRange, TorchParameter
-import ddspdrum.defaults as defaults
+import torchsynth.torchmodule as torchmodule
+from torchsynth.parameter import ParameterRange, TorchParameter
+import torchsynth.defaults as defaults
 
 
 class TestTorchSynthModule:
