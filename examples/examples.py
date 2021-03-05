@@ -865,7 +865,6 @@ print(list(fir2.parameters()))
 # +
 from ddspdrum.torchmodule import TorchLowPassSVF, TorchHighPassSVF, TorchBandPassSVF, TorchBandStopSVF
 import torch.fft
-device="cpu"
 
 # Noise for testing
 buffer = 4096
@@ -920,12 +919,11 @@ env = TorchADSR(a=0, d=0.1, s=0.0, r=0.0, buffer_size=buffer)(0.1)
 bpf = TorchBandPassSVF(cutoff=20, resonance=30, mod_depth=10000, buffer_size=buffer)
 
 filtered = bpf(noise, env)
-stft_plot(filtered.detach().numpy())
+stft_plot(filtered.cpu().detach().numpy())
 
 # +
 # Bandstop
 bsf = TorchBandStopSVF(cutoff=2000, resonance=0.05, buffer_size=buffer)
 filtered = bsf(noise)
 
-stft_plot(filtered.detach().numpy())
-# -
+stft_plot(filtered.cpu().detach().numpy())
