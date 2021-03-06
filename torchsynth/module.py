@@ -25,11 +25,7 @@ class TorchSynthModule(nn.Module):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         """
         NOTE:
         __init__ should only set parameters.
@@ -131,7 +127,7 @@ class TorchADSR(TorchSynthModule):
         r: float = 0.5,
         alpha: float = 3.0,
         sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE
+        buffer_size: int = BUFFER_SIZE,
     ):
         """
         Parameters
@@ -151,28 +147,28 @@ class TorchADSR(TorchSynthModule):
                 ModuleParameter(
                     value=a,
                     parameter_name="attack",
-                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
                 ),
                 ModuleParameter(
                     value=d,
                     parameter_name="decay",
-                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
                 ),
                 ModuleParameter(
                     value=s,
                     parameter_name="sustain",
-                    parameter_range=ModuleParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 ),
                 ModuleParameter(
                     value=r,
                     parameter_name="release",
-                    parameter_range=ModuleParameterRange(0.0, 5.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 5.0, curve="log"),
                 ),
                 ModuleParameter(
                     value=alpha,
                     parameter_name="alpha",
-                    parameter_range=ModuleParameterRange(0.1, 6.0)
-                )
+                    parameter_range=ModuleParameterRange(0.1, 6.0),
+                ),
             ]
         )
 
@@ -228,8 +224,7 @@ class TorchADSR(TorchSynthModule):
 
         assert duration.ndim == 0
         t = torch.arange(
-            self.seconds_to_samples(duration).item(),
-            device=duration.device
+            self.seconds_to_samples(duration).item(), device=duration.device
         )
         ramp = t * (1 / duration) / self.sample_rate
 
@@ -311,25 +306,23 @@ class TorchVCO(TorchSynthModule):
         mod_depth: float = 50,
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE
+        buffer_size: int = BUFFER_SIZE,
     ):
         TorchSynthModule.__init__(
-            self,
-            sample_rate=sample_rate,
-            buffer_size=buffer_size
+            self, sample_rate=sample_rate, buffer_size=buffer_size
         )
         self.add_parameters(
             [
                 ModuleParameter(
                     value=midi_f0,
                     parameter_name="pitch",
-                    parameter_range=ModuleParameterRange(0.0, 127.0)
+                    parameter_range=ModuleParameterRange(0.0, 127.0),
                 ),
                 ModuleParameter(
                     value=mod_depth,
                     parameter_name="mod_depth",
-                    parameter_range=ModuleParameterRange(0.0, 127.0)
-                )
+                    parameter_range=ModuleParameterRange(0.0, 127.0),
+                ),
             ]
         )
         # TODO: Make this a parameter too?
@@ -400,7 +393,7 @@ class TorchSineVCO(TorchVCO):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
@@ -422,10 +415,8 @@ class TorchFmVCO(TorchVCO):
     """
 
     def __init__(
-            self,
-            midi_f0: float = 10.0,
-            mod_depth: float = 50.0,
-            phase: float = 0.0):
+        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def make_control_as_frequency(self, mod_signal: T):
@@ -457,14 +448,14 @@ class TorchSquareSawVCO(TorchVCO):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-     ):
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
             [
                 ModuleParameter(
                     value=shape,
                     parameter_name="shape",
-                    parameter_range=ModuleParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 )
             ]
         )
@@ -492,11 +483,7 @@ class TorchVCA(TorchSynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
 
     def _forward(self, control_in: T, audio_in: T) -> T:
@@ -519,18 +506,14 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(
-            self,
-            ratio: float = 0.25,
-            **kwargs
-    ):
+    def __init__(self, ratio: float = 0.25, **kwargs):
         super().__init__(**kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
                     value=ratio,
                     parameter_name="ratio",
-                    parameter_range=ModuleParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 )
             ]
         )
@@ -549,11 +532,7 @@ class TorchSynthParameters(TorchSynthModule):
     A SynthModule that is strictly for managing parameters
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__(sample_rate, buffer_size)
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:
@@ -571,11 +550,7 @@ class TorchSynth(nn.Module):
     buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__()
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
@@ -628,7 +603,7 @@ class TorchDrum(TorchSynth):
         vco_2: TorchVCO = TorchSquareSawVCO(),
         noise: TorchNoise = TorchNoise(),
         vca: TorchVCA = TorchVCA(),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         assert note_on_duration >= 0
@@ -640,19 +615,21 @@ class TorchDrum(TorchSynth):
         self.note_on_duration = T(note_on_duration)
 
         # Add required global parameters
-        self.global_params.add_parameters([
-            ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))
-        ])
+        self.global_params.add_parameters(
+            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
+        )
 
         # Register all modules as children
-        self.add_synth_modules({
-            'pitch_adsr': pitch_adsr,
-            'amp_adsr': amp_adsr,
-            'vco_1': vco_1,
-            'vco_2': vco_2,
-            'noise': noise,
-            'vca': vca
-        })
+        self.add_synth_modules(
+            {
+                "pitch_adsr": pitch_adsr,
+                "amp_adsr": amp_adsr,
+                "vco_1": vco_1,
+                "vco_2": vco_2,
+                "noise": noise,
+                "vca": vca,
+            }
+        )
 
     def forward(self) -> T:
         # The convention for triggering a note event is that it has
@@ -665,12 +642,9 @@ class TorchDrum(TorchSynth):
         vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = util.crossfade(
-            vco_1_out,
-            vco_2_out,
-            self.global_params.p("vco_ratio")
+            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
         )
 
         audio_out = self.noise(audio_out)
 
         return self.vca(amp_envelope, audio_out)
-

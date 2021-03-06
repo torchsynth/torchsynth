@@ -100,7 +100,7 @@ def normalize(signal: T) -> T:
 
 
 def sinc(x: T) -> T:
-    return torch.where(x == 0, T(1., device=x.device), torch.sin(x) / x)
+    return torch.where(x == 0, T(1.0, device=x.device), torch.sin(x) / x)
 
 
 def blackman(length: T) -> T:
@@ -112,10 +112,12 @@ def blackman(length: T) -> T:
     window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
 
     # Linearly interpolate the ends of the window to achieve fractional length
-    window = torch.cat((
-        T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
-        window[1:-1],
-        T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device)
-    ))
+    window = torch.cat(
+        (
+            T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
+            window[1:-1],
+            T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
+        )
+    )
 
     return window

@@ -8,6 +8,7 @@ from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 
 from torchsynth.module import TorchSynthModule
 
+
 class FIRLowPass(TorchSynthModule):
     """
     A finite impulse response low-pass filter. Uses convolution with a windowed
@@ -36,13 +37,13 @@ class FIRLowPass(TorchSynthModule):
                 ModuleParameter(
                     value=cutoff,
                     parameter_name="cutoff",
-                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, "log")
+                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, "log"),
                 ),
                 ModuleParameter(
                     value=filter_length,
                     parameter_name="length",
-                    parameter_range=ModuleParameterRange(4.0, 4096.)
-                )
+                    parameter_range=ModuleParameterRange(4.0, 4096.0),
+                ),
             ]
         )
 
@@ -61,9 +62,7 @@ class FIRLowPass(TorchSynthModule):
         impulse = impulse.view(1, 1, impulse.size()[0])
         audio_resized = audio_in.view(1, 1, audio_in.size()[0])
         y = nn.functional.conv1d(
-            audio_resized,
-            impulse,
-            padding=int(self.p("length") / 2)
+            audio_resized, impulse, padding=int(self.p("length") / 2)
         )
         return y[0][0]
 
@@ -85,7 +84,7 @@ class FIRLowPass(TorchSynthModule):
 
         # Create a sinc function
         num_samples = torch.ceil(length)
-        half_length = (length - 1.) / 2.
+        half_length = (length - 1.0) / 2.0
         t = torch.arange(num_samples.detach(), device=length.device)
         ir = util.sinc((t - half_length) * omega)
 
@@ -131,14 +130,12 @@ class TorchMovingAverage(TorchSynthModule):
         # For non-integer impulse lengths
         if torch.sum(impulse) < 1.0:
             additional = torch.ones(1, 1, 1, device=length.device)
-            additional *= (1.0 - torch.sum(impulse))
+            additional *= 1.0 - torch.sum(impulse)
             impulse = torch.cat((impulse, additional), dim=2)
 
         audio_resized = audio_in.view(1, 1, audio_in.size()[0])
         y = nn.functional.conv1d(
-            audio_resized,
-            impulse,
-            padding=int(impulse.size()[0] / 2)
+            audio_resized, impulse, padding=int(impulse.size()[0] / 2)
         )
         return y[0][0]
 
@@ -165,18 +162,18 @@ class TorchSVF(TorchSynthModule):
     """
 
     def __init__(
-            self,
-            mode: str,
-            cutoff: float = 1000.0,
-            resonance: float = 0.707,
-            mod_depth: float = 0.0,
-            **kwargs
+        self,
+        mode: str,
+        cutoff: float = 1000.0,
+        resonance: float = 0.707,
+        mod_depth: float = 0.0,
+        **kwargs
     ):
         super().__init__(**kwargs)
 
         # Set the filter type
         self.mode = mode.lower()
-        assert mode in ['lpf', 'hpf', 'bpf', 'bsf']
+        assert mode in ["lpf", "hpf", "bpf", "bsf"]
 
         nyquist = self.sample_rate / 2.0
         self.add_parameters(
@@ -184,18 +181,18 @@ class TorchSVF(TorchSynthModule):
                 ModuleParameter(
                     value=cutoff,
                     parameter_range=ModuleParameterRange(5.0, nyquist, "log"),
-                    parameter_name="cutoff"
+                    parameter_name="cutoff",
                 ),
                 ModuleParameter(
                     value=resonance,
                     parameter_range=ModuleParameterRange(0.01, 1000.0, "log"),
-                    parameter_name="resonance"
+                    parameter_name="resonance",
                 ),
                 ModuleParameter(
                     value=mod_depth,
                     parameter_range=ModuleParameterRange(-nyquist, nyquist, "log"),
-                    parameter_name="mod_depth"
-                )
+                    parameter_name="mod_depth",
+                ),
             ]
         )
 
@@ -233,9 +230,7 @@ class TorchSVF(TorchSynthModule):
             # If there is a cutoff modulation envelope, update coefficients
             cutoff_val = cutoff + control_in[i] * mod_depth
             coeff0, coeff1, rho = TorchSVF.svf_coefficients(
-                cutoff_val,
-                res_coefficient,
-                self.sample_rate
+                cutoff_val, res_coefficient, self.sample_rate
             )
 
             # Calculate each of the filter components
@@ -287,7 +282,7 @@ class TorchLowPassSVF(TorchSVF):
     """
 
     def __init__(self, **kwargs):
-        super().__init__('lpf', **kwargs)
+        super().__init__("lpf", **kwargs)
 
 
 class TorchHighPassSVF(TorchSVF):
@@ -300,7 +295,7 @@ class TorchHighPassSVF(TorchSVF):
     """
 
     def __init__(self, **kwargs):
-        super().__init__('hpf', **kwargs)
+        super().__init__("hpf", **kwargs)
 
 
 class TorchBandPassSVF(TorchSVF):
@@ -313,7 +308,7 @@ class TorchBandPassSVF(TorchSVF):
     """
 
     def __init__(self, **kwargs):
-        super().__init__('bpf', **kwargs)
+        super().__init__("bpf", **kwargs)
 
 
 class TorchBandStopSVF(TorchSVF):
@@ -326,4 +321,4 @@ class TorchBandStopSVF(TorchSVF):
     """
 
     def __init__(self, **kwargs):
-        super().__init__('bsf', **kwargs)
+        super().__init__("bsf", **kwargs)

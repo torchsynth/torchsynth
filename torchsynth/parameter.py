@@ -102,12 +102,12 @@ class ModuleParameter(nn.Parameter):
     """
 
     def __new__(
-            cls,
-            value: float = None,
-            parameter_name: str = "",
-            parameter_range: ModuleParameterRange = None,
-            data: torch.Tensor = None,
-            requires_grad: bool = True,
+        cls,
+        value: float = None,
+        parameter_name: str = "",
+        parameter_range: ModuleParameterRange = None,
+        data: torch.Tensor = None,
+        requires_grad: bool = True,
     ):
         if value is not None:
             if parameter_range is not None:
@@ -121,10 +121,10 @@ class ModuleParameter(nn.Parameter):
 
         # Additional members -- check to make sure they don't exist first
         # (This is sanity check in case something changes in pytorch in the future)
-        assert 'parameter_range' not in self.__dict__
+        assert "parameter_range" not in self.__dict__
         self.parameter_range = parameter_range
 
-        assert 'parameter_name' not in self.__dict__
+        assert "parameter_name" not in self.__dict__
         self.parameter_name = parameter_name
 
         return self
