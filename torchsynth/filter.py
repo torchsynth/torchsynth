@@ -6,7 +6,7 @@ import torchsynth.util as util
 from torchsynth.defaults import SAMPLE_RATE
 from torchsynth.parameter import ParameterRange, TorchParameter
 
-from torchsynth.synthmodule import TorchSynthModule
+from torchsynth.module import TorchSynthModule
 
 class FIRLowPass(TorchSynthModule):
     """

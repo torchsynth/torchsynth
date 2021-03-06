@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.fft
 
-from torchsynth.synthmodule import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
+from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE
 # -
 
@@ -201,7 +201,7 @@ for p in adsr.torchparameters:
 # interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
 # +
-from torchsynth.synthmodule import TorchSquareSawVCO
+from torchsynth.module import TorchSquareSawVCO
 
 square_saw1 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=0.0).to(device)
 env1 = torch.zeros(square_saw1.buffer_size, device=device)
@@ -245,7 +245,7 @@ time_plot(test_output.detach().cpu())
 # Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
 
 # +
-from torchsynth.synthmodule import TorchFmVCO
+from torchsynth.module import TorchFmVCO
 
 # FmVCO test
 midi_f0 = 50.0
