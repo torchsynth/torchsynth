@@ -423,8 +423,8 @@ class TorchVCO(TorchSynthModule):
 
     def __init__(
         self,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
+        midi_f0: T = T(10),
+        mod_depth: T = T(50),
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
         buffer_size: int = BUFFER_SIZE,
@@ -511,8 +511,8 @@ class TorchSineVCO(TorchVCO):
 
     def __init__(
         self,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
         phase: float = 0.0,
         **kwargs,
     ):
@@ -536,7 +536,7 @@ class TorchFmVCO(TorchVCO):
     """
 
     def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+        self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
@@ -565,10 +565,10 @@ class TorchSquareSawVCO(TorchVCO):
 
     def __init__(
         self,
-        shape: float = 0.0,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
-        phase: float = 0.0,
+        shape: T = T(0.0),
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
+        phase: T = T(0.0),
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
@@ -627,7 +627,7 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(self, ratio: float = 0.25, **kwargs):
+    def __init__(self, ratio: T = T(0.25), **kwargs):
         super().__init__(**kwargs)
         self.add_parameters(
             [
