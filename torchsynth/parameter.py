@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch.tensor as T
 
 
-class ParameterRange:
+class ModuleParameterRange:
     """
-    ParameterRange class is a structure for keeping track of the specific range that a
+    ModuleParameterRange class is a structure for keeping track of the specific range that a
     parameter might take on. Also handles functionality for converting to and from a
     range between 0 and 1. This class does not store the value of a parameter, just the
     range.
@@ -44,7 +44,7 @@ class ParameterRange:
             raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
 
     def __repr__(self):
-        return "ParameterRange(min={}, max={}, curve={})".format(
+        return "ModuleParameterRange(min={}, max={}, curve={})".format(
             self.minimum, self.maximum, self.curve_type
         )
 
@@ -83,19 +83,19 @@ class ParameterRange:
         return normalized
 
 
-class TorchParameter(nn.Parameter):
+class ModuleParameter(nn.Parameter):
     """
-    Parameter class that inherits from pytorch nn.Parameter so it can be used for
-    training. Can use a ParameterRange object to help convert from a 0 to 1 range
+    ModuleParameter class that inherits from pytorch nn.Parameter so it can be used for
+    training. Can use a ModuleParameterRange object to help convert from a 0 to 1 range
     which is expected internally and an external user specified range.
 
     Parameters
     ----------
     value (float) : initial value of this parameter in the user-specific range.
-        Must pass in a ParameterRange object when using this to provide conversion to
+        Must pass in a ModuleParameterRange object when using this to provide conversion to
         and from 0-to-1 range
     parameter_name (str) : A name for this parameter
-    parameter_range (ParameterRange) : A ParameterRange object that supports conversion
+    parameter_range (ModuleParameterRange) : A ModuleParameterRange object that supports conversion
         to and from 0-to-1 range and a user-specified range.
     data (Tensor) : directly add data to this parameter without a user-range
     requires_grad (bool) : whether or not a gradient is required for this parameter
@@ -105,7 +105,7 @@ class TorchParameter(nn.Parameter):
             cls,
             value: float = None,
             parameter_name: str = "",
-            parameter_range: ParameterRange = None,
+            parameter_range: ModuleParameterRange = None,
             data: torch.Tensor = None,
             requires_grad: bool = True,
     ):
@@ -130,7 +130,7 @@ class TorchParameter(nn.Parameter):
         return self
 
     def __repr__(self):
-        return "TorchParameter(name={}, value={})".format(
+        return "ModuleParameter(name={}, value={})".format(
             self.parameter_name, self.item()
         )
 

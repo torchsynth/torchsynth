@@ -4,7 +4,7 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.defaults import SAMPLE_RATE
-from torchsynth.parameter import ParameterRange, TorchParameter
+from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 
 from torchsynth.module import TorchSynthModule
 
@@ -36,12 +36,12 @@ class FIRLowPass(TorchSynthModule):
                 TorchParameter(
                     value=cutoff,
                     parameter_name="cutoff",
-                    parameter_range=ParameterRange(5.0, sample_rate / 2.0, "log")
+                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, "log")
                 ),
                 TorchParameter(
                     value=filter_length,
                     parameter_name="length",
-                    parameter_range=ParameterRange(4.0, 4096.)
+                    parameter_range=ModuleParameterRange(4.0, 4096.)
                 )
             ]
         )
@@ -111,7 +111,7 @@ class TorchMovingAverage(TorchSynthModule):
                 TorchParameter(
                     value=filter_length,
                     parameter_name="length",
-                    parameter_range=ParameterRange(1.0, 4096.0),
+                    parameter_range=ModuleParameterRange(1.0, 4096.0),
                 )
             ]
         )
@@ -183,17 +183,17 @@ class TorchSVF(TorchSynthModule):
             [
                 TorchParameter(
                     value=cutoff,
-                    parameter_range=ParameterRange(5.0, nyquist, "log"),
+                    parameter_range=ModuleParameterRange(5.0, nyquist, "log"),
                     parameter_name="cutoff"
                 ),
                 TorchParameter(
                     value=resonance,
-                    parameter_range=ParameterRange(0.01, 1000.0, "log"),
+                    parameter_range=ModuleParameterRange(0.01, 1000.0, "log"),
                     parameter_name="resonance"
                 ),
                 TorchParameter(
                     value=mod_depth,
-                    parameter_range=ParameterRange(-nyquist, nyquist, "log"),
+                    parameter_range=ModuleParameterRange(-nyquist, nyquist, "log"),
                     parameter_name="mod_depth"
                 )
             ]

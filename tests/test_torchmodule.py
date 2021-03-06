@@ -7,7 +7,7 @@ import torch.nn
 import torch.tensor as T
 
 import torchsynth.module as synthmodule
-from torchsynth.parameter import ParameterRange, TorchParameter
+from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 import torchsynth.defaults as defaults
 
 
@@ -30,7 +30,7 @@ class TestTorchSynthModule:
 
         param_2 = TorchParameter(
             value=5000.0,
-            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_2"
         )
         module.add_parameters([param_2])
@@ -40,7 +40,7 @@ class TestTorchSynthModule:
         module = synthmodule.TorchSynthModule()
         param_1 = TorchParameter(
             value=5000.0,
-            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
         module.add_parameters([param_1])
@@ -57,7 +57,7 @@ class TestTorchSynthModule:
         module = synthmodule.TorchSynthModule()
         param_1 = TorchParameter(
             value=5000.0,
-            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
         module.add_parameters([param_1])
@@ -75,7 +75,7 @@ class TestTorchSynthModule:
         module = synthmodule.TorchSynthModule()
         param_1 = TorchParameter(
             value=5000.0,
-            parameter_range=ParameterRange(0.0, 20000.0),
+            parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
         module.add_parameters([param_1])

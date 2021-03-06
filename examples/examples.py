@@ -396,7 +396,7 @@ for n, p in drum1.named_parameters():
 # Parameters of individual modules can be accessed in several ways:
 
 # +
-# Get the full TorchParameter object by name from the module
+# Get the full ModuleParameter object by name from the module
 print(drum1.vco_1.get_parameter("pitch"))
 
 # Access the value as a Tensor in the full value human range
