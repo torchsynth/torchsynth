@@ -9,9 +9,10 @@ import torch.tensor as T
 
 class ModuleParameterRange:
     """
-    ModuleParameterRange class is a structure for keeping track of the specific range that a
-    parameter might take on. Also handles functionality for converting to and from a
-    range between 0 and 1. This class does not store the value of a parameter, just the
+    ModuleParameterRange class is a structure for keeping track of
+    the specific range that a parameter might take on. Also handles
+    functionality for converting to and from a range between 0 and
+    1. This class does not store the value of a parameter, just the
     range.
 
     Parameters
@@ -85,9 +86,10 @@ class ModuleParameterRange:
 
 class ModuleParameter(nn.Parameter):
     """
-    ModuleParameter class that inherits from pytorch nn.Parameter so it can be used for
-    training. Can use a ModuleParameterRange object to help convert from a 0 to 1 range
-    which is expected internally and an external user specified range.
+    ModuleParameter class that inherits from pytorch nn.Parameter
+    so it can be used for training. Can use a ModuleParameterRange
+    object to help convert from a 0 to 1 range which is expected
+    internally and an external user specified range.
 
     Parameters
     ----------
@@ -146,8 +148,9 @@ class ModuleParameter(nn.Parameter):
 
     def to_0to1(self, new_value: T):
         """
-        Set the value of this parameter using an input that is within the user-specified
-        range. It will be converted to a 0-to-1 range and stored internally.
+	    Set the value of this parameter using an input that is
+    	within the user-specified range. It will be converted to a
+    	0-to-1 range and stored internally.
 
         Parameters
         ----------
