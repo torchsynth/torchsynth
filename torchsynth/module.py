@@ -171,7 +171,9 @@ class TorchSynthModule1D(TorchSynthModule):
         """
         Wrapper for _forward that ensures a buffer_size length output.
         """
-        return self.forward1D(*args, **kwargs)
+        x = self.forward1D(*args, **kwargs)
+        assert x.shape[0] == 1
+        return x[0]
 
     def add_parameters(self, parameters: List[TorchParameter]):
         """
