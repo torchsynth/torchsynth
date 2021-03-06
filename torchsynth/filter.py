@@ -33,12 +33,12 @@ class FIRLowPass(TorchSynthModule):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=cutoff,
                     parameter_name="cutoff",
                     parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, "log")
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=filter_length,
                     parameter_name="length",
                     parameter_range=ModuleParameterRange(4.0, 4096.)
@@ -108,7 +108,7 @@ class TorchMovingAverage(TorchSynthModule):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=filter_length,
                     parameter_name="length",
                     parameter_range=ModuleParameterRange(1.0, 4096.0),
@@ -181,17 +181,17 @@ class TorchSVF(TorchSynthModule):
         nyquist = self.sample_rate / 2.0
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=cutoff,
                     parameter_range=ModuleParameterRange(5.0, nyquist, "log"),
                     parameter_name="cutoff"
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=resonance,
                     parameter_range=ModuleParameterRange(0.01, 1000.0, "log"),
                     parameter_name="resonance"
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=mod_depth,
                     parameter_range=ModuleParameterRange(-nyquist, nyquist, "log"),
                     parameter_name="mod_depth"

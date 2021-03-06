@@ -89,42 +89,42 @@ class TestParameterRange:
         assert torch.all(params.eq(expected))
 
 
-class TestTorchParameter:
+class TestModuleParameter:
 
     def test_empty_construction(self):
-        param = TorchParameter()
+        param = ModuleParameter()
         assert issubclass(ModuleParameter, nn.Parameter)
         assert isinstance(param, nn.Parameter)
         assert isinstance(param, ModuleParameter)
 
     def test_construction(self):
         # Test passing in the data directly
-        param = TorchParameter(data=T(1.0))
+        param = ModuleParameter(data=T(1.0))
         assert param == 1.0
 
         # Test construction by passing in a value in a specific range
-        param = TorchParameter(value=5.0, parameter_range=ModuleParameterRange(0.0, 10.))
+        param = ModuleParameter(value=5.0, parameter_range=ModuleParameterRange(0.0, 10.))
         assert param == 0.5
         assert param.from_0to1() == 5.0
 
         # Test naming a parameter
-        param = TorchParameter(parameter_name="param_1")
+        param = ModuleParameter(parameter_name="param_1")
         assert param.parameter_name == "param_1"
 
         # Test to make sure we can require grad
-        param = TorchParameter(requires_grad=False)
+        param = ModuleParameter(requires_grad=False)
         assert not param.requires_grad
 
-        param = TorchParameter()
+        param = ModuleParameter()
         assert param.requires_grad
 
         # Test error thrown if a value is passed in with a range
         with pytest.raises(ValueError):
-            TorchParameter(value=2555.0)
+            ModuleParameter(value=2555.0)
 
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 10.0)
-        param = TorchParameter(
+        param = ModuleParameter(
             value=5.0,
             parameter_range=param_range,
             parameter_name="param_1"
@@ -133,7 +133,7 @@ class TestTorchParameter:
 
     def test_from_0to1(self):
         # Test with no range first -- should get original value back
-        param = TorchParameter(data=T(0.45))
+        param = ModuleParameter(data=T(0.45))
         np.testing.assert_almost_equal(param.from_0to1().item(), 0.45)
 
         # Make sure the requires_grad attribute is sustained
@@ -141,19 +141,19 @@ class TestTorchParameter:
 
         # Test with range now
         param_range = ModuleParameterRange(0.0, 10.0)
-        param = TorchParameter(data=T(0.5), parameter_range=param_range)
+        param = ModuleParameter(data=T(0.5), parameter_range=param_range)
         np.testing.assert_almost_equal(param.from_0to1().item(), 5.0)
         assert param.requires_grad
 
     def test_to_0to1(self):
         param_range = ModuleParameterRange(0.0, 10.0)
-        param = TorchParameter(value=7.5, parameter_range=param_range)
+        param = ModuleParameter(value=7.5, parameter_range=param_range)
         assert param == 0.75
 
         param.to_0to1(T(5.0))
         assert param == 0.5
 
         # Now test setting a ModuleParameter without a range set
-        param = TorchParameter(data=T(0.0))
+        param = ModuleParameter(data=T(0.0))
         with pytest.raises(RuntimeError):
             param.to_0to1(T(0.2))

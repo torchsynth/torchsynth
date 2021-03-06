@@ -148,27 +148,27 @@ class TorchADSR(TorchSynthModule):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=a,
                     parameter_name="attack",
                     parameter_range=ModuleParameterRange(0.0, 2.0, curve="log")
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=d,
                     parameter_name="decay",
                     parameter_range=ModuleParameterRange(0.0, 2.0, curve="log")
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=s,
                     parameter_name="sustain",
                     parameter_range=ModuleParameterRange(0.0, 1.0)
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=r,
                     parameter_name="release",
                     parameter_range=ModuleParameterRange(0.0, 5.0, curve="log")
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=alpha,
                     parameter_name="alpha",
                     parameter_range=ModuleParameterRange(0.1, 6.0)
@@ -320,12 +320,12 @@ class TorchVCO(TorchSynthModule):
         )
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=midi_f0,
                     parameter_name="pitch",
                     parameter_range=ModuleParameterRange(0.0, 127.0)
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=mod_depth,
                     parameter_name="mod_depth",
                     parameter_range=ModuleParameterRange(0.0, 127.0)
@@ -461,7 +461,7 @@ class TorchSquareSawVCO(TorchVCO):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=shape,
                     parameter_name="shape",
                     parameter_range=ModuleParameterRange(0.0, 1.0)
@@ -527,7 +527,7 @@ class TorchNoise(TorchSynthModule):
         super().__init__(**kwargs)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=ratio,
                     parameter_name="ratio",
                     parameter_range=ModuleParameterRange(0.0, 1.0)
@@ -641,7 +641,7 @@ class TorchDrum(TorchSynth):
 
         # Add required global parameters
         self.global_params.add_parameters([
-            TorchParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))
+            ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))
         ])
 
         # Register all modules as children
