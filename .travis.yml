@@ -1,5 +1,15 @@
 language:
   python
+python:
+  - 3.7
+  - 3.8
+  - 3.9
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install -U pytest
+install:
+  - pip install ".[test]" . # install package + test dependencies
 script: pytest
 after_success:
   - bash <(curl -s https://codecov.io/bash)
