@@ -11,7 +11,7 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
-from torchsynth.parameter import ParameterRange, TorchParameter
+from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -25,11 +25,7 @@ class TorchSynthModule(nn.Module):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         """
         NOTE:
         __init__ should only set parameters.
@@ -59,7 +55,7 @@ class TorchSynthModule(nn.Module):
         """
         return self.to_buffer_size(self._forward(*args, **kwargs))
 
-    def add_parameters(self, parameters: List[TorchParameter]):
+    def add_parameters(self, parameters: List[ModuleParameter]):
         """
         Add parameters to this SynthModule's torch parameter dictionary.
         """
@@ -67,9 +63,9 @@ class TorchSynthModule(nn.Module):
             assert parameter.parameter_name not in self.torchparameters
             self.torchparameters[parameter.parameter_name] = parameter
 
-    def get_parameter(self, parameter_id: str) -> TorchParameter:
+    def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """
-        Get a single TorchParameter for this module
+        Get a single ModuleParameter for this module
 
         Parameters
         ----------
@@ -131,7 +127,7 @@ class TorchADSR(TorchSynthModule):
         r: float = 0.5,
         alpha: float = 3.0,
         sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE
+        buffer_size: int = BUFFER_SIZE,
     ):
         """
         Parameters
@@ -148,31 +144,31 @@ class TorchADSR(TorchSynthModule):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=a,
                     parameter_name="attack",
-                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=d,
                     parameter_name="decay",
-                    parameter_range=ParameterRange(0.0, 2.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=s,
                     parameter_name="sustain",
-                    parameter_range=ParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=r,
                     parameter_name="release",
-                    parameter_range=ParameterRange(0.0, 5.0, curve="log")
+                    parameter_range=ModuleParameterRange(0.0, 5.0, curve="log"),
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=alpha,
                     parameter_name="alpha",
-                    parameter_range=ParameterRange(0.1, 6.0)
-                )
+                    parameter_range=ModuleParameterRange(0.1, 6.0),
+                ),
             ]
         )
 
@@ -228,8 +224,7 @@ class TorchADSR(TorchSynthModule):
 
         assert duration.ndim == 0
         t = torch.arange(
-            self.seconds_to_samples(duration).item(),
-            device=duration.device
+            self.seconds_to_samples(duration).item(), device=duration.device
         )
         ramp = t * (1 / duration) / self.sample_rate
 
@@ -311,25 +306,23 @@ class TorchVCO(TorchSynthModule):
         mod_depth: float = 50,
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE
+        buffer_size: int = BUFFER_SIZE,
     ):
         TorchSynthModule.__init__(
-            self,
-            sample_rate=sample_rate,
-            buffer_size=buffer_size
+            self, sample_rate=sample_rate, buffer_size=buffer_size
         )
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=midi_f0,
                     parameter_name="pitch",
-                    parameter_range=ParameterRange(0.0, 127.0)
+                    parameter_range=ModuleParameterRange(0.0, 127.0),
                 ),
-                TorchParameter(
+                ModuleParameter(
                     value=mod_depth,
                     parameter_name="mod_depth",
-                    parameter_range=ParameterRange(0.0, 127.0)
-                )
+                    parameter_range=ModuleParameterRange(0.0, 127.0),
+                ),
             ]
         )
         # TODO: Make this a parameter too?
@@ -400,7 +393,7 @@ class TorchSineVCO(TorchVCO):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
@@ -422,10 +415,8 @@ class TorchFmVCO(TorchVCO):
     """
 
     def __init__(
-            self,
-            midi_f0: float = 10.0,
-            mod_depth: float = 50.0,
-            phase: float = 0.0):
+        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def make_control_as_frequency(self, mod_signal: T):
@@ -457,14 +448,14 @@ class TorchSquareSawVCO(TorchVCO):
         midi_f0: float = 10.0,
         mod_depth: float = 50.0,
         phase: float = 0.0,
-     ):
+    ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=shape,
                     parameter_name="shape",
-                    parameter_range=ParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 )
             ]
         )
@@ -492,11 +483,7 @@ class TorchVCA(TorchSynthModule):
     Voltage controlled amplifier.
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
 
     def _forward(self, control_in: T, audio_in: T) -> T:
@@ -519,18 +506,14 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(
-            self,
-            ratio: float = 0.25,
-            **kwargs
-    ):
+    def __init__(self, ratio: float = 0.25, **kwargs):
         super().__init__(**kwargs)
         self.add_parameters(
             [
-                TorchParameter(
+                ModuleParameter(
                     value=ratio,
                     parameter_name="ratio",
-                    parameter_range=ParameterRange(0.0, 1.0)
+                    parameter_range=ModuleParameterRange(0.0, 1.0),
                 )
             ]
         )
@@ -549,11 +532,7 @@ class TorchSynthParameters(TorchSynthModule):
     A SynthModule that is strictly for managing parameters
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__(sample_rate, buffer_size)
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:
@@ -571,11 +550,7 @@ class TorchSynth(nn.Module):
     buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(
-            self,
-            sample_rate: int = SAMPLE_RATE,
-            buffer_size: int = BUFFER_SIZE
-    ):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
         super().__init__()
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
@@ -628,7 +603,7 @@ class TorchDrum(TorchSynth):
         vco_2: TorchVCO = TorchSquareSawVCO(),
         noise: TorchNoise = TorchNoise(),
         vca: TorchVCA = TorchVCA(),
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         assert note_on_duration >= 0
@@ -640,19 +615,21 @@ class TorchDrum(TorchSynth):
         self.note_on_duration = T(note_on_duration)
 
         # Add required global parameters
-        self.global_params.add_parameters([
-            TorchParameter(vco_ratio, "vco_ratio", ParameterRange(0.0, 1.0))
-        ])
+        self.global_params.add_parameters(
+            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
+        )
 
         # Register all modules as children
-        self.add_synth_modules({
-            'pitch_adsr': pitch_adsr,
-            'amp_adsr': amp_adsr,
-            'vco_1': vco_1,
-            'vco_2': vco_2,
-            'noise': noise,
-            'vca': vca
-        })
+        self.add_synth_modules(
+            {
+                "pitch_adsr": pitch_adsr,
+                "amp_adsr": amp_adsr,
+                "vco_1": vco_1,
+                "vco_2": vco_2,
+                "noise": noise,
+                "vca": vca,
+            }
+        )
 
     def forward(self) -> T:
         # The convention for triggering a note event is that it has
@@ -665,332 +642,9 @@ class TorchDrum(TorchSynth):
         vco_2_out = self.vco_2(pitch_envelope)
 
         audio_out = util.crossfade(
-            vco_1_out,
-            vco_2_out,
-            self.global_params.p("vco_ratio")
+            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
         )
 
         audio_out = self.noise(audio_out)
 
         return self.vca(amp_envelope, audio_out)
-
-
-class FIRLowPass(TorchSynthModule):
-    """
-    A finite impulse response low-pass filter. Uses convolution with a windowed
-    sinc function.
-
-    Parameters
-    ----------
-
-    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
-                            half the sampling rate. Defaults to 1000Hz.
-    filter_length (int) :   The length of the filter in samples. A longer filter will
-                            result in a steeper filter cutoff. Should be greater than 4.
-                            Defaults to 512 samples.
-    sample_rate (int)   :   Sampling rate to run processing at.
-    """
-
-    def __init__(
-        self,
-        cutoff: float = 1000.0,
-        filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE,
-    ):
-        super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
-            [
-                TorchParameter(
-                    value=cutoff,
-                    parameter_name="cutoff",
-                    parameter_range=ParameterRange(5.0, sample_rate / 2.0, "log")
-                ),
-                TorchParameter(
-                    value=filter_length,
-                    parameter_name="length",
-                    parameter_range=ParameterRange(4.0, 4096.)
-                )
-            ]
-        )
-
-    def _forward(self, audio_in: T) -> T:
-        """
-        Filter audio samples
-        TODO: Cutoff frequency modulation, if there is an efficient way to do it
-
-        Parameters
-        ----------
-
-        audio (T)  :   audio samples to filter
-        """
-
-        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
-        impulse = impulse.view(1, 1, impulse.size()[0])
-        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
-        y = nn.functional.conv1d(
-            audio_resized,
-            impulse,
-            padding=int(self.p("length") / 2)
-        )
-        return y[0][0]
-
-    def windowed_sinc(self, cutoff: T, length: T) -> T:
-        """
-        Calculates the impulse response for FIR low-pass filter using the
-        windowed sinc function method. Updated to allow for a fractional filter length.
-
-        Parameters
-        ----------
-
-        cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
-                                half the sampling rate.
-        length (T) :   Length of the filter impulse response to create.
-        """
-
-        # Normalized frequency
-        omega = 2 * torch.pi * cutoff / self.sample_rate
-
-        # Create a sinc function
-        num_samples = torch.ceil(length)
-        half_length = (length - 1.) / 2.
-        t = torch.arange(num_samples.detach(), device=length.device)
-        ir = util.sinc((t - half_length) * omega)
-
-        return ir * util.blackman(length)
-
-
-class TorchMovingAverage(TorchSynthModule):
-    """
-    A finite impulse response moving average filter.
-
-    Parameters
-    ----------
-
-    filter_length (int) :   Length of filter and number of samples to take average over.
-                            Must be greater than 0. Defaults to 32.
-    sample_rate (int)   :   Sampling rate to run processing at.
-    """
-
-    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
-        super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
-            [
-                TorchParameter(
-                    value=filter_length,
-                    parameter_name="length",
-                    parameter_range=ParameterRange(1.0, 4096.0),
-                )
-            ]
-        )
-
-    def _forward(self, audio_in: T) -> T:
-        """
-        Filter audio samples
-
-        Parameters
-        ----------
-
-        audio (T)  :   audio samples to filter
-        """
-        length = self.p("length")
-        impulse = torch.ones((1, 1, int(length)), device=length.device) / length
-
-        # For non-integer impulse lengths
-        if torch.sum(impulse) < 1.0:
-            additional = torch.ones(1, 1, 1, device=length.device)
-            additional *= (1.0 - torch.sum(impulse))
-            impulse = torch.cat((impulse, additional), dim=2)
-
-        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
-        y = nn.functional.conv1d(
-            audio_resized,
-            impulse,
-            padding=int(impulse.size()[0] / 2)
-        )
-        return y[0][0]
-
-
-class TorchSVF(TorchSynthModule):
-    """
-    A State Variable Filter that can do low-pass, high-pass, band-pass, and
-    band-reject filtering. Allows modulation of the cutoff frequency and an
-    adjustable resonance parameter. Can self-oscillate to make a sinusoid
-    oscillator.
-
-    Parameters
-    ----------
-
-    mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
-    cutoff (float)          :   cutoff frequency in Hz must be between 5 and
-                                half the sample rate. Defaults to 1000Hz.
-    resonance (float)       :   filter resonance, or "Quality Factor". Higher
-                                values cause the filter to resonate more. Must
-                                be greater than 0.5. Defaults to 0.707.
-    mod_depth (float)       :   Amount of modulation to apply to the cutoff from
-                                the control input during processing. Can be negative
-                                or positive in Hertz. Defaults to zero.
-    """
-
-    def __init__(
-            self,
-            mode: str,
-            cutoff: float = 1000.0,
-            resonance: float = 0.707,
-            mod_depth: float = 0.0,
-            **kwargs
-    ):
-        super().__init__(**kwargs)
-
-        # Set the filter type
-        self.mode = mode.lower()
-        assert mode in ['lpf', 'hpf', 'bpf', 'bsf']
-
-        nyquist = self.sample_rate / 2.0
-        self.add_parameters(
-            [
-                TorchParameter(
-                    value=cutoff,
-                    parameter_range=ParameterRange(5.0, nyquist, "log"),
-                    parameter_name="cutoff"
-                ),
-                TorchParameter(
-                    value=resonance,
-                    parameter_range=ParameterRange(0.01, 1000.0, "log"),
-                    parameter_name="resonance"
-                ),
-                TorchParameter(
-                    value=mod_depth,
-                    parameter_range=ParameterRange(-nyquist, nyquist, "log"),
-                    parameter_name="mod_depth"
-                )
-            ]
-        )
-
-    def _forward(
-        self,
-        audio_in: T,
-        control_in: T = None,
-    ) -> T:
-        """
-        Process audio samples and return filtered results.
-
-        Parameters
-        ----------
-
-        audio (torch.tensor)          :   Audio samples to filter
-        cutoff_mod (torch.tensor)     :   Control signal used to modulate the filter
-                                        cutoff. Values must be in range [0,1]
-        """
-
-        h0 = 0.0
-        h1 = 0.0
-        y = torch.zeros_like(audio_in, device=audio_in.device)
-
-        if control_in is None:
-            control_in = torch.zeros_like(audio_in, device=audio_in.device)
-        else:
-            assert control_in.size() == audio_in.size()
-
-        cutoff = self.p("cutoff")
-        mod_depth = self.p("mod_depth")
-        res_coefficient = 1.0 / self.p("resonance")
-
-        # Processing loop
-        for i in range(len(audio_in)):
-            # If there is a cutoff modulation envelope, update coefficients
-            cutoff_val = cutoff + control_in[i] * mod_depth
-            coeff0, coeff1, rho = TorchSVF.svf_coefficients(
-                cutoff_val,
-                res_coefficient,
-                self.sample_rate
-            )
-
-            # Calculate each of the filter components
-            hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
-            bpf = coeff1 * hpf + h0
-            lpf = coeff1 * bpf + h1
-
-            # Feedback samples
-            h0 = coeff1 * hpf + bpf
-            h1 = coeff1 * bpf + lpf
-
-            if self.mode == "lpf":
-                y[i] = lpf
-            elif self.mode == "bpf":
-                y[i] = bpf
-            elif self.mode == "bsf":
-                y[i] = hpf + lpf
-            else:
-                y[i] = hpf
-
-        return y
-
-    @staticmethod
-    def svf_coefficients(cutoff, res_coefficient, sample_rate):
-        """
-        Calculates the filter coefficients for SVF.
-
-        Parameters
-        ----------
-        cutoff (T)  :   Filter cutoff frequency in Hz.
-        resonance (T) : Filter resonance
-        sample_rate (T) : Sample rate to process at
-        """
-
-        g = torch.tan(torch.pi * cutoff / sample_rate)
-        coeff0 = 1.0 / (1.0 + res_coefficient * g + g * g)
-        rho = res_coefficient + g
-
-        return coeff0, g, rho
-
-
-class TorchLowPassSVF(TorchSVF):
-    """
-    IIR Low-pass using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see TorchSVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__('lpf', **kwargs)
-
-
-class TorchHighPassSVF(TorchSVF):
-    """
-    IIR High-pass using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see TorchSVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__('hpf', **kwargs)
-
-
-class TorchBandPassSVF(TorchSVF):
-    """
-    IIR Band-pass using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see TorchSVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__('bpf', **kwargs)
-
-
-class TorchBandStopSVF(TorchSVF):
-    """
-    IIR Band-stop using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see TorchSVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__('bsf', **kwargs)
