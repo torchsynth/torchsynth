@@ -4,9 +4,8 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.defaults import SAMPLE_RATE
-from torchsynth.parameter import ModuleParameterRange, ModuleParameter
-
 from torchsynth.module import TorchSynthModule
+from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
 class FIRLowPass(TorchSynthModule):
