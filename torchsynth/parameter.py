@@ -148,9 +148,9 @@ class ModuleParameter(nn.Parameter):
 
     def to_0to1(self, new_value: T):
         """
-	    Set the value of this parameter using an input that is
-    	within the user-specified range. It will be converted to a
-    	0-to-1 range and stored internally.
+        Set the value of this parameter using an input that is
+        within the user-specified range. It will be converted to a
+        0-to-1 range and stored internally.
 
         Parameters
         ----------
