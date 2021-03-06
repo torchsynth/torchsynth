@@ -93,12 +93,15 @@ class ModuleParameter(nn.Parameter):
 
     Parameters
     ----------
-    value (float) : initial value of this parameter in the user-specific range.
-        Must pass in a ModuleParameterRange object when using this to provide conversion to
-        and from 0-to-1 range
+    value (float) : initial value of this parameter in the user-specific
+        range. Must pass in a ModuleParameterRange object when using this
+        to provide conversion to and from 0-to-1 range
+
     parameter_name (str) : A name for this parameter
-    parameter_range (ModuleParameterRange) : A ModuleParameterRange object that supports conversion
-        to and from 0-to-1 range and a user-specified range.
+    parameter_range (ModuleParameterRange) : A ModuleParameterRange
+        object that supports conversion to and from 0-to-1 range
+        and a user-specified range.
+
     data (Tensor) : directly add data to this parameter without a user-range
     requires_grad (bool) : whether or not a gradient is required for this parameter
     """
