@@ -173,7 +173,7 @@ class TorchSynthModule1D(TorchSynthModule):
         """
         return self.forward1D(*args, **kwargs)
 
-    def add_parameters(self, parameters: List[TorchParameter]):
+    def add_parameters(self, parameters: List[ModuleParameter]):
         """
         Add parameters to this SynthModule's torch parameter dictionary.
         """
@@ -182,9 +182,9 @@ class TorchSynthModule1D(TorchSynthModule):
             assert parameter.shape == (self.batch_size,)
             self.torchparameters[parameter.parameter_name] = parameter
 
-    def get_parameter(self, parameter_id: str) -> TorchParameter:
+    def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """
-        Get a single TorchParameter for this module
+        Get a single ModuleParameter for this module
 
         Parameters
         ----------
