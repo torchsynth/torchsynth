@@ -1,2 +1,13 @@
-# https://stackoverflow.com/a/16624700/82733
-.
+# These are the packages needed to develop torchsynth
+# User requirements are in setup.py
+# If we want to use snyk, we need a requirements.txt file
+# Otherwise we could just do this:
+#   https://stackoverflow.com/a/16624700/82733
+numpy
+scipy
+torch>=1.7
+pytest
+pytest-cov
+ipython
+librosa
+matplotlib
