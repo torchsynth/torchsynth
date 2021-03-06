@@ -175,7 +175,7 @@ class TorchSynthModule1D(TorchSynthModule):
         assert x.shape[0] == 1
         return x[0]
 
-    def add_parameters(self, parameters: List[TorchParameter]):
+    def add_parameters(self, parameters: List[ModuleParameter]):
         """
         Add parameters to this SynthModule's torch parameter dictionary.
         """
@@ -184,9 +184,9 @@ class TorchSynthModule1D(TorchSynthModule):
             assert parameter.shape == (self.batch_size,)
             self.torchparameters[parameter.parameter_name] = parameter
 
-    def get_parameter(self, parameter_id: str) -> TorchParameter:
+    def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """
-        Get a single TorchParameter for this module
+        Get a single ModuleParameter for this module
 
         Parameters
         ----------
@@ -425,8 +425,8 @@ class TorchVCO(TorchSynthModule):
 
     def __init__(
         self,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
+        midi_f0: T = T(10),
+        mod_depth: T = T(50),
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
         buffer_size: int = BUFFER_SIZE,
@@ -513,8 +513,8 @@ class TorchSineVCO(TorchVCO):
 
     def __init__(
         self,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
         phase: float = 0.0,
         **kwargs,
     ):
@@ -538,7 +538,7 @@ class TorchFmVCO(TorchVCO):
     """
 
     def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
+        self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
@@ -567,10 +567,10 @@ class TorchSquareSawVCO(TorchVCO):
 
     def __init__(
         self,
-        shape: float = 0.0,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
-        phase: float = 0.0,
+        shape: T = T(0.0),
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
+        phase: T = T(0.0),
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
@@ -629,7 +629,7 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(self, ratio: float = 0.25, **kwargs):
+    def __init__(self, ratio: T = T(0.25), **kwargs):
         super().__init__(**kwargs)
         self.add_parameters(
             [

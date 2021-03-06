@@ -29,7 +29,7 @@ class TestTorchSynthModule:
         assert module.get_parameter_0to1("param_1") == 0.5
 
         param_2 = ModuleParameter(
-            value=5000.0,
+            value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_2"
         )
@@ -39,7 +39,7 @@ class TestTorchSynthModule:
     def test_set_parameter(self):
         module = synthmodule.TorchSynthModule()
         param_1 = ModuleParameter(
-            value=5000.0,
+            value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
@@ -56,7 +56,7 @@ class TestTorchSynthModule:
     def test_set_parameter_0to1(self):
         module = synthmodule.TorchSynthModule()
         param_1 = ModuleParameter(
-            value=5000.0,
+            value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
@@ -74,7 +74,7 @@ class TestTorchSynthModule:
     def test_p(self):
         module = synthmodule.TorchSynthModule()
         param_1 = ModuleParameter(
-            value=5000.0,
+            value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
             parameter_name="param_1"
         )
@@ -133,7 +133,14 @@ class TestTorchSynth():
             })
 
         with pytest.raises(ValueError):
-            adsr = synthmodule.TorchADSR(buffer_size=512)
+            adsr = synthmodule.TorchADSR(
+                a=T([0.5]),
+                d=T([0.25]),
+                s=T([0.5]),
+                r=T([1.0]),
+                alpha=T([1.0]),
+                buffer_size=T(512)
+            )
             synth.add_synth_modules({
                 'adsr': adsr
             })

@@ -94,8 +94,8 @@ class ModuleParameter(nn.Parameter):
     Parameters
     ----------
     value (T) : initial value of this parameter in the user-specific
-	    range. Must pass in a ModuleParameterRange object when using
-    	this to provide conversion to and from 0-to-1 range
+    range. Must pass in a ModuleParameterRange object when using
+    this to provide conversion to and from 0-to-1 range
 
     parameter_name (str) : A name for this parameter
     parameter_range (ModuleParameterRange) : A ModuleParameterRange
@@ -108,16 +108,16 @@ class ModuleParameter(nn.Parameter):
 
     def __new__(
             cls,
-            value: T,
+            value: T = None,
             parameter_name: str = "",
-            parameter_range: ParameterRange = None,
+            parameter_range: ModuleParameterRange = None,
             data: torch.Tensor = None,
             requires_grad: bool = True,
     ):
         # TODO: Assert value is 1D after we have 1D'ified everything
         if value is not None:
             if parameter_range is not None:
-                data = parameter_range.to_0to1(T(value))
+                data = parameter_range.to_0to1(value)
             else:
                 raise ValueError(
                     "A parameter range must be specified when passing in a value"
@@ -137,7 +137,7 @@ class ModuleParameter(nn.Parameter):
 
     def __repr__(self):
         return "ModuleParameter(name={}, value={})".format(
-            self.parameter_name, self.item()
+            self.parameter_name, self.data
         )
 
     def from_0to1(self) -> T:

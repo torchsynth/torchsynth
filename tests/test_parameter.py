@@ -13,12 +13,6 @@ from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 
 class TestParameterRange:
 
-    def test_empty_construction(self):
-        param_range = ModuleParameterRange()
-        assert param_range.minimum == 0.0
-        assert param_range.maximum == 1.0
-        assert param_range.curve_type == "linear"
-
     def test_construction(self):
         param_range = ModuleParameterRange(0.0, 10.0)
         assert param_range.minimum == 0.0
@@ -39,7 +33,7 @@ class TestParameterRange:
         assert param_range.curve == 2.0
 
         with pytest.raises(ValueError):
-            ModuleParameterRange(curve="not_a_curve")
+            ModuleParameterRange(0.0, 1.0, curve="not_a_curve")
 
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 1.0)
@@ -99,13 +93,15 @@ class TestModuleParameter:
 
     def test_construction(self):
         # Test passing in the data directly
-        param = ModuleParameter(data=T(1.0))
-        assert param == 1.0
+        data = torch.rand(10)
+        param = ModuleParameter(data=data)
+        assert torch.all(param.eq(data))
 
         # Test construction by passing in a value in a specific range
-        param = ModuleParameter(value=5.0, parameter_range=ModuleParameterRange(0.0, 10.))
-        assert param == 0.5
-        assert param.from_0to1() == 5.0
+        data = torch.linspace(0.0, 9.0, 10)
+        param = ModuleParameter(value=data, parameter_range=ModuleParameterRange(0.0, 10.))
+        assert torch.all(param.eq(data / 10.))
+        assert torch.all(param.from_0to1().eq(data))
 
         # Test naming a parameter
         param = ModuleParameter(parameter_name="param_1")
@@ -118,37 +114,41 @@ class TestModuleParameter:
         param = ModuleParameter()
         assert param.requires_grad
 
-        # Test error thrown if a value is passed in with a range
+        # Test error thrown if a value is passed in with an incorrect range
         with pytest.raises(ValueError):
-            ModuleParameter(value=2555.0)
+            ModuleParameter(value=T([0.0, 2555.0]))
 
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 10.0)
         param = ModuleParameter(
-            value=5.0,
+            value=T([5.0, 1.0]),
             parameter_range=param_range,
             parameter_name="param_1"
         )
-        assert repr(param) == 'ModuleParameter(name=param_1, value=0.5)'
+        assert repr(param) == 'ModuleParameter(name=param_1, value=tensor([0.5000, 0.1000]))'
 
     def test_from_0to1(self):
         # Test with no range first -- should get original value back
-        param = ModuleParameter(data=T(0.45))
-        np.testing.assert_almost_equal(param.from_0to1().item(), 0.45)
+        data = torch.linspace(0.0, 0.99, 100)
+        param = ModuleParameter(data=data)
+        assert torch.all(param.from_0to1().eq(data))
 
         # Make sure the requires_grad attribute is sustained
         assert param.requires_grad
 
         # Test with range now
-        param_range = ModuleParameterRange(0.0, 10.0)
-        param = ModuleParameter(data=T(0.5), parameter_range=param_range)
-        np.testing.assert_almost_equal(param.from_0to1().item(), 5.0)
+        param_range = ModuleParameterRange(0.0, 100.0)
+        expected = torch.linspace(0.0, 99.0, 100)
+        param = ModuleParameter(data=data, parameter_range=param_range)
+        assert torch.all(torch.isclose(param.from_0to1(), expected))
         assert param.requires_grad
 
     def test_to_0to1(self):
         param_range = ModuleParameterRange(0.0, 10.0)
-        param = ModuleParameter(value=7.5, parameter_range=param_range)
-        assert param == 0.75
+        data = torch.linspace(0.0, 9.0, 10)
+        param = ModuleParameter(value=T([0.0, 1.0]), parameter_range=param_range)
+        param.to_0to1(data)
+        assert torch.all(torch.isclose(data / 10., param))
 
         param.to_0to1(T(5.0))
         assert param == 0.5
