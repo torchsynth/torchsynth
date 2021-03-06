@@ -1,9 +1,6 @@
 """
 Utility functions for torch DSP related things
 
-TODO: After everything is torch'ified, remove numpyutil.py version
-and rename this to util.py.
-
 TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 

@@ -5,7 +5,6 @@ Synth modules in Torch.
 from abc import abstractmethod
 from typing import Any, Dict, List
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.tensor as T
@@ -59,31 +58,6 @@ class TorchSynthModule(nn.Module):
         Wrapper for _forward that ensures a buffer_size length output.
         """
         return self.to_buffer_size(self._forward(*args, **kwargs))
-
-    def npyforward(
-            self,
-            *args: Any,
-            **kwargs: Any
-    ) -> np.ndarray:  # pragma: no cover
-        """
-        This is the numpy version of the torch.nn.Module.forward command.
-        All torch.tensor inputs and outputs are cast to ndarrays.
-        """
-        npyargs = []
-        for i in args:
-            if isinstance(i, T):
-                npyargs.append(i.numpy())
-            else:
-                npyargs.append(i)
-
-        npykwargs = {}
-        for key in kwargs.keys():
-            if isinstance(kwargs[key], T):
-                npykwargs[key] = kwargs[key].numpy()
-            else:
-                npykwargs[key] = kwargs[key]
-
-        return self.forward(*npyargs, **npykwargs).numpy()
 
     def add_parameters(self, parameters: List[TorchParameter]):
         """
@@ -202,7 +176,7 @@ class TorchADSR(TorchSynthModule):
             ]
         )
 
-    def _forward(self, note_on_duration: T = T(0)) -> np.ndarray:
+    def _forward(self, note_on_duration: T = T(0)) -> T:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
