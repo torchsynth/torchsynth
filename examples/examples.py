@@ -431,7 +431,7 @@ for i in range(10):
 # ### Filters
 
 # +
-from torchsynth.synthmodule import TorchMovingAverage, FIRLowPass
+from torchsynth.filter import TorchMovingAverage, FIRLowPass
 
 # Create some noise to filter
 duration = 2
@@ -444,6 +444,7 @@ stft_plot(noise.cpu().detach().numpy())
 # A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
 
 # +
+
 ma_filter = TorchMovingAverage(filter_length=32.).to(device)
 filtered = ma_filter(noise)
 
@@ -512,7 +513,7 @@ for p in fir1.torchparameters:
 # IIR filters are really slow in Torch, so we're only testing with a shorter buffer
 
 # +
-from torchsynth.synthmodule import TorchLowPassSVF, TorchHighPassSVF, TorchBandPassSVF, TorchBandStopSVF
+from torchsynth.filter import TorchLowPassSVF, TorchHighPassSVF, TorchBandPassSVF, TorchBandStopSVF
 import torch.fft
 
 # Noise for testing
