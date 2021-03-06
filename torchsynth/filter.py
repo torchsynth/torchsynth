@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
+from torchsynth.defaults import SAMPLE_RATE
 from torchsynth.parameter import ParameterRange, TorchParameter
 
 from torchsynth.synthmodule import TorchSynthModule
