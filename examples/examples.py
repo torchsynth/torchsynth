@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.fft
+import torch.tensor as T
 
-from torchsynth.torchmodule import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
+from torchsynth.torchmodule import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise #, TorchDrum, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE
 # -
 
@@ -80,6 +81,20 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
 # If this is confusing, don't worry about it. ADSR's do a lot of work behind the
 # scenes to make the playing experience feel natural. Alternately, you may
 # specify one-shot mode (see below), which is more typical of drum machines.
+
+# +
+# Synthesis parameters.
+a = [0.1, 0.2]
+d = [0.1, 0.2]
+s = [0.75, 0.8]
+r = [0.5, 0.8]
+alpha = [3.0, 4.0]
+note_on_duration = [0.5, 2.0]
+
+# Envelope test
+adsr = TorchADSR(T(a), T(d), T(s), T(r), T(alpha)).to(device)
+envelope = adsr(T(note_on_duration))
+time_plot(envelope.detach().cpu(), adsr.sample_rate)
 
 # +
 # Synthesis parameters.

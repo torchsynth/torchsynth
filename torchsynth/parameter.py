@@ -16,8 +16,8 @@ class ParameterRange:
 
     Parameters
     ----------
-    minimum (float) :   minimum value in range
-    maximum (float) :   maximum value in range
+    minimum (T) :   minimum value in range
+    maximum (T) :   maximum value in range
     curve   (str)   :   relationship between parameter values and the normalized values
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
@@ -25,8 +25,8 @@ class ParameterRange:
 
     def __init__(
         self,
-        minimum: float = 0.0,
-        maximum: float = 1.0,
+        minimum: T,
+        maximum: T,
         curve: str = "linear",
     ):
         self.minimum = minimum
@@ -54,7 +54,7 @@ class ParameterRange:
 
         Parameters
         ----------
-        normalized (float)   : value within [0,1] range to convert to range defined by
+        normalized (T)     : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
         assert torch.all(0.0 <= normalized)
@@ -71,7 +71,7 @@ class ParameterRange:
 
         Parameters
         ----------
-        value (float)   : value within the range defined by minimum and maximum
+        value (T)      : value within the range defined by minimum and maximum
         """
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
@@ -91,7 +91,7 @@ class TorchParameter(nn.Parameter):
 
     Parameters
     ----------
-    value (float) : initial value of this parameter in the user-specific range.
+    value (T) : initial value of this parameter in the user-specific range.
         Must pass in a ParameterRange object when using this to provide conversion to
         and from 0-to-1 range
     parameter_name (str) : A name for this parameter
@@ -103,12 +103,13 @@ class TorchParameter(nn.Parameter):
 
     def __new__(
             cls,
-            value: float = None,
+            value: T,
             parameter_name: str = "",
             parameter_range: ParameterRange = None,
             data: torch.Tensor = None,
             requires_grad: bool = True,
     ):
+        # TODO: Assert value is 1D after we have 1D'ified everything
         if value is not None:
             if parameter_range is not None:
                 data = parameter_range.to_0to1(T(value))
