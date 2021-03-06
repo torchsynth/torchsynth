@@ -22,15 +22,22 @@ setup(
     long_description_content_type="text/markdown",
     url=__url__,
     licence=__license__,
-    packages=find_packages(exclude=('tests', 'examples')),
-    #package_dir={"": "src"},
-    #package_data={
+    packages=find_packages(exclude=("tests", "examples")),
+    # package_dir={"": "src"},
+    # package_data={
     #    "": [],
-    #},
+    # },
     scripts=[],
     python_requires=">=3.6",
     install_requires=["numpy", "scipy", "torch>=1.7"],
     extras_require={
-        "dev": ["pytest", "pytest-cov", "ipython", "librosa", "matplotlib"],
+        "dev": [
+            "pytest",
+            "pytest-cov",
+            "ipython",
+            "librosa",
+            "matplotlib",
+            "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
+        ],
     },
 )
