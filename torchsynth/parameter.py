@@ -108,7 +108,7 @@ class ModuleParameter(nn.Parameter):
 
     def __new__(
             cls,
-            value: T,
+            value: T = None,
             parameter_name: str = "",
             parameter_range: ModuleParameterRange = None,
             data: torch.Tensor = None,
