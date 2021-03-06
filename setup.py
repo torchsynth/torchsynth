@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 __version__ = "0.0.1"
-__author__ = ""
+__author__ = "Joseph Turian, Jordie Shier, Max Henry"
 __contact__ = ""
 __url__ = ""
 __license__ = "Apache-2.0"
@@ -22,11 +22,11 @@ setup(
     long_description_content_type="text/markdown",
     url=__url__,
     licence=__license__,
-    packages=find_packages("src"),
-    package_dir={"": "src"},
-    package_data={
-        "": [],
-    },
+    packages=find_packages(exclude=('tests', 'examples')),
+    #package_dir={"": "src"},
+    #package_data={
+    #    "": [],
+    #},
     scripts=[],
     python_requires=">=3.6",
     install_requires=["numpy", "scipy", "torch>=1.7"],

@@ -1,9 +1,15 @@
 # torchsynth
 
-{\tt torchsynth} is based upon traditional modular synthesis, but is GPU-enabled and is differentiable.
+torchsynth is based upon traditional modular synthesis written in
+pytorch. It is GPU-optional and differentiable.
 
+[![PyPI](https://img.shields.io/pypi/v/torchsynth)](https://pypi.org/project/torchsynth/)
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/torchsynth)
+![PyPI - License](https://img.shields.io/pypi/l/torchsynth)
 [![codecov.io](https://codecov.io/gh/turian/torchsynth/branch/main/graphs/badge.svg?logoWidth=18)](https://codecov.io/github/turian/torchsynth?branch=master)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
+[![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
+
 
 ## Development Installation
 
@@ -21,8 +27,8 @@ We recommend that you run examples through Jupyter notebooks, and
 that you have
 [jupytext](https://towardsdatascience.com/introducing-jupytext-9234fdff6c57)
 installed. It's a little fiddly to install, and those instructions
-are the best. jupytext makes it easy to put demo notebooks into
-the repo as Python files. (Larger assets like ipynb files we should
+are the best. jupytext makes it easy to put demo notebooks into the
+repo as Python files. (Larger assets like ipynb files we should
 avoid.)
 
 To run examples, you should also do:
@@ -56,6 +62,6 @@ pytest
 
 To run tests with a coverage report:
 ```
-pytest --cov=./src
+pytest --cov=./torchsynth
 ```
 
