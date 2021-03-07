@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -400,22 +400,18 @@ class TorchVCO(TorchSynthModule1D):
     ----------
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
-    phase (T)       :   initial phase values
-    sample_rate (T) :   sample_rate to run process at
-    buffer_size (T) :   size of buffer to return
+    phase (optional, T)       :   initial phase values
+    **kwargs        : keyword args, see TorchSynthModule1D
     """
 
     def __init__(
         self,
         midi_f0: T,
         mod_depth: T,
-        phase: T = None,
-        sample_rate: T = T(SAMPLE_RATE),
-        buffer_size: T = T(BUFFER_SIZE),
+        phase: Optional[T] = None,
+        **kwargs
     ):
-        TorchSynthModule1D.__init__(
-            self, midi_f0.shape[0], sample_rate=sample_rate, buffer_size=buffer_size
-        )
+        TorchSynthModule1D.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -433,10 +429,12 @@ class TorchVCO(TorchSynthModule1D):
 
         # Setup initial phase values
         if phase is not None:
-            assert phase.shape == midi_f0.shape
             self.phase = phase.unsqueeze(1)
         else:
+            # Create initial phase of zeros like the parameters
             self.phase = torch.zeros_like(midi_f0).unsqueeze(1)
+
+        assert self.phase.shape[0] == self.batch_size
 
     def _forward(self, mod_signal: T) -> T:
         """
@@ -505,7 +503,7 @@ class TorchSineVCO(TorchVCO):
         self,
         midi_f0: T,
         mod_depth: T,
-        phase: T = None,
+        phase: Optional[T] = None,
         **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
@@ -537,7 +535,7 @@ class TorchFmVCO(TorchVCO):
         self,
         midi_f0: T,
         mod_depth: T,
-        phase: T = None,
+        phase: Optional[T] = None,
         **kwargs
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
@@ -578,7 +576,7 @@ class TorchSquareSawVCO(TorchVCO):
         midi_f0: T,
         mod_depth: T,
         shape: T,
-        phase: T = None,
+        phase: Optional[T] = None,
         **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
@@ -611,21 +609,26 @@ class TorchSquareSawVCO(TorchVCO):
         return 12000 / (max_f0 * torch.log10(max_f0))
 
 
-class TorchVCA(TorchSynthModule):
+class TorchVCA(TorchSynthModule1D):
     """
     Voltage controlled amplifier.
+
+    Parameters
+    ----------
+    **kwargs : keyword args, see TorchSynthModule1D
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
-        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+    def __init__(self, **kwargs):
+        super().__init__(batch_size=None, **kwargs)
 
     def _forward(self, control_in: T, audio_in: T) -> T:
         assert (control_in >= 0).all() and (control_in <= 1).all()
 
+        # Should VCA be responsible for this?
         if (audio_in <= -1).any() or (audio_in >= 1).any():
             util.normalize(audio_in)
 
-        audio_in = util.fix_length(audio_in, len(control_in))
+        audio_in = util.fix_length2D(audio_in, control_in.shape[1])
         return control_in * audio_in
 
 
