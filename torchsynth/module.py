@@ -235,7 +235,7 @@ class TorchSynthModule1D(TorchSynthModule):
 
 class TorchADSR(TorchSynthModule1D):
     """
-    Envelope class for building a control rate ADSR signal
+    Envelope class for building a control rate ADSR signal.
     """
 
     def __init__(
@@ -312,81 +312,60 @@ class TorchADSR(TorchSynthModule1D):
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-        num_samples = self.seconds_to_samples(note_on_duration)
+        assert torch.all(self.p("attack") + self.p("decay") < note_on_duration)
 
-        # Release decays from the last value of the attack-and-decay sections.
-        ADS = self.note_on(num_samples)
-        R = self.note_off(ADS[-1])
+        attack = self.make_attack()
+        decay = self.make_decay()
+        release = self.make_release(note_on_duration)
 
-        # Slightly worried this won't be performant on GPU?
-        return torch.cat((ADS, R))
+        return attack * decay * release
 
-    def _ramp(self, duration: T, inverse: bool = False):
+    def _ramp(self, start, duration: T, inverse: bool = False):
         """Makes a ramp of a given duration in seconds.
 
-        This function is used for the piece-wise construction of the envelope
-        signal. Its output monotonically increases from 0 to 1. As a result,
-        each component of the envelope is a scaled and possibly reversed
-        version of this ramp:
+        The construction of this matrix is rather cryptic. Essentially, this
+        method works by tilting and clipping ramps between 0 and 1, then
+        applying some scaling factor (`alpha`).
 
-        attack      -->     returns an `a`-length ramp, as is.
-        decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
-        release     -->     `r`-length reverse ramp, descends to 0.
-
-        Its curve is determined by alpha:
-
-        alpha = 1 --> linear,
-        alpha > 1 --> exponential,
-        alpha < 1 --> logarithmic.
-
+        `start` is the initial delay in seconds (all 0's) before the ramp up.
+        `duration` is the length of the ramp up, also in seconds.
         """
 
+        assert start.ndim == 1
         assert duration.ndim == 1
-        # Unfortunately this won't work with 1D tensors
-        # and we can't have ramps in different sizes
-        t = torch.arange(
-            self.seconds_to_samples(duration), device=duration.device
-        )
-        ramp = t * (1 / duration) / self.sample_rate
+
+        # Convert to number of samples.
+        start_ = self.seconds_to_samples(start)
+        duration_ = self.seconds_to_samples(duration)
+
+        # Build ramps template.
+        tmp = torch.arange(self.buffer_size)
+        ramp = tmp.repeat([self.batch_size, 1])
+
+        # Shape ramps.
+        ramp = ramp - start_[:, None]
+        ramp = torch.maximum(ramp, T(0.))
+        ramp = ramp / duration_[:, None]
+        ramp = torch.minimum(ramp, T(1.))
 
         if inverse:
-            ramp = 1.0 - ramp
+            ramp = 1 - ramp
 
+        ramp = ramp.squeeze()
+
+        # Apply scaling factor.
         return torch.pow(ramp, self.p("alpha"))
 
-    @property
-    def attack(self):
-        return self._ramp(self.p("attack"))
+    def make_attack(self):
+        return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
 
-    @property
-    def decay(self):
-        # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self._ramp(self.p("decay"), inverse=True)
-        return decay * (1 - self.p("sustain")) + self.p("sustain")
+    def make_decay(self):
+        _a = 1. - self.p("sustain")[:, None]
+        _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
+        return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
-    @property
-    def release(self):
-        # `r`-length reverse ramp, reversed to descend to 0.
-        return self._ramp(self.p("release"), inverse=True)
-
-    def note_on(self, num_samples: T):
-        assert num_samples.ndim == 1
-        out_ = torch.cat((self.attack, self.decay), 0)
-
-        # Slightly worried this won't be performant on GPU?
-        # Truncate or extend based on sustain duration.
-        if num_samples <= len(out_):
-            out_ = out_[:num_samples]
-        else:
-            hold_samples = num_samples - len(out_)
-            sustain = torch.ones(hold_samples, device=self.p("sustain").device)
-            sustain = sustain * self.p("sustain")
-            out_ = torch.cat((out_, sustain))
-
-        return out_
-
-    def note_off(self, last_val: T):
-        return self.release * last_val
+    def make_release(self, note_on_duration):
+        return self._ramp(note_on_duration, self.p("release"), inverse=True)
 
     def __str__(self):
         return (
