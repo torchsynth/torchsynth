@@ -68,7 +68,7 @@ def fix_length(signal: T, length: int) -> T:
     return signal
 
 
-def fix_length2D(signal: Signal, length: T) -> T:
+def fix_length2D(signal: Signal, length: T) -> Signal:
     """
     Pad or truncate array to specified length.
     """

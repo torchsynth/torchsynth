@@ -150,7 +150,7 @@ class TorchSynthModule1D(TorchSynthModule):
         self.batch_size = batch_size
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
-    def to_buffer_size(self, signal: T) -> T:
+    def to_buffer_size(self, signal: Signal) -> Signal:
         return util.fix_length2D(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
@@ -164,7 +164,7 @@ class TorchSynthModule1D(TorchSynthModule):
         """
         raise NotImplementedError("Derived classes must override this method")
 
-    def forward1D(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+    def forward1D(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Wrapper for _forward that ensures a buffer_size length output.
         TODO: Make this forward() after everything is 1D
@@ -176,7 +176,7 @@ class TorchSynthModule1D(TorchSynthModule):
         Wrapper for _forward that ensures a buffer_size length output.
         """
         x = self.forward1D(*args, **kwargs)
-        assert x.ndim == 2 and x.shape[0] == 1
+        assert x.batch_size == 1
         return x.flatten()
 
     def add_parameters(self, parameters: List[ModuleParameter]):
@@ -288,7 +288,7 @@ class TorchADSR(TorchSynthModule1D):
             ]
         )
 
-    def _forward(self, note_on_duration: T) -> T:
+    def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -318,7 +318,7 @@ class TorchADSR(TorchSynthModule1D):
 
         return attack * decay * release
 
-    def _ramp(self, start, duration: T, inverse: bool = False):
+    def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
 
         The construction of this matrix is rather cryptic. Essentially, this
@@ -354,15 +354,15 @@ class TorchADSR(TorchSynthModule1D):
 
         return ramp
 
-    def make_attack(self):
+    def make_attack(self) -> Signal:
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
 
-    def make_decay(self):
+    def make_decay(self) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
         _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
         return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
-    def make_release(self, note_on_duration):
+    def make_release(self, note_on_duration) -> Signal:
         return self._ramp(note_on_duration, self.p("release"), inverse=True)
 
     def __str__(self):
