@@ -117,30 +117,30 @@ plt.plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu())
 # We can also use an optimizer to match the parameters of the two ADSRs
 
 # +
-# %matplotlib notebook
+# # %matplotlib notebook
 
-optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
+# optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
 
-fig, ax = plt.subplots()
-time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
-time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
-plt.show()
+# fig, ax = plt.subplots()
+# time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
+# time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
+# plt.show()
 
-for i in range(100):
-    optimizer.zero_grad()
+# for i in range(100):
+#     optimizer.zero_grad()
 
-    envelope = adsr(note_on_duration)
-    envelope2 = adsr2(note_on_duration)
-    err = torch.mean(torch.abs(envelope - envelope2))
+#     envelope = adsr(note_on_duration)
+#     envelope2 = adsr2(note_on_duration)
+#     err = torch.mean(torch.abs(envelope - envelope2))
         
-    if i % 10 == 0:
-        ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
-        ax.lines[0].set_ydata(envelope.detach().cpu())
-        ax.lines[1].set_ydata(envelope2.detach().cpu())
-        fig.canvas.draw()
+#     if i % 10 == 0:
+#         ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
+#         ax.lines[0].set_ydata(envelope.detach().cpu())
+#         ax.lines[1].set_ydata(envelope2.detach().cpu())
+#         fig.canvas.draw()
     
-    err.backward()
-    optimizer.step()
+#     err.backward()
+#     optimizer.step()
 
 # -
 
