@@ -131,7 +131,7 @@ class TorchSynthModule1D(TorchSynthModule):
     # TODO: have these already moved to cuda
     def __init__(
         self,
-        batch_size: T,
+        batch_size: int,
         sample_rate: T = T(SAMPLE_RATE),
         buffer_size: T = T(BUFFER_SIZE),
     ):
@@ -159,7 +159,7 @@ class TorchSynthModule1D(TorchSynthModule):
         # assert seconds.ndim == 1
         return torch.round(seconds * self.sample_rate).int()
 
-    def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each TorchSynthModule should override this.
         """
