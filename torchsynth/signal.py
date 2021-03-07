@@ -4,6 +4,7 @@ A convenience type for signals.
 
 import torch.tensor as T
 
+
 class Signal(T):
     @property
     def batch_size(self):
