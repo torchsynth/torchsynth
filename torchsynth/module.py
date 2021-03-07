@@ -382,13 +382,7 @@ class TorchVCO(TorchSynthModule1D):
     **kwargs        : keyword args, see TorchSynthModule1D
     """
 
-    def __init__(
-        self,
-        midi_f0: T,
-        mod_depth: T,
-        phase: Optional[T] = None,
-        **kwargs
-    ):
+    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
         TorchSynthModule1D.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
         self.add_parameters(
             [
@@ -507,13 +501,8 @@ class TorchFmVCO(TorchVCO):
     phase (T)       :   initial phase values
     **kwargs        :   keyword args, see TorchVCO
     """
-    def __init__(
-        self,
-        midi_f0: T,
-        mod_depth: T,
-        phase: Optional[T] = None,
-        **kwargs
-    ):
+
+    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:

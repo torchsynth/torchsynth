@@ -9,6 +9,7 @@ import torch.tensor as T
 import torchsynth.util as util
 from torchsynth.signal import Signal
 
+
 class TestTorchUtil:
     """
     Tests for util methods
