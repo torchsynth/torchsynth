@@ -22,15 +22,6 @@ matrix:
       dist: bionic
       python: 3.9
     - os: linux
-      dist: xenial
-      python: 3.7
-    - os: linux
-      dist: xenial
-      python: 3.8
-    - os: linux
-      dist: xenial
-      python: 3.9
-    - os: linux
       dist: groovy
       python: 3.7
     - os: linux

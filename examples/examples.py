@@ -8,7 +8,7 @@
 # %matplotlib inline
 
 # +
-def isnotebook():
+def isnotebook(): # pragma: no cover
     try:
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
@@ -25,7 +25,7 @@ def isnotebook():
 print(f"isnotebook = {isnotebook()}")
 
 # +
-if isnotebook():
+if isnotebook(): # pragma: no cover
     import IPython.display as ipd
     from IPython.core.display import display
     import librosa
@@ -56,7 +56,7 @@ else:
 
 
 def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
-    if isnotebook():
+    if isnotebook(): # pragma: no cover
         t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
         plt.plot(t, signal)
         plt.xlabel("Time")
@@ -66,7 +66,7 @@ def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
 
 
 def stft_plot(signal, sample_rate=SAMPLE_RATE):
-    if isnotebook():
+    if isnotebook(): # pragma: no cover
         X = librosa.stft(signal)
         Xdb = librosa.amplitude_to_db(abs(X))
         plt.figure(figsize=(5, 5))
@@ -344,7 +344,7 @@ for i in range(100):
     err.backward()
     optimizer.step()
 
-if isnotebook():
+if isnotebook(): # pragma: no cover
     plt.plot(error_hist)
     plt.ylabel("Error")
     plt.xlabel("Optimization steps")
