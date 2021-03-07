@@ -8,6 +8,10 @@ import torch
 
 
 class Signal(torch.Tensor):
+    """
+    IMPORTANT: To make sure a tensor is a signal, do this:
+    torch.zeros(batch_size, N, device='cuda').as_subclass(Signal)
+    """
     @property
     def batch_size(self):
         assert self.ndim == 2
