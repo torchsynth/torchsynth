@@ -74,9 +74,9 @@ def fix_length2D(signal: Signal, length: T) -> Signal:
     """
     assert length.ndim == 0
     assert signal.ndim == 2
-    if signal.nsamples < length:
-        signal = torch.nn.functional.pad(signal, (0, length - signal.nsamples))
-    elif signal.nsamples > length:
+    if signal.num_samples < length:
+        signal = torch.nn.functional.pad(signal, (0, length - signal.num_samples))
+    elif signal.num_samples > length:
         signal = signal[:, :length]
     assert signal.shape == (signal.batch_size, length)
     return signal

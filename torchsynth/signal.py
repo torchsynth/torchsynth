@@ -14,6 +14,6 @@ class Signal(torch.Tensor):
         return self.shape[0]
 
     @property
-    def nsamples(self):
+    def num_samples(self):
         assert self.ndim == 2
         return self.shape[1]
