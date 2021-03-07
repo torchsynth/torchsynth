@@ -455,7 +455,7 @@ class TorchVCO(TorchSynthModule1D):
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
-    def oscillator(self, argument: T) -> T:
+    def oscillator(self, argument: Signal) -> Signal:
         """
         Dummy method. Overridden by child class VCO's.
         """
@@ -485,7 +485,7 @@ class TorchSineVCO(TorchVCO):
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
-    def oscillator(self, argument):
+    def oscillator(self, argument: Signal) -> Signal:
         return torch.cos(argument)
 
 
@@ -516,14 +516,14 @@ class TorchFmVCO(TorchVCO):
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
-    def make_control_as_frequency(self, mod_signal: T):
+    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
         f0_hz = util.midi_to_hz(self.p("pitch"))
         fm_depth = self.p("mod_depth") * f0_hz
         modulation_hz = fm_depth.unsqueeze(1) * mod_signal
         return f0_hz.unsqueeze(1) + modulation_hz
 
-    def oscillator(self, argument):
+    def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
@@ -566,7 +566,7 @@ class TorchSquareSawVCO(TorchVCO):
             ]
         )
 
-    def oscillator(self, argument):
+    def oscillator(self, argument: Signal) -> Signal:
         partials = self.partials_constant.unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
         shape = self.p("shape").unsqueeze(1)
@@ -630,12 +630,12 @@ class TorchNoise(TorchSynthModule1D):
             ]
         )
 
-    def _forward(self, audio_in: T) -> T:
+    def _forward(self, audio_in: Signal) -> Signal:
         noise = self.noise_of_length(audio_in)
         return util.crossfade2D(audio_in, noise, self.p("ratio"))
 
     @staticmethod
-    def noise_of_length(audio_in: T) -> T:
+    def noise_of_length(audio_in: Signal) -> Signal:
         return torch.rand_like(audio_in) * 2 - 1
 
 

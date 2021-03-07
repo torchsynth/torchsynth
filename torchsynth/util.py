@@ -100,7 +100,7 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
 
 
-def crossfade2D(in_1: T, in_2: T, ratio: T) -> T:
+def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
     """
     Equal power cross-fade.
 

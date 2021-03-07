@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # # torchsynth examples
 #
 # We walk through basic functionality of `torchsynth` in this Jupyter notebook.
