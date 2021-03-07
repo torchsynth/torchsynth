@@ -10,6 +10,7 @@ import torch
 import torch.tensor as T
 
 from torchsynth.defaults import EPSILON, EQ_POW
+from torchsynth.signal import Signal
 
 
 # What is amin here? And maybe we should convert it to a value in defaults?
@@ -67,21 +68,17 @@ def fix_length(signal: T, length: int) -> T:
     return signal
 
 
-def fix_length2D(signal: T, length: T) -> T:
+def fix_length2D(signal: Signal, length: T) -> T:
     """
     Pad or truncate array to specified length.
     """
-
     assert length.ndim == 0
     assert signal.ndim == 2
-    if signal.shape[1] < length:
-        signal = torch.nn.functional.pad(signal, (0, length - signal.shape[1]))
-    elif signal.shape[1] > length:
+    if signal.nsamples < length:
+        signal = torch.nn.functional.pad(signal, (0, length - signal.nsamples))
+    elif signal.nsamples > length:
         signal = signal[:, :length]
-    assert signal.shape == (
-        signal.shape[0],
-        length,
-    )
+    assert signal.shape == (signal.batch_size, length)
     return signal
 
 
