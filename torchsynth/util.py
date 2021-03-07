@@ -67,6 +67,26 @@ def fix_length(signal: T, length: T) -> T:
     return signal
 
 
+def fix_length2D(signal: T, length: T) -> T:
+    """
+    Pad or truncate 2D signal tensor to specified length
+    TODO: replace fix_length above with this once all modules are 2D
+
+    Parameters
+    ----------
+    signal (T): input tensor
+    length (T): length that each tensor should be
+    """
+    assert signal.ndim == 2
+    if signal.shape[1] < length:
+        pad_amount = length - signal.shape[1]
+        signal = torch.nn.functional.pad(signal, (0, pad_amount, 0, 0))
+    elif signal.shape[1] > length:
+        signal = signal[:, length]
+    assert signal.shape[1] == length
+    return signal
+
+
 def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """
     Equal power cross-fade.

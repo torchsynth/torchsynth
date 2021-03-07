@@ -136,8 +136,7 @@ class TorchSynthModule1D(TorchSynthModule):
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
-        return util.fix_length(signal, self.buffer_size)
-        #return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length2D(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
@@ -479,7 +478,7 @@ class TorchVCO(TorchSynthModule1D):
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
-        return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=0)
+        return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
     def oscillator(self, argument: T) -> T:
         """
@@ -497,9 +496,9 @@ class TorchSineVCO(TorchVCO):
 
     def __init__(
         self,
-        midi_f0: T = T(10.0),
-        mod_depth: T = T(50.0),
-        phase: float = 0.0,
+        midi_f0: T,
+        mod_depth: T,
+        phase: T = None,
         **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
