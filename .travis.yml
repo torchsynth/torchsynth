@@ -22,13 +22,8 @@ matrix:
       dist: bionic
       python: 3.9
     - os: osx
-      python: 3.7
-      osx_image: xcode10.2
-    - os: osx
-      python: 3.8
-      osx_image: xcode10.2
-    - os: osx
-      python: 3.9
+      # Would be nice to try different python versions :(
+      #python: 3.7
       osx_image: xcode10.2
 
 before_install:
