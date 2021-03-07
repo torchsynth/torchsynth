@@ -55,11 +55,14 @@ def midi_to_hz(midi: T) -> T:
     return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
 
 
-def fix_length(signal: T, length: int) -> T:
+def fix_length(signal: T, length: Union[int, T]) -> T:
     """
     Pad or truncate array to specified length.
     """
-
+    if isinstance(length, int):
+        pass
+    else:
+        assert length.ndim == 0
     assert signal.ndim == 1
     if len(signal) < length:
         signal = torch.nn.functional.pad(signal, [0, length - len(signal)])
