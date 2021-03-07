@@ -353,7 +353,7 @@ class TorchADSR(TorchSynthModule1D):
         # Apply scaling factor.
         ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
-        return ramp
+        return Signal(ramp)
 
     def make_attack(self) -> Signal:
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
