@@ -36,6 +36,7 @@ setup(
             "pytest-cov",
         ],
         "dev": [
+            "pre-commit",
             "pytest",
             "pytest-cov",
             "ipython",

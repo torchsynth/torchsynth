@@ -3,6 +3,7 @@
 # If we want to use snyk, we need a requirements.txt file
 # Otherwise we could just do this:
 #   https://stackoverflow.com/a/16624700/82733
+pre-commit
 numpy
 scipy
 torch>=1.7

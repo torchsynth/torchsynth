@@ -8,35 +8,39 @@
 # %matplotlib inline
 
 # +
-def isnotebook(): # pragma: no cover
+def isnotebook():  # pragma: no cover
     try:
         shell = get_ipython().__class__.__name__
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
         if shell == "google.colab._shell":
-            return True   # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
             return False  # Terminal running IPython
         else:
             return False  # Other type (?)
     except NameError:
-        return False      # Probably standard Python interprete
-    
+        return False  # Probably standard Python interprete
+
+
 print(f"isnotebook = {isnotebook()}")
 
 # +
-if isnotebook(): # pragma: no cover
+if isnotebook():  # pragma: no cover
     import IPython.display as ipd
     from IPython.core.display import display
     import librosa
     import librosa.display
     import matplotlib.pyplot as plt
 else:
-    class IPD():
+
+    class IPD:
         def Audio(*args, **kwargs):
             pass
+
         def display(*args, **kwargs):
             pass
+
     ipd = IPD()
 import numpy as np
 import torch
@@ -45,6 +49,7 @@ import torch.tensor as T
 
 from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE
+
 # -
 
 
@@ -56,7 +61,7 @@ else:
 
 
 def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
-    if isnotebook(): # pragma: no cover
+    if isnotebook():  # pragma: no cover
         t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
         plt.plot(t, signal)
         plt.xlabel("Time")
@@ -66,7 +71,7 @@ def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
 
 
 def stft_plot(signal, sample_rate=SAMPLE_RATE):
-    if isnotebook(): # pragma: no cover
+    if isnotebook():  # pragma: no cover
         X = librosa.stft(signal)
         Xdb = librosa.amplitude_to_db(abs(X))
         plt.figure(figsize=(5, 5))
@@ -91,7 +96,7 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
 # amplitude, or filter cutoff frequency. In this notebook we will use the same
 # envelope to modulate several different audio parameters.
 #
-# ### A note about note-on, note-off behaviour 
+# ### A note about note-on, note-off behaviour
 #
 # By default, this envelope reacts as if it was triggered with midi, for example
 # playing a keyboard. Each midi event has a beginning and end: note-on, when you
@@ -133,8 +138,8 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # ##### And here are the gradients
 
 # +
-#err.backward(retain_graph=True)
-#for p in adsr.torchparameters:
+# err.backward(retain_graph=True)
+# for p in adsr.torchparameters:
 #    print(adsr.torchparameters[p].data.grad)
 #    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
 # -
@@ -157,13 +162,13 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 #     envelope = adsr(note_on_duration)
 #     envelope2 = adsr2(note_on_duration)
 #     err = torch.mean(torch.abs(envelope - envelope2))
-        
+
 #     if i % 10 == 0:
 #         ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
 #         ax.lines[0].set_ydata(envelope.detach().cpu())
 #         ax.lines[1].set_ydata(envelope2.detach().cpu())
 #         fig.canvas.draw()
-    
+
 #     err.backward()
 #     optimizer.step()
 
@@ -206,11 +211,11 @@ print("Error =", err)
 time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
 
 # +
-#err.backward(retain_graph=True)
-#for p in sine_vco.torchparameters:
+# err.backward(retain_graph=True)
+# for p in sine_vco.torchparameters:
 #    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={sine_vco2.torchparameters[p].grad.item()}")
 ## Both SineVCOs use the sample envelope
-#for p in adsr.torchparameters:
+# for p in adsr.torchparameters:
 #    print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
 # -
 
@@ -222,7 +227,9 @@ time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
 # +
 from torchsynth.module import TorchSquareSawVCO
 
-square_saw1 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(0.0)).to(device)
+square_saw1 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(0.0)).to(
+    device
+)
 env1 = torch.zeros(square_saw1.buffer_size, device=device)
 
 square_saw_out1 = square_saw1(env1, phase=T(0.0))
@@ -231,7 +238,9 @@ ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.i
 
 # +
 # SquareSawVCO test
-square_saw2 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(1.0)).to(device)
+square_saw2 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(1.0)).to(
+    device
+)
 env2 = torch.zeros(square_saw2.buffer_size, device=device)
 
 square_saw_out2 = square_saw2(env2, phase=T(0.0))
@@ -243,7 +252,9 @@ err = torch.mean(torch.abs(square_saw_out2 - square_saw_out1))
 print(err)
 err.backward(retain_graph=True)
 for p in square_saw1.torchparameters:
-    print(f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}")
+    print(
+        f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}"
+    )
 
 # ### VCA
 #
@@ -319,7 +330,9 @@ print(err)
 
 err.backward(retain_graph=True)
 for p in noise1.torchparameters:
-    print(f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}")
+    print(
+        f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}"
+    )
 
 # +
 optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
@@ -344,7 +357,7 @@ for i in range(100):
     err.backward()
     optimizer.step()
 
-if isnotebook(): # pragma: no cover
+if isnotebook():  # pragma: no cover
     plt.plot(error_hist)
     plt.ylabel("Error")
     plt.xlabel("Optimization steps")
@@ -472,7 +485,7 @@ stft_plot(noise.cpu().detach().numpy())
 
 # +
 
-ma_filter = TorchMovingAverage(filter_length=T(32.)).to(device)
+ma_filter = TorchMovingAverage(filter_length=T(32.0)).to(device)
 filtered = ma_filter(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
@@ -498,7 +511,9 @@ print("Error =", err)
 
 err.backward(retain_graph=True)
 for p in ma_filter.torchparameters:
-    print(f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}")
+    print(
+        f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}"
+    )
 # -
 
 # **FIR Lowpass**
@@ -514,7 +529,7 @@ ipd.Audio(filtered1.cpu().detach().numpy(), rate=44100)
 
 # +
 # Second filter with a lower cutoff and a longer filter
-fir2 = FIRLowPass(cutoff=T(256.), filter_length=T(1024)).to(device)
+fir2 = FIRLowPass(cutoff=T(256.0), filter_length=T(1024)).to(device)
 filtered2 = fir2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -531,7 +546,9 @@ print("Error =", err)
 
 err.backward(retain_graph=True)
 for p in fir1.torchparameters:
-    print(f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}")
+    print(
+        f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}"
+    )
 # -
 # #### IIR Filters
 #
@@ -540,7 +557,12 @@ for p in fir1.torchparameters:
 # IIR filters are really slow in Torch, so we're only testing with a shorter buffer
 
 # +
-from torchsynth.filter import TorchLowPassSVF, TorchHighPassSVF, TorchBandPassSVF, TorchBandStopSVF
+from torchsynth.filter import (
+    TorchLowPassSVF,
+    TorchHighPassSVF,
+    TorchBandPassSVF,
+    TorchBandStopSVF,
+)
 import torch.fft
 
 # Noise for testing
@@ -552,13 +574,17 @@ stft_plot(noise.cpu().numpy())
 # We'll create two lowpass filters with different cutoffs and filter resonance to compare. The second filter has higher resonance at the filter cutoff, this causes the filter to ring at that frequency. This can be seen in the spectrogram as a darker line at the cutoff.
 
 # +
-lpf1 = TorchLowPassSVF(cutoff=T(500), resonance=T(1.0), buffer_size=T(buffer)).to(device)
+lpf1 = TorchLowPassSVF(cutoff=T(500), resonance=T(1.0), buffer_size=T(buffer)).to(
+    device
+)
 filtered1 = lpf1(noise)
 
 stft_plot(filtered1.cpu().detach().numpy())
 
 # +
-lpf2 = TorchLowPassSVF(cutoff=T(1000), resonance=T(10), buffer_size=T(buffer)).to(device)
+lpf2 = TorchLowPassSVF(cutoff=T(1000), resonance=T(10), buffer_size=T(buffer)).to(
+    device
+)
 filtered2 = lpf2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -576,7 +602,9 @@ print(err)
 
 err.backward(retain_graph=True)
 for p in lpf1.torchparameters:
-    print(f"{p} grad1={lpf1.torchparameters[p].grad.item()} grad2={lpf2.torchparameters[p].grad.item()}")
+    print(
+        f"{p} grad1={lpf1.torchparameters[p].grad.item()} grad2={lpf2.torchparameters[p].grad.item()}"
+    )
 
 # Let's checkout some other SVF filters
 
@@ -592,12 +620,16 @@ stft_plot(filtered.cpu().detach().numpy())
 
 # +
 # Bandpass with envelope
-env = TorchADSR(a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]), buffer_size=T(buffer))(T([0.2]))
-bpf = TorchBandPassSVF(cutoff=T(20), resonance=T(30), mod_depth=T(10000), buffer_size=T(buffer))
+env = TorchADSR(
+    a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]), buffer_size=T(buffer)
+)(T([0.2]))
+bpf = TorchBandPassSVF(
+    cutoff=T(20), resonance=T(30), mod_depth=T(10000), buffer_size=T(buffer)
+)
 
 filtered = bpf(noise, env)
 # ParameterError: Audio buffer is not finite everywhere ????
-#stft_plot(filtered.cpu().detach().numpy())
+# stft_plot(filtered.cpu().detach().numpy())
 
 # +
 # Bandstop
@@ -606,4 +638,3 @@ filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
 # -
-

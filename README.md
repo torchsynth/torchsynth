@@ -17,8 +17,15 @@ pytorch. It is GPU-optional and differentiable.
 ```
 git clone https://github.com/turian/torchsynth
 cd torchsynth
-pip install -e .
+pip install -e ".[dev]"
 ```
+
+Make sure you have pre-commit hooks installed:
+```
+pre-commit install
+```
+This helps us avoid checking dirty jupyter notebook cells into the
+repo.
 
 Note that torchsynth requires PyTorch version 1.7 or greater.
 

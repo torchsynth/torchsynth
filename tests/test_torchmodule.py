@@ -6,9 +6,9 @@ import pytest
 import torch.nn
 import torch.tensor as T
 
-import torchsynth.module as synthmodule
-from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 import torchsynth.defaults as defaults
+import torchsynth.module as synthmodule
+from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
 class TestTorchSynthModule:
