@@ -43,6 +43,10 @@ matrix:
       # Would be nice to try different python versions :(
       #python: 3.7
       osx_image: xcode10.2
+    - os: osx
+      # Would be nice to try different python versions :(
+      #python: 3.7
+      osx_image: xcode12.4
 
 before_install:
   - python --version
