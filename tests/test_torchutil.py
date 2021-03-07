@@ -7,7 +7,7 @@ import torch
 import torch.tensor as T
 
 import torchsynth.util as util
-
+from torchsynth.signal import Signal
 
 class TestTorchUtil:
     """
@@ -34,9 +34,10 @@ class TestTorchUtil:
 
     def test_fix_length2D(self):
         signal1 = torch.rand([2, 88100])
+        signal1 = Signal(signal1)
         assert util.fix_length2D(signal1, length=T(44100)).shape == (2, 44100)
         assert util.fix_length2D(signal1, length=T(90000)).shape == (2, 90000)
-        signal2 = T([[1, 2, 3], [4, 5, 6]])
+        signal2 = Signal(T([[1, 2, 3], [4, 5, 6]]).float())
         assert torch.all(
             util.fix_length2D(signal2, length=T(4)) == T([[1, 2, 3, 0], [4, 5, 6, 0]])
         )
