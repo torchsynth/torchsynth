@@ -3,6 +3,8 @@
 torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/turian/torchsynth)
+
 [![PyPI](https://img.shields.io/pypi/v/torchsynth)](https://pypi.org/project/torchsynth/)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/torchsynth)
 ![PyPI - License](https://img.shields.io/pypi/l/torchsynth)
