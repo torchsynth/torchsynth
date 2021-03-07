@@ -17,8 +17,8 @@ class ModuleParameterRange:
 
     Parameters
     ----------
-    minimum (float) :   minimum value in range
-    maximum (float) :   maximum value in range
+    minimum (T) :   minimum value in range
+    maximum (T) :   maximum value in range
     curve   (str)   :   relationship between parameter values and the normalized values
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
@@ -26,8 +26,8 @@ class ModuleParameterRange:
 
     def __init__(
         self,
-        minimum: float = 0.0,
-        maximum: float = 1.0,
+        minimum: T,
+        maximum: T,
         curve: str = "linear",
     ):
         self.minimum = minimum
@@ -55,7 +55,7 @@ class ModuleParameterRange:
 
         Parameters
         ----------
-        normalized (float)   : value within [0,1] range to convert to range defined by
+        normalized (T)     : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
         assert torch.all(0.0 <= normalized)
@@ -72,7 +72,7 @@ class ModuleParameterRange:
 
         Parameters
         ----------
-        value (float)   : value within the range defined by minimum and maximum
+        value (T)      : value within the range defined by minimum and maximum
         """
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
@@ -93,9 +93,9 @@ class ModuleParameter(nn.Parameter):
 
     Parameters
     ----------
-    value (float) : initial value of this parameter in the user-specific
-        range. Must pass in a ModuleParameterRange object when using this
-        to provide conversion to and from 0-to-1 range
+    value (T) : initial value of this parameter in the user-specific
+    range. Must pass in a ModuleParameterRange object when using
+    this to provide conversion to and from 0-to-1 range
 
     parameter_name (str) : A name for this parameter
     parameter_range (ModuleParameterRange) : A ModuleParameterRange
@@ -108,15 +108,16 @@ class ModuleParameter(nn.Parameter):
 
     def __new__(
         cls,
-        value: float = None,
+        value: T = None,
         parameter_name: str = "",
         parameter_range: ModuleParameterRange = None,
         data: torch.Tensor = None,
         requires_grad: bool = True,
     ):
+        # TODO: Assert value is 1D after we have 1D'ified everything
         if value is not None:
             if parameter_range is not None:
-                data = parameter_range.to_0to1(T(value))
+                data = parameter_range.to_0to1(value)
             else:
                 raise ValueError(
                     "A parameter range must be specified when passing in a value"
@@ -136,7 +137,7 @@ class ModuleParameter(nn.Parameter):
 
     def __repr__(self):
         return "ModuleParameter(name={}, value={})".format(
-            self.parameter_name, self.item()
+            self.parameter_name, self.data
         )
 
     def from_0to1(self) -> T:

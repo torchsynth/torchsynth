@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.fft
+import torch.tensor as T
 
-from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
+from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE
 # -
 
@@ -83,75 +84,67 @@ def stft_plot(signal, sample_rate=SAMPLE_RATE):
 
 # +
 # Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.75
-r = 0.5
-alpha = 3.0
-note_on_duration = 0.5
+a = T([0.1, 0.2])
+d = T([0.1, 0.2])
+s = T([0.75, 0.8])
+r = T([0.5, 0.8])
+alpha = T([3.0, 4.0])
+note_on_duration = T([0.5, 1.5])
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha).to(device)
-envelope = adsr(note_on_duration)
-time_plot(envelope.detach().cpu(), adsr.sample_rate)
+adsr = TorchADSR(T(a), T(d), T(s), T(r), T(alpha)).to(device)
+envelope = adsr.forward1D(T(note_on_duration))
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
+
+env = TorchADSR(a=T([0,0]), d=T([0.1, 0.1]), s=T([0.0, 0.0]), r=T([0.0, 0.0]), alpha=T([3.0, 3.0])).forward1D(T([0.2, 0.3]))
+env = TorchADSR(a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]))(T([0.2]))
+
 
 # Create a second envelope, higher decay
 
-# +
-# Synthesis parameters.
-a = 0.1
-d = 0.5
-s = 0.5
-r = 0.5
-alpha = 3.0
-note_on_duration = 0.5
-
-# Envelope test
-adsr2 = TorchADSR(a, d, s, r, alpha).to(device)
-envelope2 = adsr2(note_on_duration)
-time_plot(envelope2.detach().cpu(), adsr.sample_rate)
-# -
-
 # Here's the l1 error between the two envelopes
 
-err = torch.mean(torch.abs(envelope - envelope2))
+err = torch.mean(torch.abs(envelope[0, :] - envelope[1, :]))
 print("Error =", err)
-plt.plot(torch.abs(envelope - envelope2).detach().cpu())
+plt.plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu())
 
 # And here are the gradients
 
-err.backward(retain_graph=True)
-for p in adsr.torchparameters:
-    print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
+# +
+#err.backward(retain_graph=True)
+#for p in adsr.torchparameters:
+#    print(adsr.torchparameters[p].data.grad)
+#    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
+# -
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
 # +
-# %matplotlib notebook
+# # %matplotlib notebook
 
-optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
+# optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
 
-fig, ax = plt.subplots()
-time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
-time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
-plt.show()
+# fig, ax = plt.subplots()
+# time_plot(envelope.detach().cpu(), adsr.sample_rate, show=False)
+# time_plot(envelope2.detach().cpu(), adsr.sample_rate, show=False)
+# plt.show()
 
-for i in range(100):
-    optimizer.zero_grad()
+# for i in range(100):
+#     optimizer.zero_grad()
 
-    envelope = adsr(note_on_duration)
-    envelope2 = adsr2(note_on_duration)
-    err = torch.mean(torch.abs(envelope - envelope2))
+#     envelope = adsr(note_on_duration)
+#     envelope2 = adsr2(note_on_duration)
+#     err = torch.mean(torch.abs(envelope - envelope2))
         
-    if i % 10 == 0:
-        ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
-        ax.lines[0].set_ydata(envelope.detach().cpu())
-        ax.lines[1].set_ydata(envelope2.detach().cpu())
-        fig.canvas.draw()
+#     if i % 10 == 0:
+#         ax.set_title(f"Optimization Step {i} - Error: {err.item()}")
+#         ax.lines[0].set_ydata(envelope.detach().cpu())
+#         ax.lines[1].set_ydata(envelope2.detach().cpu())
+#         fig.canvas.draw()
     
-    err.backward()
-    optimizer.step()
+#     err.backward()
+#     optimizer.step()
 
 # -
 
@@ -164,11 +157,14 @@ for i in range(100):
 
 # Reset envelope
 adsr = TorchADSR(a, d, s, r, alpha).to(device)
-envelope = adsr(note_on_duration)
+envelope = adsr.forward1D(note_on_duration)
+
+# Since the rest of the stuff is 1D, let's make the envelope batch_size 1
+envelope = envelope[0]
 
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=12.0, mod_depth=50.0).to(device)
-sine_out = sine_vco(envelope, phase=0.0)
+sine_vco = TorchSineVCO(midi_f0=T(12.0), mod_depth=T(50.0)).to(device)
+sine_out = sine_vco(envelope, phase=T(0.0))
 stft_plot(sine_out.detach().cpu().numpy())
 ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 # -
@@ -177,8 +173,8 @@ ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 
 # SineVCO test
 midi_f0 = 12.0
-sine_vco2 = TorchSineVCO(midi_f0=30.0, mod_depth=50.0).to(device)
-sine_out2 = sine_vco2(envelope, phase=0.0)
+sine_vco2 = TorchSineVCO(midi_f0=T(30.0), mod_depth=T(50.0)).to(device)
+sine_out2 = sine_vco2(envelope, phase=T(0.0))
 stft_plot(sine_out2.detach().cpu().numpy())
 ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
 
@@ -188,12 +184,14 @@ err = torch.mean(torch.abs(sine_out - sine_out2))
 print("Error =", err)
 plt.plot(torch.abs(sine_out - sine_out2).detach().cpu())
 
-err.backward(retain_graph=True)
-for p in sine_vco.torchparameters:
-    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={sine_vco2.torchparameters[p].grad.item()}")
-# Both SineVCOs use the sample envelope
-for p in adsr.torchparameters:
-    print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
+# +
+#err.backward(retain_graph=True)
+#for p in sine_vco.torchparameters:
+#    print(f"{p} grad1={sine_vco.torchparameters[p].grad.item()} grad2={sine_vco2.torchparameters[p].grad.item()}")
+## Both SineVCOs use the sample envelope
+#for p in adsr.torchparameters:
+#    print(f"{p} grad={adsr.torchparameters[p].grad.item()}")
+# -
 
 # ### SquareSaw Oscillator
 #
@@ -203,19 +201,19 @@ for p in adsr.torchparameters:
 # +
 from torchsynth.module import TorchSquareSawVCO
 
-square_saw1 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=0.0).to(device)
+square_saw1 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(0.0)).to(device)
 env1 = torch.zeros(square_saw1.buffer_size, device=device)
 
-square_saw_out1 = square_saw1(env1, phase=0.0)
+square_saw_out1 = square_saw1(env1, phase=T(0.0))
 stft_plot(square_saw_out1.cpu().detach().numpy())
 ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.item())
 
 # +
 # SquareSawVCO test
-square_saw2 = TorchSquareSawVCO(midi_f0=30.0, mod_depth=0.0, shape=1.0).to(device)
+square_saw2 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(1.0)).to(device)
 env2 = torch.zeros(square_saw2.buffer_size, device=device)
 
-square_saw_out2 = square_saw2(env2, phase=0.0)
+square_saw_out2 = square_saw2(env2, phase=T(0.0))
 stft_plot(square_saw_out2.cpu().detach().numpy())
 ipd.Audio(square_saw_out2.cpu().detach().numpy(), rate=square_saw2.sample_rate.item())
 # -
@@ -248,17 +246,17 @@ time_plot(test_output.detach().cpu())
 from torchsynth.module import TorchFmVCO
 
 # FmVCO test
-midi_f0 = 50.0
+midi_f0 = T(50.0)
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=0.0).to(device)
+sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=T(0.0)).to(device)
 operator_out = sine_operator(envelope)
 
 # Shape the modulation depth.
 operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=midi_f0, mod_depth=5.0).to(device)
+fm_vco = TorchFmVCO(midi_f0=T(midi_f0), mod_depth=T(5.0)).to(device)
 fm_out = fm_vco(operator_out)
 
 stft_plot(fm_out.cpu().detach().numpy())
@@ -270,17 +268,18 @@ ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
 # The noise generator mixes white noise into a signal
 
 # +
-N = 44100
+# Why do we have buffer_size here?? isn't this a default?
+N = T(44100)
 
 env1 = torch.zeros(N)
-vco1 = TorchSineVCO(midi_f0=60, buffer_size=N)
-noise1 = TorchNoise(ratio=0.75, buffer_size=N)
+vco1 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
+noise1 = TorchNoise(ratio=T(0.75), buffer_size=N)
 
 noisy_sine_1 = noise1(vco1(env1))
 
 env2 = torch.zeros(N)
-vco2 = TorchSineVCO(midi_f0=60, buffer_size=N)
-noise2 = TorchNoise(ratio=0.25, buffer_size=N)
+vco2 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
+noise2 = TorchNoise(ratio=T(0.25), buffer_size=N)
 
 noisy_sine_2 = noise2(vco2(env2))
 
@@ -338,7 +337,7 @@ print(list(noise2.parameters()))
 # Alternately, you can just use the Drum class that composes all these modules
 # together automatically. The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
 
-# +
+"""
 drum1 = TorchDrum(
     pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
     amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
@@ -350,11 +349,11 @@ drum1 = TorchDrum(
 drum_out1 = drum1()
 stft_plot(drum_out1.detach().numpy())
 ipd.Audio(drum_out1.detach().numpy(), rate=drum1.sample_rate.item())
-# -
+"""
 
 # Additionally, the Drum class can take two oscillators.
 
-# +
+"""
 drum2 = TorchDrum(
     pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
     amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
@@ -367,35 +366,39 @@ drum2 = TorchDrum(
 drum_out2 = drum2()
 stft_plot(drum_out2.detach().numpy())
 ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
-# -
+"""
 
 # Test gradients on entire drum
 
+"""
 err = torch.mean(torch.abs(drum_out1 - drum_out2))
 print(err)
+"""
 
 # Print out the gradients for all the paramters
 
-# +
+"""
 err.backward(retain_graph=True)
 
 for ((n1, p1), p2) in zip(drum1.named_parameters(), drum2.parameters()):
     print(f"{n1:40} Drum1: {p1.grad.item()} \tDrum2: {p2.grad.item()}")
-# -
+    """
 
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Drum we just created.
 
+"""
 for n, p in drum1.named_parameters():
     print(f"{n:40} Normalized = {p:.2f} Human Range = {p.from_0to1():.2f}")
+"""
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
 #
 # Parameters of individual modules can be accessed in several ways:
 
-# +
+"""
 # Get the full ModuleParameter object by name from the module
 print(drum1.vco_1.get_parameter("pitch"))
 
@@ -404,11 +407,11 @@ print(drum1.vco_1.p("pitch"))
 
 # Access the value as a float in the range from 0 to 1
 print(drum1.vco_1.get_parameter_0to1("pitch"))
-# -
+"""
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
-# +
+"""
 # Set the vco pitch using the human range, which is MIDI note number
 drum1.vco_1.set_parameter("pitch", 64)
 print(drum1.vco_1.p("pitch"))
@@ -416,17 +419,19 @@ print(drum1.vco_1.p("pitch"))
 # Set the vco pitch using a normalized range between 0 and 1
 drum1.vco_1.set_parameter_0to1("pitch", 0.5433)
 print(drum1.vco_1.p("pitch"))
-# -
+"""
 
 # ## Random synths
 #
 # Let's generate some random synths
 
+"""
 drum = TorchDrum(note_on_duration=1.0).to(device)
 for i in range(10):
     drum.randomize()
     drum_out = drum()
     display(ipd.Audio(drum_out.cpu().detach().numpy(), rate=drum.sample_rate.item()))
+"""
 
 # ### Filters
 
@@ -445,7 +450,7 @@ stft_plot(noise.cpu().detach().numpy())
 
 # +
 
-ma_filter = TorchMovingAverage(filter_length=32.).to(device)
+ma_filter = TorchMovingAverage(filter_length=T(32.)).to(device)
 filtered = ma_filter(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
@@ -453,7 +458,7 @@ ipd.Audio(filtered.cpu().detach().numpy(), rate=44100)
 
 # +
 # Second example with a longer filter -- notice that the filter length can be fractional
-ma_filter2 = TorchMovingAverage(filter_length=64.25).to(device)
+ma_filter2 = TorchMovingAverage(filter_length=T(64.25)).to(device)
 filtered2 = ma_filter2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -479,7 +484,7 @@ for p in ma_filter.torchparameters:
 # The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
 
 # +
-fir1 = FIRLowPass(cutoff=1024, filter_length=128.0).to(device)
+fir1 = FIRLowPass(cutoff=T(1024), filter_length=T(128.0)).to(device)
 filtered1 = fir1(noise)
 
 stft_plot(filtered1.cpu().detach().numpy())
@@ -487,7 +492,7 @@ ipd.Audio(filtered1.cpu().detach().numpy(), rate=44100)
 
 # +
 # Second filter with a lower cutoff and a longer filter
-fir2 = FIRLowPass(cutoff=256., filter_length=1024).to(device)
+fir2 = FIRLowPass(cutoff=T(256.), filter_length=T(1024)).to(device)
 filtered2 = fir2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -525,13 +530,13 @@ stft_plot(noise.cpu().numpy())
 # We'll create two lowpass filters with different cutoffs and filter resonance to compare. The second filter has higher resonance at the filter cutoff, this causes the filter to ring at that frequency. This can be seen in the spectrogram as a darker line at the cutoff.
 
 # +
-lpf1 = TorchLowPassSVF(cutoff=500, resonance=1.0, buffer_size=buffer).to(device)
+lpf1 = TorchLowPassSVF(cutoff=T(500), resonance=T(1.0), buffer_size=T(buffer)).to(device)
 filtered1 = lpf1(noise)
 
 stft_plot(filtered1.cpu().detach().numpy())
 
 # +
-lpf2 = TorchLowPassSVF(cutoff=1000, resonance=10, buffer_size=buffer).to(device)
+lpf2 = TorchLowPassSVF(cutoff=T(1000), resonance=T(10), buffer_size=T(buffer)).to(device)
 filtered2 = lpf2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -553,44 +558,30 @@ for p in lpf1.torchparameters:
 
 # Let's checkout some other SVF filters
 
-# +
+"""
 # Highpass
-hpf = TorchHighPassSVF(cutoff=2048, buffer_size=buffer)
+hpf = TorchHighPassSVF(cutoff=T(2048), buffer_size=T(buffer))
 filtered = hpf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
-# -
+"""
 
 # We can also apply an envelope to the filter frequency. The mod_depth parameter determines how much effect the envelope will have on the cutoff. In this example a simple decay envelope is applied to the cutoff frequency, which has a base value of 20Hz, and has a duration of 100ms. The mod_depth is 10,000Hz, which means that as the envelope travels from 1 to 0, the cutoff will go from 10,020Hz down to 20Hz. The envelope is passed in as an extra argument to the call function on the filter.
 
 # +
 # Bandpass with envelope
-env = TorchADSR(a=0, d=0.1, s=0.0, r=0.0, buffer_size=buffer)(0.1)
-bpf = TorchBandPassSVF(cutoff=20, resonance=30, mod_depth=10000, buffer_size=buffer)
+env = TorchADSR(a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]), buffer_size=T(buffer))(T([0.2]))
+bpf = TorchBandPassSVF(cutoff=T(20), resonance=T(30), mod_depth=T(10000), buffer_size=T(buffer))
 
 filtered = bpf(noise, env)
-stft_plot(filtered.cpu().detach().numpy())
+# ParameterError: Audio buffer is not finite everywhere ????
+#stft_plot(filtered.cpu().detach().numpy())
 
 # +
 # Bandstop
-bsf = TorchBandStopSVF(cutoff=2000, resonance=0.05, buffer_size=buffer)
+bsf = TorchBandStopSVF(cutoff=T(2000), resonance=T(0.05), buffer_size=T(buffer))
 filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
 # -
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

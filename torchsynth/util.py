@@ -53,7 +53,7 @@ def midi_to_hz(midi: T) -> T:
     return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
 
 
-def fix_length(signal: T, length: T) -> T:
+def fix_length(signal: T, length: int) -> T:
     """
     Pad or truncate array to specified length.
     """
@@ -64,6 +64,24 @@ def fix_length(signal: T, length: T) -> T:
     elif len(signal) > length:
         signal = signal[:length]
     assert signal.shape == (length,)
+    return signal
+
+
+def fix_length2D(signal: T, length: T) -> T:
+    """
+    Pad or truncate array to specified length.
+    """
+
+    assert length.ndim == 0
+    assert signal.ndim == 2
+    if signal.shape[1] < length:
+        signal = torch.nn.functional.pad(signal, (0, length - signal.shape[1]))
+    elif signal.shape[1] > length:
+        signal = signal[:, :length]
+    assert signal.shape == (
+        signal.shape[0],
+        length,
+    )
     return signal
 
 

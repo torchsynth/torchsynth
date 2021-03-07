@@ -114,21 +114,137 @@ class TorchSynthModule(nn.Module):
         return self.torchparameters[parameter_id].from_0to1()
 
 
-class TorchADSR(TorchSynthModule):
+class TorchSynthModule1D(TorchSynthModule):
     """
-    Envelope class for building a control rate ADSR signal
+    Base class for synthesis modules, in torch.
+    All parameters are assumed to be 1D tensors,
+    the dimension size being the batch size.
+
+    WARNING: For now, TorchSynthModules should be atomic and not
+    contain other SynthModules.
+
+    TODO: Later, we should deprecate SynthModule and fold everything
+    into here.
     """
 
+    # TODO: have these already moved to cuda
     def __init__(
         self,
-        a: float = 0.25,
-        d: float = 0.25,
-        s: float = 0.5,
-        r: float = 0.5,
-        alpha: float = 3.0,
-        sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE,
+        batch_size: T,
+        sample_rate: T = T(SAMPLE_RATE),
+        buffer_size: T = T(BUFFER_SIZE),
     ):
+        """
+        NOTE:
+        __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
+
+        batch_size is the number of settings we are rendering at once.
+        """
+        nn.Module.__init__(self)
+        assert sample_rate.shape == torch.Size([])
+        assert buffer_size.shape == torch.Size([])
+        self.sample_rate = sample_rate
+        self.buffer_size = buffer_size
+        self.batch_size = batch_size
+        self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+
+    def to_buffer_size(self, signal: T) -> T:
+        return util.fix_length2D(signal, self.buffer_size)
+
+    def seconds_to_samples(self, seconds: T) -> T:
+        # Do we want this?
+        # assert seconds.ndim == 1
+        return torch.round(seconds * self.sample_rate).int()
+
+    def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+        """
+        Each TorchSynthModule should override this.
+        """
+        raise NotImplementedError("Derived classes must override this method")
+
+    def forward1D(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+        """
+        Wrapper for _forward that ensures a buffer_size length output.
+        TODO: Make this forward() after everything is 1D
+        """
+        return self.to_buffer_size(self._forward(*args, **kwargs))
+
+    def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+        """
+        Wrapper for _forward that ensures a buffer_size length output.
+        """
+        x = self.forward1D(*args, **kwargs)
+        assert x.ndim == 2 and x.shape[0] == 1
+        return x.flatten()
+
+    def add_parameters(self, parameters: List[ModuleParameter]):
+        """
+        Add parameters to this SynthModule's torch parameter dictionary.
+        """
+        for parameter in parameters:
+            assert parameter.parameter_name not in self.torchparameters
+            assert parameter.shape == (self.batch_size,)
+            self.torchparameters[parameter.parameter_name] = parameter
+
+    def get_parameter(self, parameter_id: str) -> ModuleParameter:
+        """
+        Get a single ModuleParameter for this module
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return
+        """
+        return self.torchparameters[parameter_id]
+
+    def get_parameter_0to1(self, parameter_id: str) -> T:
+        """
+        Get the value of a parameter in the range of [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  :   Id of the parameter to return the value for
+        """
+        return self.torchparameters[parameter_id].item()
+
+    def set_parameter(self, parameter_id: str, value: T):
+        """
+        Update a specific parameter value, ensuring that it is within a specified
+        range
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (T)           : Value to update parameter with
+        """
+        self.torchparameters[parameter_id].to_0to1(value)
+
+    def set_parameter_0to1(self, parameter_id: str, value: T):
+        """
+        Update a specific parameter with a value in the range [0,1]
+
+        Parameters
+        ----------
+        parameter_id (str)  : Id of the parameter to update
+        value (T)           : Value to update parameter with
+        """
+        assert torch.all(0 <= value <= 1)
+        self.torchparameters[parameter_id].data = value
+
+    def p(self, parameter_id: str) -> T:
+        """
+        Convenience method for getting the parameter value.
+        """
+        return self.torchparameters[parameter_id].from_0to1()
+
+
+class TorchADSR(TorchSynthModule1D):
+    """
+    Envelope class for building a control rate ADSR signal.
+    """
+
+    def __init__(self, a: T, d: T, s: T, r: T, alpha: T, **kwargs: Dict[str, T]):
         """
         Parameters
         ----------
@@ -141,7 +257,7 @@ class TorchADSR(TorchSynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+        super().__init__(batch_size=a.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -172,7 +288,7 @@ class TorchADSR(TorchSynthModule):
             ]
         )
 
-    def _forward(self, note_on_duration: T = T(0)) -> T:
+    def _forward(self, note_on_duration: T) -> T:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -192,80 +308,62 @@ class TorchADSR(TorchSynthModule):
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
         """
+        assert note_on_duration.ndim == 1
+        assert torch.all(note_on_duration > 0)
+        assert torch.all(self.p("attack") + self.p("decay") < note_on_duration)
 
-        assert note_on_duration > 0
-        num_samples = self.seconds_to_samples(note_on_duration)
+        attack = self.make_attack()
+        decay = self.make_decay()
+        release = self.make_release(note_on_duration)
 
-        # Release decays from the last value of the attack-and-decay sections.
-        ADS = self.note_on(num_samples)
-        R = self.note_off(ADS[-1])
+        return attack * decay * release
 
-        return torch.cat((ADS, R))
-
-    def _ramp(self, duration: T, inverse: bool = False):
+    def _ramp(self, start, duration: T, inverse: bool = False):
         """Makes a ramp of a given duration in seconds.
 
-        This function is used for the piece-wise construction of the envelope
-        signal. Its output monotonically increases from 0 to 1. As a result,
-        each component of the envelope is a scaled and possibly reversed
-        version of this ramp:
+        The construction of this matrix is rather cryptic. Essentially, this
+        method works by tilting and clipping ramps between 0 and 1, then
+        applying some scaling factor (`alpha`).
 
-        attack      -->     returns an `a`-length ramp, as is.
-        decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
-        release     -->     `r`-length reverse ramp, descends to 0.
-
-        Its curve is determined by alpha:
-
-        alpha = 1 --> linear,
-        alpha > 1 --> exponential,
-        alpha < 1 --> logarithmic.
-
+        `start` is the initial delay in seconds (all 0's) before the ramp up.
+        `duration` is the length of the ramp up, also in seconds.
         """
 
-        assert duration.ndim == 0
-        t = torch.arange(
-            self.seconds_to_samples(duration).item(), device=duration.device
-        )
-        ramp = t * (1 / duration) / self.sample_rate
+        assert start.ndim == 1
+        assert duration.ndim == 1
+
+        # Convert to number of samples.
+        start_ = self.seconds_to_samples(start)
+        duration_ = self.seconds_to_samples(duration)
+
+        # Build ramps template.
+        tmp = torch.arange(self.buffer_size)
+        ramp = tmp.repeat([self.batch_size, 1])
+
+        # Shape ramps.
+        ramp = ramp - start_[:, None]
+        ramp = torch.maximum(ramp, T(0.0))
+        ramp = ramp / duration_[:, None]
+        ramp = torch.minimum(ramp, T(1.0))
 
         if inverse:
-            ramp = 1.0 - ramp
+            ramp = 1 - ramp
 
-        return torch.pow(ramp, self.p("alpha"))
+        # Apply scaling factor.
+        ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
-    @property
-    def attack(self):
-        return self._ramp(self.p("attack"))
+        return ramp
 
-    @property
-    def decay(self):
-        # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self._ramp(self.p("decay"), inverse=True)
-        return decay * (1 - self.p("sustain")) + self.p("sustain")
+    def make_attack(self):
+        return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
 
-    @property
-    def release(self):
-        # `r`-length reverse ramp, reversed to descend to 0.
-        return self._ramp(self.p("release"), inverse=True)
+    def make_decay(self):
+        _a = 1.0 - self.p("sustain")[:, None]
+        _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
+        return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
-    def note_on(self, num_samples):
-        assert self.attack.ndim == 1
-        assert self.decay.ndim == 1
-        out_ = torch.cat((self.attack, self.decay), 0)
-
-        # Truncate or extend based on sustain duration.
-        if num_samples <= len(out_):
-            out_ = out_[:num_samples]
-        else:
-            hold_samples = num_samples - len(out_)
-            sustain = torch.ones(hold_samples, device=self.p("sustain").device)
-            sustain = sustain * self.p("sustain")
-            out_ = torch.cat((out_, sustain))
-
-        return out_
-
-    def note_off(self, last_val):
-        return self.release * last_val
+    def make_release(self, note_on_duration):
+        return self._ramp(note_on_duration, self.p("release"), inverse=True)
 
     def __str__(self):
         return (
@@ -302,8 +400,8 @@ class TorchVCO(TorchSynthModule):
 
     def __init__(
         self,
-        midi_f0: float = 10,
-        mod_depth: float = 50,
+        midi_f0: T = T(10),
+        mod_depth: T = T(50),
         phase: float = 0,
         sample_rate: int = SAMPLE_RATE,
         buffer_size: int = BUFFER_SIZE,
@@ -390,8 +488,8 @@ class TorchSineVCO(TorchVCO):
 
     def __init__(
         self,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
         phase: float = 0.0,
         **kwargs,
     ):
@@ -414,9 +512,7 @@ class TorchFmVCO(TorchVCO):
 
     """
 
-    def __init__(
-        self, midi_f0: float = 10.0, mod_depth: float = 50.0, phase: float = 0.0
-    ):
+    def __init__(self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def make_control_as_frequency(self, mod_signal: T):
@@ -444,10 +540,10 @@ class TorchSquareSawVCO(TorchVCO):
 
     def __init__(
         self,
-        shape: float = 0.0,
-        midi_f0: float = 10.0,
-        mod_depth: float = 50.0,
-        phase: float = 0.0,
+        shape: T = T(0.0),
+        midi_f0: T = T(10.0),
+        mod_depth: T = T(50.0),
+        phase: T = T(0.0),
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
         self.add_parameters(
@@ -506,7 +602,7 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(self, ratio: float = 0.25, **kwargs):
+    def __init__(self, ratio: T = T(0.25), **kwargs):
         super().__init__(**kwargs)
         self.add_parameters(
             [
@@ -588,63 +684,63 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-class TorchDrum(TorchSynth):
-    """
-    A package of modules that makes one drum hit.
-    """
-
-    def __init__(
-        self,
-        note_on_duration: float,
-        vco_ratio: float = 0.5,
-        pitch_adsr: TorchADSR = TorchADSR(),
-        amp_adsr: TorchADSR = TorchADSR(),
-        vco_1: TorchVCO = TorchSineVCO(),
-        vco_2: TorchVCO = TorchSquareSawVCO(),
-        noise: TorchNoise = TorchNoise(),
-        vca: TorchVCA = TorchVCA(),
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        assert note_on_duration >= 0
-
-        # We assume that sustain duration is a hyper-parameter,
-        # with the mindset that if you are trying to learn to
-        # synthesize a sound, you won't be adjusting the note_on_duration.
-        # However, this is easily changed if desired.
-        self.note_on_duration = T(note_on_duration)
-
-        # Add required global parameters
-        self.global_params.add_parameters(
-            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
-        )
-
-        # Register all modules as children
-        self.add_synth_modules(
-            {
-                "pitch_adsr": pitch_adsr,
-                "amp_adsr": amp_adsr,
-                "vco_1": vco_1,
-                "vco_2": vco_2,
-                "noise": noise,
-                "vca": vca,
-            }
-        )
-
-    def forward(self) -> T:
-        # The convention for triggering a note event is that it has
-        # the same note_on_duration for both ADSRs.
-        note_on_duration = self.note_on_duration
-        pitch_envelope = self.pitch_adsr(note_on_duration)
-        amp_envelope = self.amp_adsr(note_on_duration)
-
-        vco_1_out = self.vco_1(pitch_envelope)
-        vco_2_out = self.vco_2(pitch_envelope)
-
-        audio_out = util.crossfade(
-            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
-        )
-
-        audio_out = self.noise(audio_out)
-
-        return self.vca(amp_envelope, audio_out)
+# class TorchDrum(TorchSynth):
+#    """
+#    A package of modules that makes one drum hit.
+#    """
+#
+#    def __init__(
+#        self,
+#        note_on_duration: float,
+#        vco_ratio: float = 0.5,
+#        pitch_adsr: TorchADSR = TorchADSR(),
+#        amp_adsr: TorchADSR = TorchADSR(),
+#        vco_1: TorchVCO = TorchSineVCO(),
+#        vco_2: TorchVCO = TorchSquareSawVCO(),
+#        noise: TorchNoise = TorchNoise(),
+#        vca: TorchVCA = TorchVCA(),
+#        **kwargs,
+#    ):
+#        super().__init__(**kwargs)
+#        assert note_on_duration >= 0
+#
+#        # We assume that sustain duration is a hyper-parameter,
+#        # with the mindset that if you are trying to learn to
+#        # synthesize a sound, you won't be adjusting the note_on_duration.
+#        # However, this is easily changed if desired.
+#        self.note_on_duration = T(note_on_duration)
+#
+#        # Add required global parameters
+#        self.global_params.add_parameters(
+#            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
+#        )
+#
+#        # Register all modules as children
+#        self.add_synth_modules(
+#            {
+#                "pitch_adsr": pitch_adsr,
+#                "amp_adsr": amp_adsr,
+#                "vco_1": vco_1,
+#                "vco_2": vco_2,
+#                "noise": noise,
+#                "vca": vca,
+#            }
+#        )
+#
+#    def forward(self) -> T:
+#        # The convention for triggering a note event is that it has
+#        # the same note_on_duration for both ADSRs.
+#        note_on_duration = self.note_on_duration
+#        pitch_envelope = self.pitch_adsr(note_on_duration)
+#        amp_envelope = self.amp_adsr(note_on_duration)
+#
+#        vco_1_out = self.vco_1(pitch_envelope)
+#        vco_2_out = self.vco_2(pitch_envelope)
+#
+#        audio_out = util.crossfade(
+#            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
+#        )
+#
+#        audio_out = self.noise(audio_out)
+#
+#        return self.vca(amp_envelope, audio_out)
