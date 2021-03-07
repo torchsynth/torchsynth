@@ -528,7 +528,7 @@ class TorchFmVCO(TorchVCO):
     Parameters
     ----------
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
-    mod_depth (T)   :   depth of the frequency modulation in Hz
+    mod_depth (T)   :   depth of the frequency (0-127)
     phase (T)       :   initial phase values
     **kwargs        :   keyword args, see TorchVCO
     """
@@ -563,16 +563,25 @@ class TorchSquareSawVCO(TorchVCO):
 
     Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    shape (T)       :   Waveshape - square to saw [0,1]
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
     def __init__(
         self,
-        shape: T = T(0.0),
-        midi_f0: T = T(10.0),
-        mod_depth: T = T(50.0),
-        phase: T = T(0.0),
+        midi_f0: T,
+        mod_depth: T,
+        shape: T,
+        phase: T = None,
+        **kwargs,
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -584,8 +593,9 @@ class TorchSquareSawVCO(TorchVCO):
         )
 
     def oscillator(self, argument):
-        square = torch.tanh(torch.pi * self.partials_constant * torch.sin(argument) / 2)
-        shape = self.p("shape")
+        partials = self.partials_constant.unsqueeze(1)
+        square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
+        shape = self.p("shape").unsqueeze(1)
         return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
 
     @property
