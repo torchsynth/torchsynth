@@ -1,7 +1,13 @@
-# # torchsynth examples
-#
-# We walk through basic functionality of `torchsynth` in this Jupyter notebook.
-# Just note that all ipd.Audio play widgets normalize the audio.
+"""
+# torchsynth examples
+
+We walk through basic functionality of `torchsynth` in this Jupyter notebook.
+
+Just note that all ipd.Audio play widgets normalize the audio.
+
+If you're in Colab, remember to set the runtime to GPU.
+"""
+
 
 # %load_ext autoreload
 # %autoreload 2
