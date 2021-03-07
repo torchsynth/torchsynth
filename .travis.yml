@@ -5,19 +5,29 @@ matrix:
   include:
     - os: linux
       dist: focal
-      compiler: clang
+      python: 3.7
+    - os: linux
+      dist: focal
+      python: 3.8
+    - os: linux
+      dist: focal
       python: 3.9
-      addons:
-        apt:
-          sources:
-            - sourceline: 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-10 main'
-          packages:
-            - g++-10
-            - uuid-dev
-            - clang-10
-            - llvm-10
+    - os: linux
+      dist: bionic
+      python: 3.7
+    - os: linux
+      dist: bionic
+      python: 3.8
+    - os: linux
+      dist: bionic
+      python: 3.9
     - os: osx
-      compiler: clang
+      python: 3.7
+      osx_image: xcode10.2
+    - os: osx
+      python: 3.8
+      osx_image: xcode10.2
+    - os: osx
       python: 3.9
       osx_image: xcode10.2
 
