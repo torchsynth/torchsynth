@@ -18,6 +18,7 @@ matrix:
             - llvm-10
     - os: osx
       compiler: clang
+      python: 3.9
       osx_image: xcode10.2
 
 before_install:
