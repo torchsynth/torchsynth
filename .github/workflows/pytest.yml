@@ -29,3 +29,6 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+    - name: Run integration test
+      run: |
+        python examples/examples.py
