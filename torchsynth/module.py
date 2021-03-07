@@ -73,16 +73,6 @@ class TorchSynthModule(nn.Module):
         """
         return self.torchparameters[parameter_id]
 
-    def get_parameter_0to1(self, parameter_id: str) -> float:
-        """
-        Get the value of a single parameter in the range of [0,1]
-
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return the value for
-        """
-        return float(self.torchparameters[parameter_id].item())
-
     def set_parameter(self, parameter_id: str, value: float):
         """
         Update a specific parameter value, ensuring that it is within a specified
@@ -398,39 +388,34 @@ class TorchADSR(TorchSynthModule1D):
         )
 
 
-class TorchVCO(TorchSynthModule):
+class TorchVCO(TorchSynthModule1D):
     """
-    Voltage controlled oscillator.
+    Base class for voltage controlled oscillators (VCO).
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
-    accepts a modulation signal between 0 - 1. An array of 0's returns a
+    accepts a modulation signal between [-1, 1]. An array of 0's returns a
     stationary audio signal at its base pitch.
-
 
     Parameters
     ----------
-
-    midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
-    mod_depth (flt)     :       depth of the pitch modulation in semitones.
-
-    Examples
-    --------
-
-    >>> vco = VCO(midi_f0=69.0, mod_depth=24.0)
-    >>> two_8ve_chirp = vco(linspace(0, 1, 1000, endpoint=False))
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    phase (T)       :   initial phase values
+    sample_rate (T) :   sample_rate to run process at
+    buffer_size (T) :   size of buffer to return
     """
 
     def __init__(
         self,
-        midi_f0: T = T(10),
-        mod_depth: T = T(50),
-        phase: float = 0,
-        sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE,
+        midi_f0: T,
+        mod_depth: T,
+        phase: T = None,
+        sample_rate: T = T(SAMPLE_RATE),
+        buffer_size: T = T(BUFFER_SIZE),
     ):
-        TorchSynthModule.__init__(
-            self, sample_rate=sample_rate, buffer_size=buffer_size
+        TorchSynthModule1D.__init__(
+            self, midi_f0.shape[0], sample_rate=sample_rate, buffer_size=buffer_size
         )
         self.add_parameters(
             [
@@ -446,10 +431,15 @@ class TorchVCO(TorchSynthModule):
                 ),
             ]
         )
-        # TODO: Make this a parameter too?
-        self.phase = T(phase)
 
-    def _forward(self, mod_signal: T, phase: T = T(0.0)) -> T:
+        # Setup initial phase values
+        if phase is not None:
+            assert phase.shape == midi_f0.shape
+            self.phase = phase.unsqueeze(1)
+        else:
+            self.phase = torch.zeros_like(midi_f0).unsqueeze(1)
+
+    def _forward(self, mod_signal: T) -> T:
         """
         Generates audio signal from modulation signal.
 
@@ -476,30 +466,26 @@ class TorchVCO(TorchSynthModule):
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(mod_signal)
-
-        cosine_argument = self.make_argument(control_as_frequency) + phase
-
-        self.phase = cosine_argument[-1]
+        cosine_argument = self.make_argument(control_as_frequency) + self.phase
+        self.phase = cosine_argument[:, -1, None]
         return self.oscillator(cosine_argument)
 
     def make_control_as_frequency(self, mod_signal: T):
-        modulation = self.p("mod_depth") * mod_signal
-        control_as_midi = self.p("pitch") + modulation
+        modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
+        control_as_midi = self.p("pitch").unsqueeze(1) + modulation
         return util.midi_to_hz(control_as_midi)
 
-    def make_argument(self, control_as_frequency: T) -> T:
+    def make_argument(self, freq: T) -> T:
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
-        assert control_as_frequency.ndim == 1
-        return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE, dim=0)
+        return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=0)
 
-    @abstractmethod
     def oscillator(self, argument: T) -> T:
         """
         Dummy method. Overridden by child class VCO's.
         """
-        pass
+        raise NotImplementedError("Derived classes must override this method")
 
 
 class TorchSineVCO(TorchVCO):
