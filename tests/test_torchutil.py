@@ -37,9 +37,10 @@ class TestTorchUtil:
         assert util.fix_length2D(signal1, length=44100).shape == (2, 44100)
         assert util.fix_length2D(signal1, length=90000).shape == (2, 90000)
         signal2 = torch.tensor([[1, 2, 3], [4, 5, 6]])
-        assert torch.all(util.fix_length2D(signal2, length=4) == torch.tensor(
-            [[1, 2, 3, 0], [4, 5, 6, 0]]
-        ))
-        assert torch.all(util.fix_length2D(signal2, length=2) == torch.tensor(
-            [[1, 2], [4, 5]]
-        ))
+        assert torch.all(
+            util.fix_length2D(signal2, length=4)
+            == torch.tensor([[1, 2, 3, 0], [4, 5, 6, 0]])
+        )
+        assert torch.all(
+            util.fix_length2D(signal2, length=2) == torch.tensor([[1, 2], [4, 5]])
+        )

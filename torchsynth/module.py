@@ -128,7 +128,12 @@ class TorchSynthModule1D(TorchSynthModule):
     """
 
     # TODO: have these already moved to cuda
-    def __init__(self, batch_size: T, sample_rate: T = T(SAMPLE_RATE), buffer_size: T = T(BUFFER_SIZE)):
+    def __init__(
+        self,
+        batch_size: T,
+        sample_rate: T = T(SAMPLE_RATE),
+        buffer_size: T = T(BUFFER_SIZE),
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -150,7 +155,7 @@ class TorchSynthModule1D(TorchSynthModule):
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
-        #assert seconds.ndim == 1
+        # assert seconds.ndim == 1
         return torch.round(seconds * self.sample_rate).int()
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
@@ -237,15 +242,7 @@ class TorchADSR(TorchSynthModule1D):
     Envelope class for building a control rate ADSR signal.
     """
 
-    def __init__(
-        self,
-        a: T,
-        d: T,
-        s: T,
-        r: T,
-        alpha: T,
-        **kwargs: Dict[str, T]
-    ):
+    def __init__(self, a: T, d: T, s: T, r: T, alpha: T, **kwargs: Dict[str, T]):
         """
         Parameters
         ----------
@@ -343,9 +340,9 @@ class TorchADSR(TorchSynthModule1D):
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.))
+        ramp = torch.maximum(ramp, T(0.0))
         ramp = ramp / duration_[:, None]
-        ramp = torch.minimum(ramp, T(1.))
+        ramp = torch.minimum(ramp, T(1.0))
 
         if inverse:
             ramp = 1 - ramp
@@ -359,7 +356,7 @@ class TorchADSR(TorchSynthModule1D):
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
 
     def make_decay(self):
-        _a = 1. - self.p("sustain")[:, None]
+        _a = 1.0 - self.p("sustain")[:, None]
         _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
         return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
@@ -513,9 +510,7 @@ class TorchFmVCO(TorchVCO):
 
     """
 
-    def __init__(
-        self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)
-    ):
+    def __init__(self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
 
     def make_control_as_frequency(self, mod_signal: T):
@@ -687,7 +682,7 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-#class TorchDrum(TorchSynth):
+# class TorchDrum(TorchSynth):
 #    """
 #    A package of modules that makes one drum hit.
 #    """

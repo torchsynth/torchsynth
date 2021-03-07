@@ -79,7 +79,10 @@ def fix_length2D(signal: T, length: T) -> T:
         signal = torch.nn.functional.pad(signal, (0, length - signal.shape[1]))
     elif signal.shape[1] > length:
         signal = signal[:, :length]
-    assert signal.shape == (signal.shape[0], length,)
+    assert signal.shape == (
+        signal.shape[0],
+        length,
+    )
     return signal
 
 

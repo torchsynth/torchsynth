@@ -31,7 +31,7 @@ class TestTorchSynthModule:
         param_2 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_2"
+            parameter_name="param_2",
         )
         module.add_parameters([param_2])
         assert module.get_parameter_0to1("param_2") == 0.25
@@ -41,7 +41,7 @@ class TestTorchSynthModule:
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1"
+            parameter_name="param_1",
         )
         module.add_parameters([param_1])
         assert module.torchparameters["param_1"] == 0.25
@@ -58,7 +58,7 @@ class TestTorchSynthModule:
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1"
+            parameter_name="param_1",
         )
         module.add_parameters([param_1])
         assert module.torchparameters["param_1"] == 0.25
@@ -76,14 +76,14 @@ class TestTorchSynthModule:
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1"
+            parameter_name="param_1",
         )
         module.add_parameters([param_1])
         assert module.torchparameters["param_1"] == 0.25
         assert module.p("param_1") == 5000.0
 
 
-class TestTorchSynth():
+class TestTorchSynth:
     """
     Tests for TorchSynth
     """
@@ -105,10 +105,7 @@ class TestTorchSynth():
         vco = synthmodule.TorchSineVCO()
         noise = synthmodule.TorchNoise()
 
-        synth.add_synth_modules({
-            "vco": vco,
-            "noise": noise
-        })
+        synth.add_synth_modules({"vco": vco, "noise": noise})
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
@@ -121,16 +118,12 @@ class TestTorchSynth():
 
         # Expect a TypeError if a non TorchSynthModule is passed in
         with pytest.raises(TypeError):
-            synth.add_synth_modules({
-                'module': torch.nn.Module()
-            })
+            synth.add_synth_modules({"module": torch.nn.Module()})
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
             vco_2 = synthmodule.TorchSineVCO(sample_rate=16000)
-            synth.add_synth_modules({
-                'vco_2': vco_2
-            })
+            synth.add_synth_modules({"vco_2": vco_2})
 
         with pytest.raises(ValueError):
             adsr = synthmodule.TorchADSR(
@@ -139,8 +132,6 @@ class TestTorchSynth():
                 s=T([0.5]),
                 r=T([1.0]),
                 alpha=T([1.0]),
-                buffer_size=T(512)
+                buffer_size=T(512),
             )
-            synth.add_synth_modules({
-                'adsr': adsr
-            })
+            synth.add_synth_modules({"adsr": adsr})
