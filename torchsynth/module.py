@@ -12,6 +12,7 @@ import torch.tensor as T
 import torchsynth.util as util
 from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
+from torchsynth.signal import Signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
