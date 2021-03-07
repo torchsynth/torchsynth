@@ -3,16 +3,41 @@
 # We walk through basic functionality of `torchsynth` in this Jupyter notebook.
 # Just note that all ipd.Audio play widgets normalize the audio.
 
-# +
 # %load_ext autoreload
 # %autoreload 2
 # %matplotlib inline
 
-import IPython.display as ipd
-from IPython.core.display import display
-import librosa
-import librosa.display
-import matplotlib.pyplot as plt
+# +
+def isnotebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        if shell == "google.colab._shell":
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interprete
+    
+print(f"isnotebook = {isnotebook()}")
+
+# +
+if isnotebook():
+    import IPython.display as ipd
+    from IPython.core.display import display
+    import librosa
+    import librosa.display
+    import matplotlib.pyplot as plt
+else:
+    class IPD():
+        def Audio(*args, **kwargs):
+            pass
+        def display(*args, **kwargs):
+            pass
+    ipd = IPD()
 import numpy as np
 import torch
 import torch.fft
@@ -31,20 +56,22 @@ else:
 
 
 def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
-    t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
-    plt.plot(t, signal)
-    plt.xlabel("Time")
-    plt.ylabel("Amplitude")
-    if show:
-        plt.show()
+    if isnotebook():
+        t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
+        plt.plot(t, signal)
+        plt.xlabel("Time")
+        plt.ylabel("Amplitude")
+        if show:
+            plt.show()
 
 
 def stft_plot(signal, sample_rate=SAMPLE_RATE):
-    X = librosa.stft(signal)
-    Xdb = librosa.amplitude_to_db(abs(X))
-    plt.figure(figsize=(5, 5))
-    librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
-    plt.show()
+    if isnotebook():
+        X = librosa.stft(signal)
+        Xdb = librosa.amplitude_to_db(abs(X))
+        plt.figure(figsize=(5, 5))
+        librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
+        plt.show()
 
 
 # ## The Envelope
@@ -97,19 +124,13 @@ envelope = adsr.forward1D(T(note_on_duration))
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
 
-env = TorchADSR(a=T([0,0]), d=T([0.1, 0.1]), s=T([0.0, 0.0]), r=T([0.0, 0.0]), alpha=T([3.0, 3.0])).forward1D(T([0.2, 0.3]))
-env = TorchADSR(a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]))(T([0.2]))
-
-
-# Create a second envelope, higher decay
-
 # Here's the l1 error between the two envelopes
 
 err = torch.mean(torch.abs(envelope[0, :] - envelope[1, :]))
 print("Error =", err)
-plt.plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu())
+time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
-# And here are the gradients
+# ##### And here are the gradients
 
 # +
 #err.backward(retain_graph=True)
@@ -182,7 +203,7 @@ ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
 
 err = torch.mean(torch.abs(sine_out - sine_out2))
 print("Error =", err)
-plt.plot(torch.abs(sine_out - sine_out2).detach().cpu())
+time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
 
 # +
 #err.backward(retain_graph=True)
@@ -323,9 +344,10 @@ for i in range(100):
     err.backward()
     optimizer.step()
 
-plt.plot(error_hist)
-plt.ylabel("Error")
-plt.xlabel("Optimization steps")
+if isnotebook():
+    plt.plot(error_hist)
+    plt.ylabel("Error")
+    plt.xlabel("Optimization steps")
 
 print("Parameters after optimization:")
 print(list(noise1.parameters()))

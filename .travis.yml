@@ -25,7 +25,7 @@ before_install:
   - pip install -U pip
   - pip install -U pytest
 install:
-  - pip install ".[dev]" . # install package + test dependencies
+  - pip install ".[test]" . # install package + test dependencies
 script:
   - pytest
   - python examples/examples.py
