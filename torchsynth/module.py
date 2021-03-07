@@ -491,7 +491,14 @@ class TorchSineVCO(TorchVCO):
     """
     Simple VCO that generates a pitched sinusoid.
 
-    Built off the VCO base class, it simply implements a cosine function as oscillator.
+    Derives from TorchVCO, it simply implements a cosine function as oscillator.
+
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
     def __init__(
@@ -518,19 +525,29 @@ class TorchFmVCO(TorchVCO):
 
         modulation_index = frequency_deviation / modulation_frequency
 
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the frequency modulation in Hz
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
     def __init__(
-        self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)
+        self,
+        midi_f0: T,
+        mod_depth: T,
+        phase: T = None,
+        **kwargs
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
     def make_control_as_frequency(self, mod_signal: T):
         # Compute modulation in Hz space (rather than midi-space).
         f0_hz = util.midi_to_hz(self.p("pitch"))
         fm_depth = self.p("mod_depth") * f0_hz
-        modulation_hz = fm_depth * mod_signal
-        return f0_hz + modulation_hz
+        modulation_hz = fm_depth.unsqueeze(1) * mod_signal
+        return f0_hz.unsqueeze(1) + modulation_hz
 
     def oscillator(self, argument):
         # Classically, FM operators are sine waves.
