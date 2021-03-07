@@ -15,6 +15,7 @@ matrix:
             - g++-10
             - uuid-dev
             - clang-10
+            - llvm-10
     - os: osx
       compiler: clang
       osx_image: xcode10.2
