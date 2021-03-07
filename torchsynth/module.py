@@ -175,7 +175,9 @@ class TorchSynthModule1D(TorchSynthModule):
         """
         Wrapper for _forward that ensures a buffer_size length output.
         """
-        return self.forward1D(*args, **kwargs)
+        x = self.forward1D(*args, **kwargs)
+        assert x.ndim == 2 and x.shape[0] == 1
+        return x.flatten()
 
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
@@ -350,7 +352,7 @@ class TorchADSR(TorchSynthModule1D):
         # Apply scaling factor.
         ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
-        return torch.squeeze(ramp)
+        return ramp
 
     def make_attack(self):
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
