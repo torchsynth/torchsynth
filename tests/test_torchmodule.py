@@ -88,7 +88,9 @@ class TestTorchSynth:
     def test_add_synth_module(self):
 
         synth = synthmodule.TorchSynth()
-        vco = synthmodule.TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]))
+        vco = synthmodule.TorchSineVCO(
+            midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])
+        )
         noise = synthmodule.TorchNoise(ratio=T([0.25, 0.75]))
 
         synth.add_synth_modules({"vco": vco, "noise": noise})
@@ -103,7 +105,9 @@ class TestTorchSynth:
         for p in module_params:
             fails = True
             for p2 in synth_params:
-                if p.parameter_name == p2.parameter_name and torch.all(p.data == p2.data):
+                if p.parameter_name == p2.parameter_name and torch.all(
+                    p.data == p2.data
+                ):
                     fails = False
             assert not fails
 
@@ -113,7 +117,9 @@ class TestTorchSynth:
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
-            vco_2 = synthmodule.TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), sample_rate=T(16000))
+            vco_2 = synthmodule.TorchSineVCO(
+                midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), sample_rate=T(16000)
+            )
             synth.add_synth_modules({"vco_2": vco_2})
 
         with pytest.raises(ValueError):

@@ -140,9 +140,9 @@ class ModuleParameter(nn.Parameter):
             self.parameter_name, self.data
         )
 
-#    def __eq__(self, other):
-#        # Should we be testing other attributes??
-#        return self.parameter_name == other.parameter_name and torch.all(self.data == other.data)
+    #    def __eq__(self, other):
+    #        # Should we be testing other attributes??
+    #        return self.parameter_name == other.parameter_name and torch.all(self.data == other.data)
 
     def from_0to1(self) -> T:
         """
