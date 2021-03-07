@@ -31,6 +31,10 @@ setup(
     python_requires=">=3.6",
     install_requires=["numpy", "scipy", "torch>=1.7"],
     extras_require={
+        "test": [
+            "pytest",
+            "pytest-cov",
+        ],
         "dev": [
             "pytest",
             "pytest-cov",
