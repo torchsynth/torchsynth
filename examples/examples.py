@@ -177,8 +177,8 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 #     err.backward()
 #     optimizer.step()
-
 # -
+
 
 # ## Oscillators
 #
@@ -643,4 +643,3 @@ bsf = TorchBandStopSVF(cutoff=T(2000), resonance=T(0.05), buffer_size=T(buffer))
 filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
-# -
