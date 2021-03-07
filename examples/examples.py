@@ -180,30 +180,20 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr.forward1D(note_on_duration)
 
-# Since the rest of the stuff is 1D, let's make the envelope batch_size 1
-envelope = envelope[0]
-
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=T(12.0), mod_depth=T(50.0)).to(device)
-sine_out = sine_vco(envelope, phase=T(0.0))
-stft_plot(sine_out.detach().cpu().numpy())
-ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
-# -
+sine_vco = TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])).to(device)
+sine_out = sine_vco.forward1D(envelope)
+stft_plot(sine_out[0].detach().cpu().numpy())
+ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+stft_plot(sine_out[1].detach().cpu().numpy())
+ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 
-# SineVCO vs SineVCO with higher midi_f0
+# We can use auraloss instead of raw waveform loss. This is just
+# to show that gradient computations occur
 
-# SineVCO test
-midi_f0 = 12.0
-sine_vco2 = TorchSineVCO(midi_f0=T(30.0), mod_depth=T(50.0)).to(device)
-sine_out2 = sine_vco2(envelope, phase=T(0.0))
-stft_plot(sine_out2.detach().cpu().numpy())
-ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
-
-# We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
-
-err = torch.mean(torch.abs(sine_out - sine_out2))
+err = torch.mean(torch.abs(sine_out[0] - sine_out[1]))
 print("Error =", err)
-time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
+time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 
 # +
 #err.backward(retain_graph=True)
@@ -222,28 +212,21 @@ time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
 # +
 from torchsynth.module import TorchSquareSawVCO
 
-square_saw1 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(0.0)).to(device)
-env1 = torch.zeros(square_saw1.buffer_size, device=device)
+square_saw = TorchSquareSawVCO(midi_f0=T([30.0, 30.0]), mod_depth=T([0.0, 0.0]), shape=T([0.0, 1.0])).to(device)
+env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
-square_saw_out1 = square_saw1(env1, phase=T(0.0))
-stft_plot(square_saw_out1.cpu().detach().numpy())
-ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.item())
+square_saw_out = square_saw.forward1D(env2)
+stft_plot(square_saw_out[0].cpu().detach().numpy())
+ipd.Audio(square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+stft_plot(square_saw_out[1].cpu().detach().numpy())
+ipd.Audio(square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
 
-# +
-# SquareSawVCO test
-square_saw2 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(1.0)).to(device)
-env2 = torch.zeros(square_saw2.buffer_size, device=device)
 
-square_saw_out2 = square_saw2(env2, phase=T(0.0))
-stft_plot(square_saw_out2.cpu().detach().numpy())
-ipd.Audio(square_saw_out2.cpu().detach().numpy(), rate=square_saw2.sample_rate.item())
-# -
-
-err = torch.mean(torch.abs(square_saw_out2 - square_saw_out1))
+err = torch.mean(torch.abs(square_saw_out[0] - square_saw_out[1]))
 print(err)
-err.backward(retain_graph=True)
-for p in square_saw1.torchparameters:
-    print(f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}")
+#err.backward(retain_graph=True)
+#for p in square_saw.torchparameters:
+#    print(f"{p} grad1={square_saw.torchparameters[p][0].grad.item()} grad2={square_saw.torchparameters[p][1].grad.item()}")
 
 # ### VCA
 #

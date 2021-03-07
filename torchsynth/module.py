@@ -342,7 +342,7 @@ class TorchADSR(TorchSynthModule1D):
         # Apply scaling factor.
         ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
-        return Signal(ramp)
+        return ramp.as_subclass(Signal)
 
     def make_attack(self) -> Signal:
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
@@ -442,8 +442,7 @@ class TorchVCO(TorchSynthModule1D):
         control_as_frequency = self.make_control_as_frequency(mod_signal)
         cosine_argument = self.make_argument(control_as_frequency) + self.phase
         output = self.oscillator(cosine_argument)
-        # TODO: this is breaking on GPU
-        return Signal(output, device=output.device)
+        return output.as_subclass(Signal)
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
