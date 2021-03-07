@@ -235,7 +235,9 @@ print(err)
 
 # +
 vca = TorchVCA()
-test_output = vca(envelope, sine_out)
+print(envelope.shape)
+print(sine_out.shape)
+test_output = vca.forward1D(envelope, sine_out)
 
 time_plot(test_output.detach().cpu())
 # -
@@ -250,18 +252,17 @@ time_plot(test_output.detach().cpu())
 from torchsynth.module import TorchFmVCO
 
 # FmVCO test
-midi_f0 = T(50.0)
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=T(0.0)).to(device)
-operator_out = sine_operator(envelope)
+sine_operator = TorchSineVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(device)
+operator_out = sine_operator.forward1D(envelope)
 
 # Shape the modulation depth.
-operator_out = vca(envelope, operator_out)
+operator_out = vca.forward1D(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=T(midi_f0), mod_depth=T(5.0)).to(device)
-fm_out = fm_vco(operator_out)
+fm_vco = TorchFmVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(device)
+fm_out = fm_vco.forward1D(operator_out)
 
 stft_plot(fm_out.cpu().detach().numpy())
 ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
@@ -275,53 +276,45 @@ ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
 # Why do we have buffer_size here?? isn't this a default?
 N = T(44100)
 
-env1 = torch.zeros(N)
-vco1 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
-noise1 = TorchNoise(ratio=T(0.75), buffer_size=N)
+env = torch.zeros([2, N])
+vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), buffer_size=N)
+noise = TorchNoise(ratio=T([0.75, 0.25]), buffer_size=N)
 
-noisy_sine_1 = noise1(vco1(env1))
+noisy_sine = noise.forward1D(vco.forward1D(env))
 
-env2 = torch.zeros(N)
-vco2 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
-noise2 = TorchNoise(ratio=T(0.25), buffer_size=N)
+stft_plot(noisy_sine[0].detach().numpy())
+ipd.display(ipd.Audio(noisy_sine[0].detach().numpy(), rate=vco.sample_rate.item()))
 
-noisy_sine_2 = noise2(vco2(env2))
-
-stft_plot(noisy_sine_1.detach().numpy())
-ipd.display(ipd.Audio(noisy_sine_1.detach().numpy(), rate=vco1.sample_rate.item()))
-
-stft_plot(noisy_sine_2.detach().numpy())
-ipd.display(ipd.Audio(noisy_sine_2.detach().numpy(), rate=vco2.sample_rate.item()))
+stft_plot(noisy_sine[1].detach().numpy())
+ipd.display(ipd.Audio(noisy_sine[1].detach().numpy(), rate=vco.sample_rate.item()))
 
 # +
 # Compute the error on the difference between the RMS level of the signals
-rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
-rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
-err = torch.abs(rms2 - rms1)
+rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
+rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
+err = torch.abs(rms1 - rms0)
 print(err)
 
-err.backward(retain_graph=True)
-for p in noise1.torchparameters:
-    print(f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}")
+#err.backward(retain_graph=True)
+#for p in noise.torchparameters:
+#    print(f"{p} grad1={noise.torchparameters[p][0].grad.item()} grad2={noise.torchparameters[p][1].grad.item()}")
 
+"""
 # +
 optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
 
 print("Parameters before optimization:")
-print(list(noise1.parameters()))
-print(list(noise2.parameters()))
+print(list(noise.parameters()))
 
 error_hist = []
 
 for i in range(100):
     optimizer.zero_grad()
 
-    noisy_sine_1 = noise1(vco1(env1))
-    noisy_sine_2 = noise2(vco2(env2))
-
-    rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
-    rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
-    err = torch.abs(rms2 - rms1)
+    noisy_sine = noise.forward1D(vco.forward1D(env))
+    rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
+    rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
+    err = torch.abs(rms1 - rms0)
 
     error_hist.append(err.item())
     err.backward()
@@ -333,8 +326,8 @@ if isnotebook(): # pragma: no cover
     plt.xlabel("Optimization steps")
 
 print("Parameters after optimization:")
-print(list(noise1.parameters()))
-print(list(noise2.parameters()))
+print(list(noise.parameters()))
+"""
 # -
 
 # ## Drum Module

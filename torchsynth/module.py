@@ -597,14 +597,14 @@ class TorchVCA(TorchSynthModule1D):
     def __init__(self, **kwargs):
         super().__init__(batch_size=None, **kwargs)
 
-    def _forward(self, control_in: T, audio_in: T) -> T:
+    def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
         assert (control_in >= 0).all() and (control_in <= 1).all()
 
         # Should VCA be responsible for this?
         if (audio_in <= -1).any() or (audio_in >= 1).any():
             util.normalize(audio_in)
 
-        audio_in = util.fix_length2D(audio_in, control_in.shape[1])
+        audio_in = util.fix_length2D(audio_in, control_in.num_samples)
         return control_in * audio_in
 
 

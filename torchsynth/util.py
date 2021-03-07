@@ -5,6 +5,7 @@ TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import math
+from typing import Union
 
 import torch
 import torch.tensor as T
@@ -68,11 +69,17 @@ def fix_length(signal: T, length: int) -> T:
     return signal
 
 
-def fix_length2D(signal: Signal, length: T) -> Signal:
+def fix_length2D(signal: Signal, length: Union[int, T]) -> Signal:
     """
     Pad or truncate array to specified length.
+    # TODO: We should figure out whether we just want to use tensors
+    everywhere. I think that will be the move for performance
+    https://github.com/turian/torchsynth/issues/108
     """
-    assert length.ndim == 0
+    if isinstance(length, int):
+        pass
+    else:
+        assert length.ndim == 0
     assert signal.ndim == 2
     if signal.num_samples < length:
         signal = torch.nn.functional.pad(signal, (0, length - signal.num_samples))
