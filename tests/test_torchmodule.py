@@ -88,8 +88,8 @@ class TestTorchSynth:
     def test_add_synth_module(self):
 
         synth = synthmodule.TorchSynth()
-        vco = synthmodule.TorchSineVCO()
-        noise = synthmodule.TorchNoise()
+        vco = synthmodule.TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]))
+        noise = synthmodule.TorchNoise(ratio=T([0.25, 0.75]))
 
         synth.add_synth_modules({"vco": vco, "noise": noise})
         assert hasattr(synth, "vco")
@@ -99,8 +99,13 @@ class TestTorchSynth:
         synth_params = [p for p in synth.parameters()]
         module_params = [p for p in vco.parameters()]
         module_params.extend([p for p in noise.parameters()])
+        # TODO: Jordi I think you meant to test something else here?
         for p in module_params:
-            assert p in synth_params
+            fails = True
+            for p2 in synth_params:
+                if p.parameter_name == p2.parameter_name and torch.all(p.data == p2.data):
+                    fails = False
+            assert not fails
 
         # Expect a TypeError if a non TorchSynthModule is passed in
         with pytest.raises(TypeError):
@@ -108,7 +113,7 @@ class TestTorchSynth:
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
-            vco_2 = synthmodule.TorchSineVCO(sample_rate=16000)
+            vco_2 = synthmodule.TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), sample_rate=T(16000))
             synth.add_synth_modules({"vco_2": vco_2})
 
         with pytest.raises(ValueError):
