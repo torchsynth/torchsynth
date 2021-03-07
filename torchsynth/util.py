@@ -10,6 +10,7 @@ import torch
 import torch.tensor as T
 
 from torchsynth.defaults import EPSILON, EQ_POW
+from torchsynth.signal import Signal
 
 
 # What is amin here? And maybe we should convert it to a value in defaults?
@@ -53,7 +54,7 @@ def midi_to_hz(midi: T) -> T:
     return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
 
 
-def fix_length(signal: T, length: T) -> T:
+def fix_length(signal: T, length: int) -> T:
     """
     Pad or truncate array to specified length.
     """
@@ -67,23 +68,17 @@ def fix_length(signal: T, length: T) -> T:
     return signal
 
 
-def fix_length2D(signal: T, length: T) -> T:
+def fix_length2D(signal: Signal, length: T) -> Signal:
     """
-    Pad or truncate 2D signal tensor to specified length
-    TODO: replace fix_length above with this once all modules are 2D
-
-    Parameters
-    ----------
-    signal (T): input tensor
-    length (T): length that each tensor should be
+    Pad or truncate array to specified length.
     """
+    assert length.ndim == 0
     assert signal.ndim == 2
-    if signal.shape[1] < length:
-        pad_amount = length - signal.shape[1]
-        signal = torch.nn.functional.pad(signal, (0, pad_amount, 0, 0))
-    elif signal.shape[1] > length:
-        signal = signal[:, length]
-    assert signal.shape[1] == length
+    if signal.num_samples < length:
+        signal = torch.nn.functional.pad(signal, (0, length - signal.num_samples))
+    elif signal.num_samples > length:
+        signal = signal[:, :length]
+    assert signal.shape == (signal.batch_size, length)
     return signal
 
 

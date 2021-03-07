@@ -12,7 +12,6 @@ from torchsynth.parameter import ModuleParameterRange, ModuleParameter
 
 
 class TestParameterRange:
-
     def test_construction(self):
         param_range = ModuleParameterRange(0.0, 10.0)
         assert param_range.minimum == 0.0
@@ -37,7 +36,9 @@ class TestParameterRange:
 
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 1.0)
-        assert repr(param_range) == "ModuleParameterRange(min=0.0, max=1.0, curve=linear)"
+        assert (
+            repr(param_range) == "ModuleParameterRange(min=0.0, max=1.0, curve=linear)"
+        )
 
     def test_to_0to1(self):
         # Test linear scaling
@@ -84,7 +85,6 @@ class TestParameterRange:
 
 
 class TestModuleParameter:
-
     def test_empty_construction(self):
         param = ModuleParameter()
         assert issubclass(ModuleParameter, nn.Parameter)
@@ -99,8 +99,10 @@ class TestModuleParameter:
 
         # Test construction by passing in a value in a specific range
         data = torch.linspace(0.0, 9.0, 10)
-        param = ModuleParameter(value=data, parameter_range=ModuleParameterRange(0.0, 10.))
-        assert torch.all(param.eq(data / 10.))
+        param = ModuleParameter(
+            value=data, parameter_range=ModuleParameterRange(0.0, 10.0)
+        )
+        assert torch.all(param.eq(data / 10.0))
         assert torch.all(param.from_0to1().eq(data))
 
         # Test naming a parameter
@@ -121,11 +123,12 @@ class TestModuleParameter:
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 10.0)
         param = ModuleParameter(
-            value=T([5.0, 1.0]),
-            parameter_range=param_range,
-            parameter_name="param_1"
+            value=T([5.0, 1.0]), parameter_range=param_range, parameter_name="param_1"
         )
-        assert repr(param) == 'ModuleParameter(name=param_1, value=tensor([0.5000, 0.1000]))'
+        assert (
+            repr(param)
+            == "ModuleParameter(name=param_1, value=tensor([0.5000, 0.1000]))"
+        )
 
     def test_from_0to1(self):
         # Test with no range first -- should get original value back
@@ -148,7 +151,7 @@ class TestModuleParameter:
         data = torch.linspace(0.0, 9.0, 10)
         param = ModuleParameter(value=T([0.0, 1.0]), parameter_range=param_range)
         param.to_0to1(data)
-        assert torch.all(torch.isclose(data / 10., param))
+        assert torch.all(torch.isclose(data / 10.0, param))
 
         param.to_0to1(T(5.0))
         assert param == 0.5

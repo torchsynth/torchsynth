@@ -2,7 +2,6 @@
 Synth modules in Torch.
 """
 
-from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -12,6 +11,7 @@ import torch.tensor as T
 import torchsynth.util as util
 from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
+from torchsynth.signal import Signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
@@ -118,7 +118,12 @@ class TorchSynthModule1D(TorchSynthModule):
     """
 
     # TODO: have these already moved to cuda
-    def __init__(self, batch_size: T, sample_rate: T = T(SAMPLE_RATE), buffer_size: T = T(BUFFER_SIZE)):
+    def __init__(
+        self,
+        batch_size: int,
+        sample_rate: T = T(SAMPLE_RATE),
+        buffer_size: T = T(BUFFER_SIZE),
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -135,21 +140,21 @@ class TorchSynthModule1D(TorchSynthModule):
         self.batch_size = batch_size
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
-    def to_buffer_size(self, signal: T) -> T:
+    def to_buffer_size(self, signal: Signal) -> Signal:
         return util.fix_length2D(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
-        #assert seconds.ndim == 1
+        # assert seconds.ndim == 1
         return torch.round(seconds * self.sample_rate).int()
 
-    def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each TorchSynthModule should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
-    def forward1D(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+    def forward1D(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Wrapper for _forward that ensures a buffer_size length output.
         TODO: Make this forward() after everything is 1D
@@ -160,7 +165,9 @@ class TorchSynthModule1D(TorchSynthModule):
         """
         Wrapper for _forward that ensures a buffer_size length output.
         """
-        return self.forward1D(*args, **kwargs)
+        x = self.forward1D(*args, **kwargs)
+        assert x.batch_size == 1
+        return x.flatten()
 
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
@@ -224,18 +231,10 @@ class TorchSynthModule1D(TorchSynthModule):
 
 class TorchADSR(TorchSynthModule1D):
     """
-    Envelope class for building a control rate ADSR signal
+    Envelope class for building a control rate ADSR signal.
     """
 
-    def __init__(
-        self,
-        a: T,
-        d: T,
-        s: T,
-        r: T,
-        alpha: T,
-        **kwargs: Dict[str, T]
-    ):
+    def __init__(self, a: T, d: T, s: T, r: T, alpha: T, **kwargs: Dict[str, T]):
         """
         Parameters
         ----------
@@ -279,7 +278,7 @@ class TorchADSR(TorchSynthModule1D):
             ]
         )
 
-    def _forward(self, note_on_duration: T) -> T:
+    def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -301,81 +300,60 @@ class TorchADSR(TorchSynthModule1D):
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-        num_samples = self.seconds_to_samples(note_on_duration)
+        assert torch.all(self.p("attack") + self.p("decay") < note_on_duration)
 
-        # Release decays from the last value of the attack-and-decay sections.
-        ADS = self.note_on(num_samples)
-        R = self.note_off(ADS[-1])
+        attack = self.make_attack()
+        decay = self.make_decay()
+        release = self.make_release(note_on_duration)
 
-        # Slightly worried this won't be performant on GPU?
-        return torch.cat((ADS, R))
+        return attack * decay * release
 
-    def _ramp(self, duration: T, inverse: bool = False):
+    def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
 
-        This function is used for the piece-wise construction of the envelope
-        signal. Its output monotonically increases from 0 to 1. As a result,
-        each component of the envelope is a scaled and possibly reversed
-        version of this ramp:
+        The construction of this matrix is rather cryptic. Essentially, this
+        method works by tilting and clipping ramps between 0 and 1, then
+        applying some scaling factor (`alpha`).
 
-        attack      -->     returns an `a`-length ramp, as is.
-        decay       -->     `d`-length reverse ramp, descends from 1 to `s`.
-        release     -->     `r`-length reverse ramp, descends to 0.
-
-        Its curve is determined by alpha:
-
-        alpha = 1 --> linear,
-        alpha > 1 --> exponential,
-        alpha < 1 --> logarithmic.
-
+        `start` is the initial delay in seconds (all 0's) before the ramp up.
+        `duration` is the length of the ramp up, also in seconds.
         """
 
+        assert start.ndim == 1
         assert duration.ndim == 1
-        # Unfortunately this won't work with 1D tensors
-        # and we can't have ramps in different sizes
-        t = torch.arange(
-            self.seconds_to_samples(duration), device=duration.device
-        )
-        ramp = t * (1 / duration) / self.sample_rate
+
+        # Convert to number of samples.
+        start_ = self.seconds_to_samples(start)
+        duration_ = self.seconds_to_samples(duration)
+
+        # Build ramps template.
+        tmp = torch.arange(self.buffer_size)
+        ramp = tmp.repeat([self.batch_size, 1])
+
+        # Shape ramps.
+        ramp = ramp - start_[:, None]
+        ramp = torch.maximum(ramp, T(0.0))
+        ramp = ramp / duration_[:, None]
+        ramp = torch.minimum(ramp, T(1.0))
 
         if inverse:
-            ramp = 1.0 - ramp
+            ramp = 1 - ramp
 
-        return torch.pow(ramp, self.p("alpha"))
+        # Apply scaling factor.
+        ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
-    @property
-    def attack(self):
-        return self._ramp(self.p("attack"))
+        return Signal(ramp)
 
-    @property
-    def decay(self):
-        # `d`-length reverse ramp, scaled and shifted to descend from 1 to `s`.
-        decay = self._ramp(self.p("decay"), inverse=True)
-        return decay * (1 - self.p("sustain")) + self.p("sustain")
+    def make_attack(self) -> Signal:
+        return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
 
-    @property
-    def release(self):
-        # `r`-length reverse ramp, reversed to descend to 0.
-        return self._ramp(self.p("release"), inverse=True)
+    def make_decay(self) -> Signal:
+        _a = 1.0 - self.p("sustain")[:, None]
+        _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
+        return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
-    def note_on(self, num_samples: T):
-        assert num_samples.ndim == 1
-        out_ = torch.cat((self.attack, self.decay), 0)
-
-        # Slightly worried this won't be performant on GPU?
-        # Truncate or extend based on sustain duration.
-        if num_samples <= len(out_):
-            out_ = out_[:num_samples]
-        else:
-            hold_samples = num_samples - len(out_)
-            sustain = torch.ones(hold_samples, device=self.p("sustain").device)
-            sustain = sustain * self.p("sustain")
-            out_ = torch.cat((out_, sustain))
-
-        return out_
-
-    def note_off(self, last_val: T):
-        return self.release * last_val
+    def make_release(self, note_on_duration) -> Signal:
+        return self._ramp(note_on_duration, self.p("release"), inverse=True)
 
     def __str__(self):
         return (
@@ -530,7 +508,6 @@ class TorchFmVCO(TorchVCO):
     phase (T)       :   initial phase values
     **kwargs        :   keyword args, see TorchVCO
     """
-
     def __init__(
         self,
         midi_f0: T,
@@ -724,7 +701,7 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-#class TorchDrum(TorchSynth):
+# class TorchDrum(TorchSynth):
 #    """
 #    A package of modules that makes one drum hit.
 #    """

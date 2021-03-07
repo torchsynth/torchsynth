@@ -107,12 +107,12 @@ class ModuleParameter(nn.Parameter):
     """
 
     def __new__(
-            cls,
-            value: T = None,
-            parameter_name: str = "",
-            parameter_range: ModuleParameterRange = None,
-            data: torch.Tensor = None,
-            requires_grad: bool = True,
+        cls,
+        value: T = None,
+        parameter_name: str = "",
+        parameter_range: ModuleParameterRange = None,
+        data: torch.Tensor = None,
+        requires_grad: bool = True,
     ):
         # TODO: Assert value is 1D after we have 1D'ified everything
         if value is not None:
