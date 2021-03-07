@@ -95,6 +95,18 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
 
 
+def crossfade2D(in_1: T, in_2: T, ratio: T) -> T:
+    """
+    Equal power cross-fade.
+
+    TODO: Replace crossfade with this once everything is 2D
+    """
+    assert in_1.ndim == 2 and in_2.ndim == 2 and ratio.ndim == 1
+    assert torch.all(0.0 <= ratio) and torch.all(ratio <= 1.0)
+    ratio = ratio.unsqueeze(1)
+    return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
+
+
 def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
     """
     Wrapper for torch.linspace that allows to count to `stop` non-inclusive.

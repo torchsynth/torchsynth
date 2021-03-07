@@ -632,7 +632,7 @@ class TorchVCA(TorchSynthModule1D):
         return control_in * audio_in
 
 
-class TorchNoise(TorchSynthModule):
+class TorchNoise(TorchSynthModule1D):
     """
     Adds noise to a signal
 
@@ -642,8 +642,8 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(self, ratio: T = T(0.25), **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, ratio: T, **kwargs):
+        super().__init__(batch_size=ratio.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -656,7 +656,7 @@ class TorchNoise(TorchSynthModule):
 
     def _forward(self, audio_in: T) -> T:
         noise = self.noise_of_length(audio_in)
-        return util.crossfade(audio_in, noise, self.p("ratio"))
+        return util.crossfade2D(audio_in, noise, self.p("ratio"))
 
     @staticmethod
     def noise_of_length(audio_in: T) -> T:
