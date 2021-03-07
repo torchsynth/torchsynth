@@ -414,7 +414,7 @@ class TorchVCO(TorchSynthModule1D):
 
         assert self.phase.shape[0] == self.batch_size
 
-    def _forward(self, mod_signal: T) -> T:
+    def _forward(self, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -439,18 +439,18 @@ class TorchVCO(TorchSynthModule1D):
         """
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-
         control_as_frequency = self.make_control_as_frequency(mod_signal)
         cosine_argument = self.make_argument(control_as_frequency) + self.phase
-        self.phase = cosine_argument[:, -1, None]
-        return self.oscillator(cosine_argument)
+        output = self.oscillator(cosine_argument)
+        # TODO: this is breaking on GPU
+        return Signal(output, device=output.device)
 
-    def make_control_as_frequency(self, mod_signal: T):
+    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = self.p("pitch").unsqueeze(1) + modulation
         return util.midi_to_hz(control_as_midi)
 
-    def make_argument(self, freq: T) -> T:
+    def make_argument(self, freq: Signal) -> Signal:
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
