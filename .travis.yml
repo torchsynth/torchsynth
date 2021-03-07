@@ -9,7 +9,7 @@ before_install:
   - pip install -U pip
   - pip install -U pytest
 install:
-  - pip install ".[test]" . # install package + test dependencies
+  - pip install ".[dev]" . # install package + test dependencies
 jobs:
   include:
     - stage: Unit test
