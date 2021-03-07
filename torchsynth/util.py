@@ -58,12 +58,28 @@ def fix_length(signal: T, length: T) -> T:
     Pad or truncate array to specified length.
     """
 
+    assert length.ndim == 0
     assert signal.ndim == 1
     if len(signal) < length:
         signal = torch.nn.functional.pad(signal, [0, length - len(signal)])
     elif len(signal) > length:
         signal = signal[:length]
     assert signal.shape == (length,)
+    return signal
+
+
+def fix_length2D(signal: T, length: T) -> T:
+    """
+    Pad or truncate array to specified length.
+    """
+
+    assert length.ndim == 0
+    assert signal.ndim == 2
+    if signal.shape[1] < length:
+        signal = torch.nn.functional.pad(signal, (0, length - signal.shape[1]))
+    elif signal.shape[1] > length:
+        signal = signal[:, :length]
+    assert signal.shape == (signal.shape[0], length,)
     return signal
 
 

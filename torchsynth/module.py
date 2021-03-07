@@ -146,8 +146,7 @@ class TorchSynthModule1D(TorchSynthModule):
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
-        return util.fix_length(signal, self.buffer_size)
-        #return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length2D(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
@@ -351,10 +350,10 @@ class TorchADSR(TorchSynthModule1D):
         if inverse:
             ramp = 1 - ramp
 
-        ramp = ramp.squeeze()
-
         # Apply scaling factor.
-        return torch.pow(ramp, self.p("alpha"))
+        ramp = torch.pow(ramp, self.p("alpha")[:, None])
+
+        return torch.squeeze(ramp)
 
     def make_attack(self):
         return self._ramp(torch.zeros(self.batch_size), self.p("attack"))

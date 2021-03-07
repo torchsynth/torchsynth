@@ -7,13 +7,13 @@ if __name__ == '__main__':
 
     # Debugging.
 
-    a = T([0.1])
-    d = T([0.5])
-    s = T([0.6])
-    r = T([0.5])
-    alpha = T([2.])
+    a = T([0.1, 0.1])
+    d = T([0.5, 0.5])
+    s = T([0.6, 0.6])
+    r = T([0.5, 0.5])
+    alpha = T([2., 2.])
 
-    note_on_duration = T([1.])
+    note_on_duration = T([1., 1.5.])
 
     adsr = TorchADSR(a, d, s, r, alpha)
 

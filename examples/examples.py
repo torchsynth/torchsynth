@@ -18,7 +18,7 @@ import torch
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchDrum, TorchFmVCO
+from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE
 # -
 
@@ -89,26 +89,12 @@ d = [0.1, 0.2]
 s = [0.75, 0.8]
 r = [0.5, 0.8]
 alpha = [3.0, 4.0]
-note_on_duration = [0.5, 2.0]
+note_on_duration = [0.5, 1.5]
 
 # Envelope test
 adsr = TorchADSR(T(a), T(d), T(s), T(r), T(alpha)).to(device)
 envelope = adsr(T(note_on_duration))
-time_plot(envelope.detach().cpu(), adsr.sample_rate)
-
-# +
-# Synthesis parameters.
-a = 0.1
-d = 0.1
-s = 0.75
-r = 0.5
-alpha = 3.0
-note_on_duration = 0.5
-
-# Envelope test
-adsr = TorchADSR(a, d, s, r, alpha).to(device)
-envelope = adsr(note_on_duration)
-time_plot(envelope.detach().cpu(), adsr.sample_rate)
+time_plot(envelope.detach().cpu().T, adsr.sample_rate)
 # -
 
 # Create a second envelope, higher decay

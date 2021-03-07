@@ -31,3 +31,15 @@ class TestTorchUtil:
         torch_blackman = torch.blackman_window(length, False)
         blackman_2 = util.blackman(T(length).float())
         assert np.allclose(blackman_2.numpy(), torch_blackman.numpy(), atol=1e-07)
+
+    def test_fix_length2D(self):
+        signal1 = torch.rand([2, 88100])
+        assert util.fix_length2D(signal1, length=44100).shape == (2, 44100)
+        assert util.fix_length2D(signal1, length=90000).shape == (2, 90000)
+        signal2 = torch.tensor([[1, 2, 3], [4, 5, 6]])
+        assert torch.all(util.fix_length2D(signal2, length=4) == torch.tensor(
+            [[1, 2, 3, 0], [4, 5, 6, 0]]
+        ))
+        assert torch.all(util.fix_length2D(signal2, length=2) == torch.tensor(
+            [[1, 2], [4, 5]]
+        ))
