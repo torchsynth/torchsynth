@@ -99,32 +99,20 @@ time_plot(envelope.detach().cpu().T, adsr.sample_rate)
 
 # Create a second envelope, higher decay
 
-# +
-# Synthesis parameters.
-a = 0.1
-d = 0.5
-s = 0.5
-r = 0.5
-alpha = 3.0
-note_on_duration = 0.5
-
-# Envelope test
-adsr2 = TorchADSR(a, d, s, r, alpha).to(device)
-envelope2 = adsr2(note_on_duration)
-time_plot(envelope2.detach().cpu(), adsr.sample_rate)
-# -
-
 # Here's the l1 error between the two envelopes
 
-err = torch.mean(torch.abs(envelope - envelope2))
+err = torch.mean(torch.abs(envelope[0, :] - envelope[1, :]))
 print("Error =", err)
-plt.plot(torch.abs(envelope - envelope2).detach().cpu())
+plt.plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu())
 
 # And here are the gradients
 
-err.backward(retain_graph=True)
-for p in adsr.torchparameters:
-    print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr2.torchparameters[p].grad.item()}")
+# +
+# err.backward(retain_graph=True)
+# for p in adsr.torchparameters:
+#     print(adsr.torchparameters[p].data.grad)
+#     print(f"{p} grad1={adsr.torchparameters[p].grad.item()} grad2={adsr.torchparameters[p].grad.item()}")
+# -
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
