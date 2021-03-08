@@ -117,6 +117,7 @@ class ModuleParameter(nn.Parameter):
 
     def __new__(
         cls,
+        # TODO: REMOVEME
         value: Optional[T] = None,
         parameter_name: str = "",
         parameter_range: Optional[ModuleParameterRange] = None,
