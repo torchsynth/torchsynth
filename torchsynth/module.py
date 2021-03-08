@@ -60,11 +60,12 @@ class TorchSynthModule(nn.Module):
     into here.
     """
 
+    # This outlines all the parameters available in this module
+    # TODO: Make this non-optional
+    parameter_ranges: Optional[List[ModuleParameterRange]] = None
+
     # TODO: have these already moved to cuda
-    def __init__(
-        self,
-        synthglobals: TorchSynthGlobals,
-    ):
+    def __init__(self, synthglobals: TorchSynthGlobals, **kwargs: Dict[str, T]):
         """
         NOTE:
         __init__ should only set parameters.
@@ -76,6 +77,26 @@ class TorchSynthModule(nn.Module):
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+
+        if self.parameter_ranges:
+            self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
+                p.name: p for p in self.parameter_ranges
+            }
+            assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
+            self.add_parameters(
+                [
+                    ModuleParameter(
+                        value=None,
+                        parameter_name=parameter_range.name,
+                        data=torch.rand((self.synthglobals.batch_size,)),
+                        parameter_range=parameter_range,
+                    )
+                    for parameter_range in self.parameter_ranges
+                ]
+            )
+            if kwargs:
+                for name, data in kwargs.items():
+                    self.set_parameter(name, data)
 
     @property
     def batch_size(self) -> T:
@@ -138,7 +159,9 @@ class TorchSynthModule(nn.Module):
         ----------
         parameter_id (str)  :   Id of the parameter to return
         """
-        return self.torchparameters[parameter_id]
+        value = self.torchparameters[parameter_id]
+        assert value.shape == (self.batch_size,)
+        return value
 
     def get_parameter_0to1(self, parameter_id: str) -> T:
         """
@@ -148,7 +171,9 @@ class TorchSynthModule(nn.Module):
         ----------
         parameter_id (str)  :   Id of the parameter to return the value for
         """
-        return self.torchparameters[parameter_id].item()
+        value = self.torchparameters[parameter_id].item()
+        assert value.shape == (self.batch_size,)
+        return value
 
     def set_parameter(self, parameter_id: str, value: T):
         """
@@ -161,6 +186,9 @@ class TorchSynthModule(nn.Module):
         value (T)           : Value to update parameter with
         """
         self.torchparameters[parameter_id].to_0to1(value)
+        value = self.torchparameters[parameter_id].data
+        assert torch.all(0 <= value) and torch.all(value <= 1)
+        assert value.shape == (self.batch_size,)
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
         """
@@ -171,14 +199,17 @@ class TorchSynthModule(nn.Module):
         parameter_id (str)  : Id of the parameter to update
         value (T)           : Value to update parameter with
         """
-        assert torch.all(0 <= value <= 1)
+        assert torch.all(0 <= value) and torch.all(value <= 1)
+        assert value.shape == (self.batch_size,)
         self.torchparameters[parameter_id].data = value
 
     def p(self, parameter_id: str) -> T:
         """
         Convenience method for getting the parameter value.
         """
-        return self.torchparameters[parameter_id].from_0to1()
+        value = self.torchparameters[parameter_id].from_0to1()
+        assert value.shape == (self.batch_size,)
+        return value
 
 
 class TorchADSR(TorchSynthModule):
@@ -210,45 +241,8 @@ class TorchADSR(TorchSynthModule):
         ),
     ]
 
-    def __init__(
-        self, a: T, d: T, s: T, r: T, alpha: T, synthglobals: TorchSynthGlobals
-    ):
-        super().__init__(synthglobals)
-        self.add_parameters(
-            [
-                ModuleParameter(
-                    value=a,
-                    parameter_name="attack",
-                    parameter_range=ModuleParameterRange(
-                        0.0, 2.0, curve="log", name="attack"
-                    ),
-                ),
-                ModuleParameter(
-                    value=d,
-                    parameter_name="decay",
-                    parameter_range=ModuleParameterRange(
-                        0.0, 2.0, curve="log", name="decay"
-                    ),
-                ),
-                ModuleParameter(
-                    value=s,
-                    parameter_name="sustain",
-                    parameter_range=ModuleParameterRange(0.0, 1.0, name="sustain"),
-                ),
-                ModuleParameter(
-                    value=r,
-                    parameter_name="release",
-                    parameter_range=ModuleParameterRange(
-                        0.0, 5.0, curve="log", name="release"
-                    ),
-                ),
-                ModuleParameter(
-                    value=alpha,
-                    parameter_name="alpha",
-                    parameter_range=ModuleParameterRange(0.1, 6.0, name="alpha"),
-                ),
-            ]
-        )
+    def __init__(self, synthglobals: TorchSynthGlobals, **kwargs: Dict[str, T]):
+        super().__init__(synthglobals, **kwargs)
 
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.

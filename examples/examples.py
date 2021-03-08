@@ -70,6 +70,15 @@ from torchsynth.module import (
     TorchSynthGlobals,
 )
 
+import random
+import numpy.random
+import torch
+
+# Determenistic seeds for replicable testing
+random.seed(0)
+numpy.random.seed(0)
+torch.manual_seed(0)
+
 # -
 
 
@@ -151,7 +160,9 @@ alpha = T([3.0, 4.0])
 note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
+adsr = TorchADSR(
+    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+).to(device)
 envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
@@ -170,6 +181,12 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 #    print(adsr.torchparameters[p].data.grad)
 #    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
 # -
+
+# Note that module parameters are optional. If they are not provided,
+# they will be randomly initialized (like a typical neural network module)
+adsr = TorchADSR(synthglobals=synthglobals).to(device)
+envelope = adsr.forward1D(note_on_duration)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
@@ -209,7 +226,9 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # %matplotlib inline
 
 # Reset envelope
-adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
+adsr = TorchADSR(
+    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+).to(device)
 envelope = adsr.forward1D(note_on_duration)
 
 # SineVCO test
@@ -635,10 +654,10 @@ synthglobals1 = TorchSynthGlobals(
 # +
 # Bandpass with envelope
 env = TorchADSR(
-    a=T([0]),
-    d=T([0.1]),
-    s=T([0.0]),
-    r=T([0.0]),
+    attack=T([0]),
+    decay=T([0.1]),
+    sustain=T([0.0]),
+    release=T([0.0]),
     alpha=T([3.0]),
     synthglobals=synthglobals1,
 )(T([0.2]))

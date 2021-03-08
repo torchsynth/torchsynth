@@ -157,6 +157,7 @@ class ModuleParameter(nn.Parameter):
     #        self.data == other.data
     #    )
 
+    # TODO: Move to ModuleRange
     def from_0to1(self) -> T:
         """
         Get the value of this parameter in the user-specified range. If no user range
@@ -167,6 +168,7 @@ class ModuleParameter(nn.Parameter):
 
         return self
 
+    # TODO: Move to ModuleRange
     def to_0to1(self, new_value: T):
         """
         Set the value of this parameter using an input that is
