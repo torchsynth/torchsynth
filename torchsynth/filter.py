@@ -4,11 +4,11 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.defaults import SAMPLE_RATE
-from torchsynth.module import TorchSynthModuleDEPRECATED
+from torchsynth.module import TorchSynthModule0Ddeprecated
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
-class FIRLowPass(TorchSynthModuleDEPRECATED):
+class FIRLowPass(TorchSynthModule0Ddeprecated):
     """
     A finite impulse response low-pass filter. Uses convolution with a windowed
     sinc function.
@@ -90,7 +90,7 @@ class FIRLowPass(TorchSynthModuleDEPRECATED):
         return ir * util.blackman(length)
 
 
-class TorchMovingAverage(TorchSynthModuleDEPRECATED):
+class TorchMovingAverage(TorchSynthModule0Ddeprecated):
     """
     A finite impulse response moving average filter.
 
@@ -139,7 +139,7 @@ class TorchMovingAverage(TorchSynthModuleDEPRECATED):
         return y[0][0]
 
 
-class TorchSVF(TorchSynthModuleDEPRECATED):
+class TorchSVF(TorchSynthModule0Ddeprecated):
     """
     A State Variable Filter that can do low-pass, high-pass, band-pass, and
     band-reject filtering. Allows modulation of the cutoff frequency and an

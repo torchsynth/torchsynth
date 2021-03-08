@@ -17,13 +17,13 @@ class TestTorchSynthModule:
     """
 
     def test_get_parameter(self):
-        module = synthmodule.TorchSynthModuleDEPRECATED()
+        module = synthmodule.TorchSynthModule0Ddeprecated()
         param_1 = ModuleParameter(data=T(1.0), parameter_name="param_1")
         module.add_parameters([param_1])
         assert module.get_parameter("param_1") == param_1
 
     def test_set_parameter(self):
-        module = synthmodule.TorchSynthModuleDEPRECATED()
+        module = synthmodule.TorchSynthModule0Ddeprecated()
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
@@ -40,7 +40,7 @@ class TestTorchSynthModule:
             module.set_parameter_0to1("param_1", -100.0)
 
     def test_set_parameter_0to1(self):
-        module = synthmodule.TorchSynthModuleDEPRECATED()
+        module = synthmodule.TorchSynthModule0Ddeprecated()
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
@@ -58,7 +58,7 @@ class TestTorchSynthModule:
             module.set_parameter_0to1("param_1", 5.0)
 
     def test_p(self):
-        module = synthmodule.TorchSynthModuleDEPRECATED()
+        module = synthmodule.TorchSynthModule0Ddeprecated()
         param_1 = ModuleParameter(
             value=T(5000.0),
             parameter_range=ModuleParameterRange(0.0, 20000.0),
@@ -112,7 +112,7 @@ class TestTorchSynth:
                     fails = False
             assert not fails
 
-        # Expect a TypeError if a non TorchSynthModuleDEPRECATED is passed in
+        # Expect a TypeError if a non TorchSynthModule0Ddeprecated is passed in
         with pytest.raises(TypeError):
             synth.add_synth_modules({"module": torch.nn.Module()})
 
