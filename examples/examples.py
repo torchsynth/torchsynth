@@ -61,7 +61,14 @@ import torch.fft
 import torch.tensor as T
 
 from torchsynth.defaults import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
-from torchsynth.module import TorchADSR, TorchFmVCO, TorchNoise, TorchSineVCO, TorchVCA
+from torchsynth.module import (
+    TorchADSR,
+    TorchFmVCO,
+    TorchNoise,
+    TorchSineVCO,
+    TorchVCA,
+    TorchSynthGlobals,
+)
 
 # -
 
@@ -90,6 +97,13 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
         plt.figure(figsize=(5, 5))
         librosa.display.specshow(Xdb, sr=sample_rate, x_axis="time", y_axis="log")
         plt.show()
+
+
+# ## Globals
+# We'll generate 2 sounds at once, 4 seconds each
+synthglobals = TorchSynthGlobals(
+    batch_size=T(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
+)
 
 
 # ## The Envelope
@@ -137,7 +151,7 @@ alpha = T([3.0, 4.0])
 note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha).to(device)
+adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
 envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
@@ -195,11 +209,13 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # %matplotlib inline
 
 # Reset envelope
-adsr = TorchADSR(a, d, s, r, alpha).to(device)
+adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
 envelope = adsr.forward1D(note_on_duration)
 
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])).to(device)
+sine_vco = TorchSineVCO(
+    midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), synthglobals=synthglobals
+).to(device)
 sine_out = sine_vco.forward1D(envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
@@ -231,7 +247,10 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 from torchsynth.module import TorchSquareSawVCO
 
 square_saw = TorchSquareSawVCO(
-    midi_f0=T([30.0, 30.0]), mod_depth=T([0.0, 0.0]), shape=T([0.0, 1.0])
+    midi_f0=T([30.0, 30.0]),
+    mod_depth=T([0.0, 0.0]),
+    shape=T([0.0, 1.0]),
+    synthglobals=synthglobals,
 ).to(device)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
@@ -254,7 +273,7 @@ print(err)
 # amplitude to smooth it out.
 
 # +
-vca = TorchVCA()
+vca = TorchVCA(synthglobals)
 test_output = vca.forward1D(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
@@ -271,16 +290,18 @@ time_plot(test_output[0].detach().cpu())
 # FmVCO test
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(
-    device
-)
+sine_operator = TorchSineVCO(
+    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+).to(device)
 operator_out = sine_operator.forward1D(envelope)
 
 # Shape the modulation depth.
 operator_out = vca.forward1D(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(device)
+fm_vco = TorchFmVCO(
+    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+).to(device)
 fm_out = fm_vco.forward1D(operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
@@ -296,8 +317,10 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 
 # +
 env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
-vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0])).to(device)
-noise = TorchNoise(ratio=T([0.75, 0.25])).to(device)
+vco = TorchSineVCO(
+    midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+).to(device)
+noise = TorchNoise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
 
 noisy_sine = noise.forward1D(vco.forward1D(env))
 
@@ -604,10 +627,20 @@ stft_plot(filtered.cpu().detach().numpy())
 
 # We can also apply an envelope to the filter frequency. The mod_depth parameter determines how much effect the envelope will have on the cutoff. In this example a simple decay envelope is applied to the cutoff frequency, which has a base value of 20Hz, and has a duration of 100ms. The mod_depth is 10,000Hz, which means that as the envelope travels from 1 to 0, the cutoff will go from 10,020Hz down to 20Hz. The envelope is passed in as an extra argument to the call function on the filter.
 
+# The rest of this doesn't support batching yet, so we use batch_size 1
+synthglobals1 = TorchSynthGlobals(
+    batch_size=T(1), sample_rate=T(44100), buffer_size=T(buffer)
+)
+
 # +
 # Bandpass with envelope
 env = TorchADSR(
-    a=T([0]), d=T([0.1]), s=T([0.0]), r=T([0.0]), alpha=T([3.0]), buffer_size=T(buffer)
+    a=T([0]),
+    d=T([0.1]),
+    s=T([0.0]),
+    r=T([0.0]),
+    alpha=T([3.0]),
+    synthglobals=synthglobals1,
 )(T([0.2]))
 bpf = TorchBandPassSVF(
     cutoff=T(20), resonance=T(30), mod_depth=T(10000), buffer_size=T(buffer)
