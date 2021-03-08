@@ -54,8 +54,9 @@ class ModuleParameterRange:
             raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
 
     def __repr__(self):
-        return "ModuleParameterRange(name={}, min={}, max={}, curve={}, description={})".format(
-            self.name, self.minimum, self.maximum, self.curve_type, self.description
+        return (
+            f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
+            + "max={self.maximum}, curve={self.curve}, description={self.description})"
         )
 
     def from_0to1(self, normalized: T) -> T:

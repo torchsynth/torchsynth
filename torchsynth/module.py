@@ -231,7 +231,8 @@ class TorchADSR(TorchSynthModule):
             0.0,
             1.0,
             name="sustain",
-            description="sustain amplitude 0-1. The only part of ADSR that (confusingly, by convention) is not a time value.",
+            description="sustain amplitude 0-1. The only part of ADSR that "
+            + "(confusingly, by convention) is not a time value.",
         ),
         ModuleParameterRange(
             0.0, 5.0, curve="log", name="release", description="release time (sec)"
@@ -525,7 +526,8 @@ class TorchNoise(TorchSynthModule):
             0.0,
             1.0,
             name="ratio",
-            description="mix ratio between the incoming signal and the produced noise, 1 is all noise",
+            description="mix ratio between the incoming signal and the produced noise, "
+            + "1 is all noise",
         )
     ]
 
