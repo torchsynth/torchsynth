@@ -25,6 +25,7 @@ class ModuleParameterRange:
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
     name    (str) : name of this parameter
+    description (str) : optional description of this parameter
     """
 
     def __init__(
@@ -34,8 +35,10 @@ class ModuleParameterRange:
         curve: str = "linear",
         # TODO: Make this not optional
         name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         self.name = name
+        self.description = description
         self.minimum = minimum
         self.maximum = maximum
 
@@ -51,8 +54,8 @@ class ModuleParameterRange:
             raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
 
     def __repr__(self):
-        return "ModuleParameterRange(name={}, min={}, max={}, curve={})".format(
-            self.name, self.minimum, self.maximum, self.curve_type
+        return "ModuleParameterRange(name={}, min={}, max={}, curve={}, description={})".format(
+            self.name, self.minimum, self.maximum, self.curve_type, self.description
         )
 
     def from_0to1(self, normalized: T) -> T:

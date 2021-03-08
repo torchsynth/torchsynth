@@ -146,46 +146,69 @@ class TorchADSR(TorchSynthModule):
     Envelope class for building a control rate ADSR signal.
     """
 
-    def __init__(self, a: T, d: T, s: T, r: T, alpha: T, **kwargs: Dict[str, T]):
-        """
-        Parameters
-        ----------
-        a                   :   attack time (sec), >= 0
-        d                   :   decay time (sec), >= 0
-        s                   :   sustain amplitude between 0-1. The only part of
-                                ADSR that (confusingly, by convention) is not
-                                a time value.
-        r                   :   release time (sec), >= 0
-        alpha               :   envelope curve, >= 0. 1 is linear, >1 is
-                                exponential.
-        """
-        super().__init__(batch_size=a.shape[0], **kwargs)
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0, 2.0, curve="log", name="attack", description="attack time (sec)"
+        ),
+        ModuleParameterRange(
+            0.0, 2.0, curve="log", name="decay", description="decay time (sec)"
+        ),
+        ModuleParameterRange(
+            0.0,
+            1.0,
+            name="sustain",
+            description="sustain amplitude 0-1. The only part of ADSR that (confusingly, by convention) is not a time value.",
+        ),
+        ModuleParameterRange(
+            0.0, 5.0, curve="log", name="release", description="release time (sec)"
+        ),
+        ModuleParameterRange(
+            0.1,
+            6.0,
+            name="alpha",
+            description="envelope curve. 1 is linear, >1 is exponential.",
+        ),
+    ]
+
+    def __init__(
+        self,
+        batch_size: int,
+        sample_rate: T = T(SAMPLE_RATE),
+        buffer_size: T = T(BUFFER_SIZE),
+    ):
+        super().__init__(batch_size, sample_rate, buffer_size)
         self.add_parameters(
             [
                 ModuleParameter(
                     value=a,
                     parameter_name="attack",
-                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
+                    parameter_range=ModuleParameterRange(
+                        0.0, 2.0, curve="log", name="attack"
+                    ),
                 ),
                 ModuleParameter(
                     value=d,
                     parameter_name="decay",
-                    parameter_range=ModuleParameterRange(0.0, 2.0, curve="log"),
+                    parameter_range=ModuleParameterRange(
+                        0.0, 2.0, curve="log", name="decay"
+                    ),
                 ),
                 ModuleParameter(
                     value=s,
                     parameter_name="sustain",
-                    parameter_range=ModuleParameterRange(0.0, 1.0),
+                    parameter_range=ModuleParameterRange(0.0, 1.0, name="sustain"),
                 ),
                 ModuleParameter(
                     value=r,
                     parameter_name="release",
-                    parameter_range=ModuleParameterRange(0.0, 5.0, curve="log"),
+                    parameter_range=ModuleParameterRange(
+                        0.0, 5.0, curve="log", name="release"
+                    ),
                 ),
                 ModuleParameter(
                     value=alpha,
                     parameter_name="alpha",
-                    parameter_range=ModuleParameterRange(0.1, 6.0),
+                    parameter_range=ModuleParameterRange(0.1, 6.0, name="alpha"),
                 ),
             ]
         )
