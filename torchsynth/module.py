@@ -44,7 +44,10 @@ class TorchSynthGlobals:
         self.buffer_size = buffer_size
 
     def __repr__(self):
-        return f"TorchSynthGlobals(batch_size={self.batch_size}, sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
+        return (
+            f"TorchSynthGlobals(batch_size={self.batch_size}, "
+            + "sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
+        )
 
 
 class TorchSynthModule(nn.Module):
