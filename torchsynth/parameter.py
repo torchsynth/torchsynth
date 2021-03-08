@@ -56,7 +56,7 @@ class ModuleParameterRange:
     def __repr__(self):
         return (
             f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
-            + f"max={self.maximum}, curve={self.curve}, description={self.description})"
+            + f"max={self.maximum}, curve={self.curve_type}, description={self.description})"
         )
 
     def from_0to1(self, normalized: T) -> T:
