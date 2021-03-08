@@ -41,10 +41,10 @@ print(f"isnotebook = {isnotebook()}")
 # +
 if isnotebook():  # pragma: no cover
     import IPython.display as ipd
-    from IPython.core.display import display
     import librosa
     import librosa.display
     import matplotlib.pyplot as plt
+    from IPython.core.display import display
 else:
 
     class IPD:
@@ -60,8 +60,8 @@ import torch
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
 from torchsynth.defaults import SAMPLE_RATE, BUFFER_SIZE
+from torchsynth.module import TorchADSR, TorchFmVCO, TorchNoise, TorchSineVCO, TorchVCA
 
 # -
 
@@ -267,7 +267,6 @@ time_plot(test_output[0].detach().cpu())
 # Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
 
 # +
-from torchsynth.module import TorchFmVCO
 
 # FmVCO test
 
@@ -458,7 +457,7 @@ for i in range(10):
 # ### Filters
 
 # +
-from torchsynth.filter import TorchMovingAverage, FIRLowPass
+from torchsynth.filter import FIRLowPass, TorchMovingAverage
 
 # Create some noise to filter
 duration = 2
@@ -542,14 +541,15 @@ for p in fir1.torchparameters:
 #
 # IIR filters are really slow in Torch, so we're only testing with a shorter buffer
 
+import torch.fft
+
 # +
 from torchsynth.filter import (
-    TorchLowPassSVF,
-    TorchHighPassSVF,
     TorchBandPassSVF,
     TorchBandStopSVF,
+    TorchHighPassSVF,
+    TorchLowPassSVF,
 )
-import torch.fft
 
 # Noise for testing
 buffer = 4096
