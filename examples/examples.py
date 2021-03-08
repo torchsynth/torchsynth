@@ -60,7 +60,7 @@ import torch
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.defaults import SAMPLE_RATE, BUFFER_SIZE
+from torchsynth.defaults import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
 from torchsynth.module import TorchADSR, TorchFmVCO, TorchNoise, TorchSineVCO, TorchVCA
 
 # -
@@ -73,7 +73,7 @@ else:
     device = "cpu"
 
 
-def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
+def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
     if isnotebook():  # pragma: no cover
         t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
         plt.plot(t, signal)
@@ -83,7 +83,7 @@ def time_plot(signal, sample_rate=SAMPLE_RATE, show=True):
             plt.show()
 
 
-def stft_plot(signal, sample_rate=SAMPLE_RATE):
+def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
     if isnotebook():  # pragma: no cover
         X = librosa.stft(signal)
         Xdb = librosa.amplitude_to_db(abs(X))
@@ -295,7 +295,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator mixes white noise into a signal
 
 # +
-env = torch.zeros([2, BUFFER_SIZE], device=device)
+env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
 vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0])).to(device)
 noise = TorchNoise(ratio=T([0.75, 0.25])).to(device)
 

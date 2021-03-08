@@ -9,11 +9,42 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import BUFFER_SIZE, SAMPLE_RATE
+from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
+
+
+class TorchSynthGlobals:
+    """
+    Any synth module requires these "global" values.
+    The should be the same for every module that is connected.
+    """
+
+    def __init__(
+        self,
+        batch_size: T,
+        sample_rate: T = T(DEFAULT_SAMPLE_RATE),
+        buffer_size: T = T(DEFAULT_BUFFER_SIZE),
+    ):
+        """
+        Parameters
+        ----------
+        batch_size (T)  : Scalar that indicates how many parameter settings
+                          there are, i.e. how many different sounds to generate.
+        sample_rate (T) : Scalar sample rate for audio generation.
+        buffer_size (T) : Duration of the output, 4 seconds by default.
+        """
+        assert batch_size.ndim == 0
+        assert sample_rate.ndim == 0
+        assert buffer_size.ndim == 0
+        self.batch_size = batch_size
+        self.sample_rate = sample_rate
+        self.buffer_size = buffer_size
+
+    def __repr__(self):
+        return f"TorchSynthGlobals(batch_size={self.batch_size}, sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
 
 
 class TorchSynthModule(nn.Module):
@@ -32,9 +63,7 @@ class TorchSynthModule(nn.Module):
     # TODO: have these already moved to cuda
     def __init__(
         self,
-        batch_size: int,
-        sample_rate: T = T(SAMPLE_RATE),
-        buffer_size: T = T(BUFFER_SIZE),
+        synthglobals: TorchSynthGlobals,
     ):
         """
         NOTE:
@@ -45,12 +74,23 @@ class TorchSynthModule(nn.Module):
         batch_size is the number of settings we are rendering at once.
         """
         nn.Module.__init__(self)
-        assert sample_rate.shape == torch.Size([])
-        assert buffer_size.shape == torch.Size([])
-        self.sample_rate = sample_rate
-        self.buffer_size = buffer_size
-        self.batch_size = batch_size
+        self.synthglobals = synthglobals
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+
+    @property
+    def batch_size(self) -> T:
+        assert self.synthglobals.batch_size.ndim == 0
+        return self.synthglobals.batch_size
+
+    @property
+    def sample_rate(self) -> T:
+        assert self.synthglobals.sample_rate.ndim == 0
+        return self.synthglobals.sample_rate
+
+    @property
+    def buffer_size(self) -> T:
+        assert self.synthglobals.buffer_size.ndim == 0
+        return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
         return util.fix_length2D(signal, self.buffer_size)
@@ -62,7 +102,7 @@ class TorchSynthModule(nn.Module):
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each TorchSynthModule0Ddeprecated should override this.
+        Each TorchSynthModule should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -146,7 +186,10 @@ class TorchADSR(TorchSynthModule):
     Envelope class for building a control rate ADSR signal.
     """
 
-    def __init__(self, a: T, d: T, s: T, r: T, alpha: T, **kwargs: Dict[str, T]):
+    def __init__(
+        self, a: T, d: T, s: T, r: T, alpha: T, synthglobals: TorchSynthGlobals
+    ):
+
         """
         Parameters
         ----------
@@ -159,7 +202,7 @@ class TorchADSR(TorchSynthModule):
         alpha               :   envelope curve, >= 0. 1 is linear, >1 is
                                 exponential.
         """
-        super().__init__(batch_size=a.shape[0], **kwargs)
+        super().__init__(synthglobals)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -291,12 +334,20 @@ class TorchVCO(TorchSynthModule):
     ----------
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
+    synthglobals: TorchSynthGlobals        : global args, see TorchSynthModule
     phase (optional, T)       :   initial phase values
-    **kwargs        : keyword args, see TorchSynthModule
     """
 
-    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
-        TorchSynthModule.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
+    def __init__(
+        self,
+        midi_f0: T,
+        mod_depth: T,
+        synthglobals: TorchSynthGlobals,
+        phase: Optional[T] = None,
+    ):
+        super().__init__(synthglobals)
+        print("synthglobals", self.synthglobals)
+        print(self.batch_size)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -382,17 +433,19 @@ class TorchSineVCO(TorchVCO):
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
     phase (T)       :   initial phase values
-    **kwargs        :   keyword args, see TorchVCO
+    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
     """
 
     def __init__(
         self,
         midi_f0: T,
         mod_depth: T,
+        synthglobals: TorchSynthGlobals,
         phase: Optional[T] = None,
-        **kwargs,
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
+        super().__init__(
+            midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, synthglobals=synthglobals
+        )
 
     def oscillator(self, argument: Signal) -> Signal:
         return torch.cos(argument)
@@ -414,11 +467,19 @@ class TorchFmVCO(TorchVCO):
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the frequency (0-127)
     phase (T)       :   initial phase values
-    **kwargs        :   keyword args, see TorchVCO
+    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
     """
 
-    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
+    def __init__(
+        self,
+        midi_f0: T,
+        mod_depth: T,
+        synthglobals: TorchSynthGlobals,
+        phase: Optional[T] = None,
+    ):
+        super().__init__(
+            midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, synthglobals=synthglobals
+        )
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
@@ -448,7 +509,7 @@ class TorchSquareSawVCO(TorchVCO):
     mod_depth (T)   :   depth of the pitch modulation in semitones.
     shape (T)       :   Waveshape - square to saw [0,1]
     phase (T)       :   initial phase values
-    **kwargs        :   keyword args, see TorchVCO
+    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
     """
 
     def __init__(
@@ -456,10 +517,12 @@ class TorchSquareSawVCO(TorchVCO):
         midi_f0: T,
         mod_depth: T,
         shape: T,
+        synthglobals: TorchSynthGlobals,
         phase: Optional[T] = None,
-        **kwargs,
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
+        super().__init__(
+            midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, synthglobals=synthglobals
+        )
         self.add_parameters(
             [
                 ModuleParameter(
@@ -495,11 +558,11 @@ class TorchVCA(TorchSynthModule):
 
     Parameters
     ----------
-    **kwargs : keyword args, see TorchSynthModule
+    synthglobals: TorchSynthGlobals : keyword args, see TorchSynthModule
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(batch_size=None, **kwargs)
+    def __init__(self, synthglobals: TorchSynthGlobals):
+        super().__init__(synthglobals)
 
     def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
         assert (control_in >= 0).all() and (control_in <= 1).all()
@@ -519,11 +582,11 @@ class TorchNoise(TorchSynthModule):
     Parameters
     ----------
     ratio (float): mix ratio between the incoming signal and the produced noise
-    **kwargs: see TorchSynthModule0Ddeprecated
+    synthglobals: TorchSynthGlobals: see TorchSynthModule
     """
 
-    def __init__(self, ratio: T, **kwargs):
-        super().__init__(batch_size=ratio.shape[0], **kwargs)
+    def __init__(self, ratio: T, synthglobals: TorchSynthGlobals):
+        super().__init__(synthglobals)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -552,7 +615,11 @@ class TorchSynthModule0Ddeprecated(nn.Module):
     TODO: Later, we should deprecate SynthModule and fold everything into here.
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
+    def __init__(
+        self,
+        sample_rate: int = DEFAULT_SAMPLE_RATE,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
+    ):
         """
         NOTE:
         __init__ should only set parameters.
@@ -562,6 +629,7 @@ class TorchSynthModule0Ddeprecated(nn.Module):
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
+        self.batch_size = T(1)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
 
     def to_buffer_size(self, signal: T) -> T:
@@ -636,7 +704,11 @@ class TorchSynthParameters(TorchSynthModule0Ddeprecated):
     A SynthModule that is strictly for managing parameters
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
+    def __init__(
+        self,
+        sample_rate: int = DEFAULT_SAMPLE_RATE,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
+    ):
         super().__init__(sample_rate, buffer_size)
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:
@@ -654,13 +726,27 @@ class TorchSynth(nn.Module):
     buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
+    def __init__(
+        self,
+        synthglobals: TorchSynthGlobals,
+    ):
         super().__init__()
-        self.sample_rate = T(sample_rate)
-        self.buffer_size = T(buffer_size)
+        self.synthglobals = synthglobals
 
-        # Global Parameter Module
-        self.global_params = TorchSynthParameters(sample_rate, buffer_size)
+    @property
+    def batch_size(self) -> T:
+        assert self.synthglobals.batch_size.ndim == 0
+        return self.synthglobals.batch_size
+
+    @property
+    def sample_rate(self) -> T:
+        assert self.synthglobals.sample_rate.ndim == 0
+        return self.synthglobals.sample_rate
+
+    @property
+    def buffer_size(self) -> T:
+        assert self.synthglobals.buffer_size.ndim == 0
+        return self.synthglobals.buffer_size
 
     def add_synth_modules(self, modules: Dict[str, TorchSynthModule0Ddeprecated]):
         """
@@ -677,6 +763,9 @@ class TorchSynth(nn.Module):
                 raise TypeError(
                     f"{modules[name]} is not a TorchSynthModule0Ddeprecated"
                 )
+
+            if modules[name].batch_size != self.batch_size:
+                raise ValueError(f"{modules[name]} batch_size does not match")
 
             if modules[name].sample_rate != self.sample_rate:
                 raise ValueError(f"{modules[name]} sample rate does not match")
@@ -709,9 +798,9 @@ class TorchSynth(nn.Module):
 #        vco_2: TorchVCO = TorchSquareSawVCO(),
 #        noise: TorchNoise = TorchNoise(),
 #        vca: TorchVCA = TorchVCA(),
-#        **kwargs,
+#        synthglobals: TorchSynthGlobals,
 #    ):
-#        super().__init__(**kwargs)
+#        super().__init__(synthglobals: TorchSynthGlobals)
 #        assert note_on_duration >= 0
 #
 #        # We assume that sustain duration is a hyper-parameter,

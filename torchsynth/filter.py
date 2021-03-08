@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import SAMPLE_RATE
+from torchsynth.defaults import DEFAULT_SAMPLE_RATE
 from torchsynth.module import TorchSynthModule0Ddeprecated
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
@@ -28,7 +28,7 @@ class FIRLowPass(TorchSynthModule0Ddeprecated):
         self,
         cutoff: float = 1000.0,
         filter_length: int = 512,
-        sample_rate: int = SAMPLE_RATE,
+        sample_rate: int = DEFAULT_SAMPLE_RATE,
     ):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
@@ -102,7 +102,7 @@ class TorchMovingAverage(TorchSynthModule0Ddeprecated):
     sample_rate (int)   :   Sampling rate to run processing at.
     """
 
-    def __init__(self, filter_length: int = 32, sample_rate: int = SAMPLE_RATE):
+    def __init__(self, filter_length: int = 32, sample_rate: int = DEFAULT_SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [
