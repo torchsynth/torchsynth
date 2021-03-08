@@ -61,7 +61,7 @@ import torch.fft
 import torch.tensor as T
 
 from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
-from torchsynth.defaults import SAMPLE_RATE
+from torchsynth.defaults import SAMPLE_RATE, BUFFER_SIZE
 
 # -
 
@@ -134,11 +134,11 @@ d = T([0.1, 0.2])
 s = T([0.75, 0.8])
 r = T([0.5, 0.8])
 alpha = T([3.0, 4.0])
-note_on_duration = T([0.5, 1.5])
+note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(T(a), T(d), T(s), T(r), T(alpha)).to(device)
-envelope = adsr.forward1D(T(note_on_duration))
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
+envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
 
@@ -201,6 +201,7 @@ envelope = adsr.forward1D(note_on_duration)
 # SineVCO test
 sine_vco = TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])).to(device)
 sine_out = sine_vco.forward1D(envelope)
+
 stft_plot(sine_out[0].detach().cpu().numpy())
 ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 stft_plot(sine_out[1].detach().cpu().numpy())
@@ -208,7 +209,6 @@ ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 
 # We can use auraloss instead of raw waveform loss. This is just
 # to show that gradient computations occur
-
 err = torch.mean(torch.abs(sine_out[0] - sine_out[1]))
 print("Error =", err)
 time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
@@ -255,11 +255,9 @@ print(err)
 
 # +
 vca = TorchVCA()
-print(envelope.shape)
-print(sine_out.shape)
 test_output = vca.forward1D(envelope, sine_out)
 
-time_plot(test_output.detach().cpu())
+time_plot(test_output[0].detach().cpu())
 # -
 
 # ### FM Synthesis
@@ -286,8 +284,11 @@ operator_out = vca.forward1D(envelope, operator_out)
 fm_vco = TorchFmVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(device)
 fm_out = fm_vco.forward1D(operator_out)
 
-stft_plot(fm_out.cpu().detach().numpy())
-ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
+stft_plot(fm_out[0].cpu().detach().numpy())
+ipd.display(ipd.Audio(fm_out[0].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
+
+stft_plot(fm_out[1].cpu().detach().numpy())
+ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
 # -
 
 # ### Noise
@@ -295,20 +296,21 @@ ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
 # The noise generator mixes white noise into a signal
 
 # +
-# Why do we have buffer_size here?? isn't this a default?
-N = T(44100)
-
-env = torch.zeros([2, N])
-vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), buffer_size=N)
-noise = TorchNoise(ratio=T([0.75, 0.25]), buffer_size=N)
+env = torch.zeros([2, BUFFER_SIZE], device=device)
+vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0])).to(device)
+noise = TorchNoise(ratio=T([0.75, 0.25])).to(device)
 
 noisy_sine = noise.forward1D(vco.forward1D(env))
 
-stft_plot(noisy_sine[0].detach().numpy())
-ipd.display(ipd.Audio(noisy_sine[0].detach().numpy(), rate=vco.sample_rate.item()))
+stft_plot(noisy_sine[0].detach().cpu().numpy())
+ipd.display(
+    ipd.Audio(noisy_sine[0].detach().cpu().numpy(), rate=vco.sample_rate.item())
+)
 
-stft_plot(noisy_sine[1].detach().numpy())
-ipd.display(ipd.Audio(noisy_sine[1].detach().numpy(), rate=vco.sample_rate.item()))
+stft_plot(noisy_sine[1].detach().cpu().numpy())
+ipd.display(
+    ipd.Audio(noisy_sine[1].detach().cpu().numpy(), rate=vco.sample_rate.item())
+)
 
 # +
 # Compute the error on the difference between the RMS level of the signals
@@ -469,7 +471,6 @@ stft_plot(noise.cpu().detach().numpy())
 # A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
 
 # +
-
 ma_filter = TorchMovingAverage(filter_length=T(32.0)).to(device)
 filtered = ma_filter(noise)
 

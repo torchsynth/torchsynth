@@ -327,7 +327,7 @@ class TorchADSR(TorchSynthModule1D):
         duration_ = self.seconds_to_samples(duration)
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size)
+        tmp = torch.arange(self.buffer_size, device=duration.device)
         ramp = tmp.repeat([self.batch_size, 1])
 
         # Shape ramps.
@@ -345,7 +345,8 @@ class TorchADSR(TorchSynthModule1D):
         return ramp.as_subclass(Signal)
 
     def make_attack(self) -> Signal:
-        return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
+        attack = self.p("attack")
+        return self._ramp(torch.zeros(self.batch_size, device=attack.device), attack)
 
     def make_decay(self) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
@@ -401,10 +402,12 @@ class TorchVCO(TorchSynthModule1D):
 
         # Setup initial phase values
         if phase is not None:
-            self.phase = phase.unsqueeze(1)
+            self.phase = nn.Parameter(data=phase.unsqueeze(1), requires_grad=False)
         else:
             # Create initial phase of zeros like the parameters
-            self.phase = torch.zeros_like(midi_f0).unsqueeze(1)
+            self.phase = nn.Parameter(
+                data=torch.zeros_like(midi_f0).unsqueeze(1), requires_grad=False
+            )
 
         assert self.phase.shape[0] == self.batch_size
 
