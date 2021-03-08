@@ -97,10 +97,12 @@ class TestTorchSynth:
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
-        # Make sure all the parameters were registered correctly
-        synth_params = [p for p in synth.parameters()]
-        module_params = [p for p in vco.parameters()]
-        module_params.extend([p for p in noise.parameters()])
+        # Make sure all the ModuleParameters were registered correctly
+        synth_params = [p for p in synth.parameters() if isinstance(p, ModuleParameter)]
+        module_params = [p for p in vco.parameters() if isinstance(p, ModuleParameter)]
+        module_params.extend(
+            [p for p in noise.parameters() if isinstance(p, ModuleParameter)]
+        )
         for p in module_params:
             fails = True
             for p2 in synth_params:
