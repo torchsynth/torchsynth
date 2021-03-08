@@ -463,25 +463,25 @@ for n, p in drum1.named_parameters():
 
 """
 # Get the full ModuleParameter object by name from the module
-print(drum1.vco_1.get_parameter("pitch"))
+print(drum1.vco_1.get_parameter("midi_f0"))
 
 # Access the value as a Tensor in the full value human range
-print(drum1.vco_1.p("pitch"))
+print(drum1.vco_1.p("midi_f0"))
 
 # Access the value as a float in the range from 0 to 1
-print(drum1.vco_1.get_parameter_0to1("pitch"))
+print(drum1.vco_1.get_parameter_0to1("midi_f0"))
 """
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 """
 # Set the vco pitch using the human range, which is MIDI note number
-drum1.vco_1.set_parameter("pitch", 64)
-print(drum1.vco_1.p("pitch"))
+drum1.vco_1.set_parameter("midi_f0", 64)
+print(drum1.vco_1.p("midi_f0"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-drum1.vco_1.set_parameter_0to1("pitch", 0.5433)
-print(drum1.vco_1.p("pitch"))
+drum1.vco_1.set_parameter_0to1("midi_f0", 0.5433)
+print(drum1.vco_1.p("midi_f0"))
 """
 
 # ## Random synths
