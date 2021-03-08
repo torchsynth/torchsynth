@@ -507,10 +507,10 @@ class TorchFmVCO(TorchVCO):
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = util.midi_to_hz(self.p("pitch"))
-        fm_depth = self.p("mod_depth") * f0_hz
-        modulation_hz = fm_depth.unsqueeze(1) * mod_signal
-        return f0_hz.unsqueeze(1) + modulation_hz
+        f0_hz = util.midi_to_hz(self.p("pitch").unsqueeze(1))
+        fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
+        modulation_hz = fm_depth * mod_signal
+        return f0_hz + modulation_hz
 
     def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.

@@ -101,7 +101,6 @@ class TestTorchSynth:
         synth_params = [p for p in synth.parameters()]
         module_params = [p for p in vco.parameters()]
         module_params.extend([p for p in noise.parameters()])
-        # TODO: Jordi I think you meant to test something else here?
         for p in module_params:
             fails = True
             for p2 in synth_params:
