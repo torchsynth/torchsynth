@@ -2,13 +2,13 @@
 Tests for DDSP Parameters
 """
 
-import pytest
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 import torch.tensor as T
 
-from torchsynth.parameter import ModuleParameterRange, ModuleParameter
+from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
 class TestParameterRange:

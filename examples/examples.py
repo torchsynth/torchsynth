@@ -2,19 +2,31 @@
 # # torchsynth examples
 #
 # We walk through basic functionality of `torchsynth` in this Jupyter notebook.
+#
 # Just note that all ipd.Audio play widgets normalize the audio.
+#
+# If you're in Colab, remember to set the runtime to GPU.
+# and get the latest torchsynth:
+#
+# ```
+# # !pip install git+https://github.com/turian/torchsynth.git
+# ```
 
 # %load_ext autoreload
 # %autoreload 2
 # %matplotlib inline
 
 # +
+def iscolab():  # pragma: no cover
+    return "google.colab" in str(get_ipython())
+
+
 def isnotebook():  # pragma: no cover
     try:
+        if iscolab():
+            return True
         shell = get_ipython().__class__.__name__
         if shell == "ZMQInteractiveShell":
-            return True  # Jupyter notebook or qtconsole
-        if shell == "google.colab._shell":
             return True  # Jupyter notebook or qtconsole
         elif shell == "TerminalInteractiveShell":
             return False  # Terminal running IPython
@@ -172,8 +184,8 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 #     err.backward()
 #     optimizer.step()
-
 # -
+
 
 # ## Oscillators
 #
@@ -330,7 +342,7 @@ for i in range(100):
     err.backward()
     optimizer.step()
 
-if isnotebook(): # pragma: no cover
+if isnotebook():  # pragma: no cover
     plt.plot(error_hist)
     plt.ylabel("Error")
     plt.xlabel("Optimization steps")
@@ -610,4 +622,3 @@ bsf = TorchBandStopSVF(cutoff=T(2000), resonance=T(0.05), buffer_size=T(buffer))
 filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
-# -
