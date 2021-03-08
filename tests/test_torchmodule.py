@@ -22,20 +22,6 @@ class TestTorchSynthModule:
         module.add_parameters([param_1])
         assert module.get_parameter("param_1") == param_1
 
-    def test_get_parameter_0to1(self):
-        module = synthmodule.TorchSynthModule()
-        param_1 = ModuleParameter(data=T(0.5), parameter_name="param_1")
-        module.add_parameters([param_1])
-        assert module.get_parameter_0to1("param_1") == 0.5
-
-        param_2 = ModuleParameter(
-            value=T(5000.0),
-            parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_2",
-        )
-        module.add_parameters([param_2])
-        assert module.get_parameter_0to1("param_2") == 0.25
-
     def test_set_parameter(self):
         module = synthmodule.TorchSynthModule()
         param_1 = ModuleParameter(
@@ -102,19 +88,29 @@ class TestTorchSynth:
     def test_add_synth_module(self):
 
         synth = synthmodule.TorchSynth()
-        vco = synthmodule.TorchSineVCO()
-        noise = synthmodule.TorchNoise()
+        vco = synthmodule.TorchSineVCO(
+            midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])
+        )
+        noise = synthmodule.TorchNoise(ratio=T([0.25, 0.75]))
 
         synth.add_synth_modules({"vco": vco, "noise": noise})
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
-        # Make sure all the parameters were registered correctly
-        synth_params = [p for p in synth.parameters()]
-        module_params = [p for p in vco.parameters()]
-        module_params.extend([p for p in noise.parameters()])
+        # Make sure all the ModuleParameters were registered correctly
+        synth_params = [p for p in synth.parameters() if isinstance(p, ModuleParameter)]
+        module_params = [p for p in vco.parameters() if isinstance(p, ModuleParameter)]
+        module_params.extend(
+            [p for p in noise.parameters() if isinstance(p, ModuleParameter)]
+        )
         for p in module_params:
-            assert p in synth_params
+            fails = True
+            for p2 in synth_params:
+                if p.parameter_name == p2.parameter_name and torch.all(
+                    p.data == p2.data
+                ):
+                    fails = False
+            assert not fails
 
         # Expect a TypeError if a non TorchSynthModule is passed in
         with pytest.raises(TypeError):
@@ -122,7 +118,9 @@ class TestTorchSynth:
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
-            vco_2 = synthmodule.TorchSineVCO(sample_rate=16000)
+            vco_2 = synthmodule.TorchSineVCO(
+                midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), sample_rate=T(16000)
+            )
             synth.add_synth_modules({"vco_2": vco_2})
 
         with pytest.raises(ValueError):

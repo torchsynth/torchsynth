@@ -2,8 +2,7 @@
 Synth modules in Torch.
 """
 
-from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -73,16 +72,6 @@ class TorchSynthModule(nn.Module):
         parameter_id (str)  :   Id of the parameter to return
         """
         return self.torchparameters[parameter_id]
-
-    def get_parameter_0to1(self, parameter_id: str) -> float:
-        """
-        Get the value of a single parameter in the range of [0,1]
-
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return the value for
-        """
-        return float(self.torchparameters[parameter_id].item())
 
     def set_parameter(self, parameter_id: str, value: float):
         """
@@ -338,7 +327,7 @@ class TorchADSR(TorchSynthModule1D):
         duration_ = self.seconds_to_samples(duration)
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size)
+        tmp = torch.arange(self.buffer_size, device=duration.device)
         ramp = tmp.repeat([self.batch_size, 1])
 
         # Shape ramps.
@@ -356,7 +345,8 @@ class TorchADSR(TorchSynthModule1D):
         return ramp.as_subclass(Signal)
 
     def make_attack(self) -> Signal:
-        return self._ramp(torch.zeros(self.batch_size), self.p("attack"))
+        attack = self.p("attack")
+        return self._ramp(torch.zeros(self.batch_size, device=attack.device), attack)
 
     def make_decay(self) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
@@ -376,40 +366,25 @@ class TorchADSR(TorchSynthModule1D):
         )
 
 
-class TorchVCO(TorchSynthModule):
+class TorchVCO(TorchSynthModule1D):
     """
-    Voltage controlled oscillator.
+    Base class for voltage controlled oscillators (VCO).
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
-    accepts a modulation signal between 0 - 1. An array of 0's returns a
+    accepts a modulation signal between [-1, 1]. An array of 0's returns a
     stationary audio signal at its base pitch.
-
 
     Parameters
     ----------
-
-    midi_f0 (flt)       :       pitch value in 'midi' (69 = 440Hz).
-    mod_depth (flt)     :       depth of the pitch modulation in semitones.
-
-    Examples
-    --------
-
-    >>> vco = VCO(midi_f0=69.0, mod_depth=24.0)
-    >>> two_8ve_chirp = vco(linspace(0, 1, 1000, endpoint=False))
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    phase (optional, T)       :   initial phase values
+    **kwargs        : keyword args, see TorchSynthModule1D
     """
 
-    def __init__(
-        self,
-        midi_f0: T = T(10),
-        mod_depth: T = T(50),
-        phase: float = 0,
-        sample_rate: int = SAMPLE_RATE,
-        buffer_size: int = BUFFER_SIZE,
-    ):
-        TorchSynthModule.__init__(
-            self, sample_rate=sample_rate, buffer_size=buffer_size
-        )
+    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
+        TorchSynthModule1D.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -424,10 +399,19 @@ class TorchVCO(TorchSynthModule):
                 ),
             ]
         )
-        # TODO: Make this a parameter too?
-        self.phase = T(phase)
 
-    def _forward(self, mod_signal: T, phase: T = T(0.0)) -> T:
+        # Setup initial phase values
+        if phase is not None:
+            self.phase = nn.Parameter(data=phase.unsqueeze(1), requires_grad=False)
+        else:
+            # Create initial phase of zeros like the parameters
+            self.phase = nn.Parameter(
+                data=torch.zeros_like(midi_f0).unsqueeze(1), requires_grad=False
+            )
+
+        assert self.phase.shape[0] == self.batch_size
+
+    def _forward(self, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -452,51 +436,53 @@ class TorchVCO(TorchSynthModule):
         """
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-
         control_as_frequency = self.make_control_as_frequency(mod_signal)
+        cosine_argument = self.make_argument(control_as_frequency) + self.phase
+        output = self.oscillator(cosine_argument)
+        return output.as_subclass(Signal)
 
-        cosine_argument = self.make_argument(control_as_frequency) + phase
-
-        self.phase = cosine_argument[-1]
-        return self.oscillator(cosine_argument)
-
-    def make_control_as_frequency(self, mod_signal: T):
-        modulation = self.p("mod_depth") * mod_signal
-        control_as_midi = self.p("pitch") + modulation
+    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
+        modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
+        control_as_midi = self.p("pitch").unsqueeze(1) + modulation
         return util.midi_to_hz(control_as_midi)
 
-    def make_argument(self, control_as_frequency: T) -> T:
+    def make_argument(self, freq: Signal) -> Signal:
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
-        assert control_as_frequency.ndim == 1
-        return torch.cumsum(2 * torch.pi * control_as_frequency / SAMPLE_RATE, dim=0)
+        return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
-    @abstractmethod
-    def oscillator(self, argument: T) -> T:
+    def oscillator(self, argument: Signal) -> Signal:
         """
         Dummy method. Overridden by child class VCO's.
         """
-        pass
+        raise NotImplementedError("Derived classes must override this method")
 
 
 class TorchSineVCO(TorchVCO):
     """
     Simple VCO that generates a pitched sinusoid.
 
-    Built off the VCO base class, it simply implements a cosine function as oscillator.
+    Derives from TorchVCO, it simply implements a cosine function as oscillator.
+
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
     def __init__(
         self,
-        midi_f0: T = T(10.0),
-        mod_depth: T = T(50.0),
-        phase: float = 0.0,
+        midi_f0: T,
+        mod_depth: T,
+        phase: Optional[T] = None,
         **kwargs,
     ):
         super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
-    def oscillator(self, argument):
+    def oscillator(self, argument: Signal) -> Signal:
         return torch.cos(argument)
 
 
@@ -511,19 +497,25 @@ class TorchFmVCO(TorchVCO):
 
         modulation_index = frequency_deviation / modulation_frequency
 
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the frequency (0-127)
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
-    def __init__(self, midi_f0: T = T(10.0), mod_depth: T = T(50.0), phase: T = T(0.0)):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+    def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
 
-    def make_control_as_frequency(self, mod_signal: T):
+    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = util.midi_to_hz(self.p("pitch"))
-        fm_depth = self.p("mod_depth") * f0_hz
+        f0_hz = util.midi_to_hz(self.p("pitch").unsqueeze(1))
+        fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
         return f0_hz + modulation_hz
 
-    def oscillator(self, argument):
+    def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
@@ -537,16 +529,25 @@ class TorchSquareSawVCO(TorchVCO):
 
     Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+
+    Parameters
+    ----------
+    midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
+    mod_depth (T)   :   depth of the pitch modulation in semitones.
+    shape (T)       :   Waveshape - square to saw [0,1]
+    phase (T)       :   initial phase values
+    **kwargs        :   keyword args, see TorchVCO
     """
 
     def __init__(
         self,
-        shape: T = T(0.0),
-        midi_f0: T = T(10.0),
-        mod_depth: T = T(50.0),
-        phase: T = T(0.0),
+        midi_f0: T,
+        mod_depth: T,
+        shape: T,
+        phase: Optional[T] = None,
+        **kwargs,
     ):
-        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase)
+        super().__init__(midi_f0=midi_f0, mod_depth=mod_depth, phase=phase, **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -557,9 +558,10 @@ class TorchSquareSawVCO(TorchVCO):
             ]
         )
 
-    def oscillator(self, argument):
-        square = torch.tanh(torch.pi * self.partials_constant * torch.sin(argument) / 2)
-        shape = self.p("shape")
+    def oscillator(self, argument: Signal) -> Signal:
+        partials = self.partials_constant.unsqueeze(1)
+        square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
+        shape = self.p("shape").unsqueeze(1)
         return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
 
     @property
@@ -575,25 +577,30 @@ class TorchSquareSawVCO(TorchVCO):
         return 12000 / (max_f0 * torch.log10(max_f0))
 
 
-class TorchVCA(TorchSynthModule):
+class TorchVCA(TorchSynthModule1D):
     """
     Voltage controlled amplifier.
+
+    Parameters
+    ----------
+    **kwargs : keyword args, see TorchSynthModule1D
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
-        super().__init__(sample_rate=sample_rate, buffer_size=buffer_size)
+    def __init__(self, **kwargs):
+        super().__init__(batch_size=None, **kwargs)
 
-    def _forward(self, control_in: T, audio_in: T) -> T:
+    def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
         assert (control_in >= 0).all() and (control_in <= 1).all()
 
+        # Should VCA be responsible for this?
         if (audio_in <= -1).any() or (audio_in >= 1).any():
             util.normalize(audio_in)
 
-        audio_in = util.fix_length(audio_in, len(control_in))
+        audio_in = util.fix_length2D(audio_in, control_in.num_samples)
         return control_in * audio_in
 
 
-class TorchNoise(TorchSynthModule):
+class TorchNoise(TorchSynthModule1D):
     """
     Adds noise to a signal
 
@@ -603,8 +610,8 @@ class TorchNoise(TorchSynthModule):
     **kwargs: see TorchSynthModule
     """
 
-    def __init__(self, ratio: T = T(0.25), **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, ratio: T, **kwargs):
+        super().__init__(batch_size=ratio.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -615,12 +622,12 @@ class TorchNoise(TorchSynthModule):
             ]
         )
 
-    def _forward(self, audio_in: T) -> T:
+    def _forward(self, audio_in: Signal) -> Signal:
         noise = self.noise_of_length(audio_in)
-        return util.crossfade(audio_in, noise, self.p("ratio"))
+        return util.crossfade2D(audio_in, noise, self.p("ratio"))
 
     @staticmethod
-    def noise_of_length(audio_in: T) -> T:
+    def noise_of_length(audio_in: Signal) -> Signal:
         return torch.rand_like(audio_in) * 2 - 1
 
 

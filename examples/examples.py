@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # # torchsynth examples
 #
 # We walk through basic functionality of `torchsynth` in this Jupyter notebook.
@@ -37,12 +38,13 @@ def isnotebook():  # pragma: no cover
 
 print(f"isnotebook = {isnotebook()}")
 
+# +
 if isnotebook():  # pragma: no cover
     import IPython.display as ipd
-    from IPython.core.display import display
     import librosa
     import librosa.display
     import matplotlib.pyplot as plt
+    from IPython.core.display import display
 else:
 
     class IPD:
@@ -58,8 +60,8 @@ import torch
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.module import TorchADSR, TorchSineVCO, TorchVCA, TorchNoise, TorchFmVCO
-from torchsynth.defaults import SAMPLE_RATE
+from torchsynth.defaults import SAMPLE_RATE, BUFFER_SIZE
+from torchsynth.module import TorchADSR, TorchFmVCO, TorchNoise, TorchSineVCO, TorchVCA
 
 # -
 
@@ -132,11 +134,11 @@ d = T([0.1, 0.2])
 s = T([0.75, 0.8])
 r = T([0.5, 0.8])
 alpha = T([3.0, 4.0])
-note_on_duration = T([0.5, 1.5])
+note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(T(a), T(d), T(s), T(r), T(alpha)).to(device)
-envelope = adsr.forward1D(T(note_on_duration))
+adsr = TorchADSR(a, d, s, r, alpha).to(device)
+envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
 
@@ -196,30 +198,20 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 adsr = TorchADSR(a, d, s, r, alpha).to(device)
 envelope = adsr.forward1D(note_on_duration)
 
-# Since the rest of the stuff is 1D, let's make the envelope batch_size 1
-envelope = envelope[0]
-
 # SineVCO test
-sine_vco = TorchSineVCO(midi_f0=T(12.0), mod_depth=T(50.0)).to(device)
-sine_out = sine_vco(envelope, phase=T(0.0))
-stft_plot(sine_out.detach().cpu().numpy())
-ipd.Audio(sine_out.detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
-# -
+sine_vco = TorchSineVCO(midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0])).to(device)
+sine_out = sine_vco.forward1D(envelope)
 
-# SineVCO vs SineVCO with higher midi_f0
+stft_plot(sine_out[0].detach().cpu().numpy())
+ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+stft_plot(sine_out[1].detach().cpu().numpy())
+ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
 
-# SineVCO test
-midi_f0 = 12.0
-sine_vco2 = TorchSineVCO(midi_f0=T(30.0), mod_depth=T(50.0)).to(device)
-sine_out2 = sine_vco2(envelope, phase=T(0.0))
-stft_plot(sine_out2.detach().cpu().numpy())
-ipd.Audio(sine_out2.detach().cpu().numpy(), rate=sine_vco2.sample_rate.item())
-
-# We can use auraloss instead of raw waveform loss. This is just to show that gradient computations occur
-
-err = torch.mean(torch.abs(sine_out - sine_out2))
+# We can use auraloss instead of raw waveform loss. This is just
+# to show that gradient computations occur
+err = torch.mean(torch.abs(sine_out[0] - sine_out[1]))
 print("Error =", err)
-time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
+time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 
 # +
 # err.backward(retain_graph=True)
@@ -238,34 +230,23 @@ time_plot(torch.abs(sine_out - sine_out2).detach().cpu())
 # +
 from torchsynth.module import TorchSquareSawVCO
 
-square_saw1 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(0.0)).to(
-    device
-)
-env1 = torch.zeros(square_saw1.buffer_size, device=device)
+square_saw = TorchSquareSawVCO(
+    midi_f0=T([30.0, 30.0]), mod_depth=T([0.0, 0.0]), shape=T([0.0, 1.0])
+).to(device)
+env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
-square_saw_out1 = square_saw1(env1, phase=T(0.0))
-stft_plot(square_saw_out1.cpu().detach().numpy())
-ipd.Audio(square_saw_out1.cpu().detach().numpy(), rate=square_saw1.sample_rate.item())
+square_saw_out = square_saw.forward1D(env2)
+stft_plot(square_saw_out[0].cpu().detach().numpy())
+ipd.Audio(square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+stft_plot(square_saw_out[1].cpu().detach().numpy())
+ipd.Audio(square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
 
-# +
-# SquareSawVCO test
-square_saw2 = TorchSquareSawVCO(midi_f0=T(30.0), mod_depth=T(0.0), shape=T(1.0)).to(
-    device
-)
-env2 = torch.zeros(square_saw2.buffer_size, device=device)
 
-square_saw_out2 = square_saw2(env2, phase=T(0.0))
-stft_plot(square_saw_out2.cpu().detach().numpy())
-ipd.Audio(square_saw_out2.cpu().detach().numpy(), rate=square_saw2.sample_rate.item())
-# -
-
-err = torch.mean(torch.abs(square_saw_out2 - square_saw_out1))
+err = torch.mean(torch.abs(square_saw_out[0] - square_saw_out[1]))
 print(err)
-err.backward(retain_graph=True)
-for p in square_saw1.torchparameters:
-    print(
-        f"{p} grad1={square_saw1.torchparameters[p].grad.item()} grad2={square_saw2.torchparameters[p].grad.item()}"
-    )
+# err.backward(retain_graph=True)
+# for p in square_saw.torchparameters:
+#    print(f"{p} grad1={square_saw.torchparameters[p][0].grad.item()} grad2={square_saw.torchparameters[p][1].grad.item()}")
 
 # ### VCA
 #
@@ -274,9 +255,9 @@ for p in square_saw1.torchparameters:
 
 # +
 vca = TorchVCA()
-test_output = vca(envelope, sine_out)
+test_output = vca.forward1D(envelope, sine_out)
 
-time_plot(test_output.detach().cpu())
+time_plot(test_output[0].detach().cpu())
 # -
 
 # ### FM Synthesis
@@ -286,24 +267,27 @@ time_plot(test_output.detach().cpu())
 # Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
 
 # +
-from torchsynth.module import TorchFmVCO
 
 # FmVCO test
-midi_f0 = T(50.0)
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(midi_f0=midi_f0, mod_depth=T(0.0)).to(device)
-operator_out = sine_operator(envelope)
+sine_operator = TorchSineVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(
+    device
+)
+operator_out = sine_operator.forward1D(envelope)
 
 # Shape the modulation depth.
-operator_out = vca(envelope, operator_out)
+operator_out = vca.forward1D(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(midi_f0=T(midi_f0), mod_depth=T(5.0)).to(device)
-fm_out = fm_vco(operator_out)
+fm_vco = TorchFmVCO(midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0])).to(device)
+fm_out = fm_vco.forward1D(operator_out)
 
-stft_plot(fm_out.cpu().detach().numpy())
-ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
+stft_plot(fm_out[0].cpu().detach().numpy())
+ipd.display(ipd.Audio(fm_out[0].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
+
+stft_plot(fm_out[1].cpu().detach().numpy())
+ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
 # -
 
 # ### Noise
@@ -311,58 +295,49 @@ ipd.Audio(fm_out.cpu().detach().numpy(), rate=fm_vco.sample_rate.item())
 # The noise generator mixes white noise into a signal
 
 # +
-# Why do we have buffer_size here?? isn't this a default?
-N = T(44100)
+env = torch.zeros([2, BUFFER_SIZE], device=device)
+vco = TorchSineVCO(midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0])).to(device)
+noise = TorchNoise(ratio=T([0.75, 0.25])).to(device)
 
-env1 = torch.zeros(N)
-vco1 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
-noise1 = TorchNoise(ratio=T(0.75), buffer_size=N)
+noisy_sine = noise.forward1D(vco.forward1D(env))
 
-noisy_sine_1 = noise1(vco1(env1))
+stft_plot(noisy_sine[0].detach().cpu().numpy())
+ipd.display(
+    ipd.Audio(noisy_sine[0].detach().cpu().numpy(), rate=vco.sample_rate.item())
+)
 
-env2 = torch.zeros(N)
-vco2 = TorchSineVCO(midi_f0=T(60), buffer_size=N)
-noise2 = TorchNoise(ratio=T(0.25), buffer_size=N)
-
-noisy_sine_2 = noise2(vco2(env2))
-
-stft_plot(noisy_sine_1.detach().numpy())
-ipd.display(ipd.Audio(noisy_sine_1.detach().numpy(), rate=vco1.sample_rate.item()))
-
-stft_plot(noisy_sine_2.detach().numpy())
-ipd.display(ipd.Audio(noisy_sine_2.detach().numpy(), rate=vco2.sample_rate.item()))
+stft_plot(noisy_sine[1].detach().cpu().numpy())
+ipd.display(
+    ipd.Audio(noisy_sine[1].detach().cpu().numpy(), rate=vco.sample_rate.item())
+)
 
 # +
 # Compute the error on the difference between the RMS level of the signals
-rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
-rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
-err = torch.abs(rms2 - rms1)
+rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
+rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
+err = torch.abs(rms1 - rms0)
 print(err)
 
-err.backward(retain_graph=True)
-for p in noise1.torchparameters:
-    print(
-        f"{p} grad1={noise1.torchparameters[p].grad.item()} grad2={noise2.torchparameters[p].grad.item()}"
-    )
+# err.backward(retain_graph=True)
+# for p in noise.torchparameters:
+#    print(f"{p} grad1={noise.torchparameters[p][0].grad.item()} grad2={noise.torchparameters[p][1].grad.item()}")
 
+"""
 # +
 optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
 
 print("Parameters before optimization:")
-print(list(noise1.parameters()))
-print(list(noise2.parameters()))
+print(list(noise.parameters()))
 
 error_hist = []
 
 for i in range(100):
     optimizer.zero_grad()
 
-    noisy_sine_1 = noise1(vco1(env1))
-    noisy_sine_2 = noise2(vco2(env2))
-
-    rms1 = torch.sqrt(torch.mean(noisy_sine_1 * noisy_sine_1))
-    rms2 = torch.sqrt(torch.mean(noisy_sine_2 * noisy_sine_2))
-    err = torch.abs(rms2 - rms1)
+    noisy_sine = noise.forward1D(vco.forward1D(env))
+    rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
+    rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
+    err = torch.abs(rms1 - rms0)
 
     error_hist.append(err.item())
     err.backward()
@@ -374,8 +349,8 @@ if isnotebook():  # pragma: no cover
     plt.xlabel("Optimization steps")
 
 print("Parameters after optimization:")
-print(list(noise1.parameters()))
-print(list(noise2.parameters()))
+print(list(noise.parameters()))
+"""
 # -
 
 # ## Drum Module
@@ -482,7 +457,7 @@ for i in range(10):
 # ### Filters
 
 # +
-from torchsynth.filter import TorchMovingAverage, FIRLowPass
+from torchsynth.filter import FIRLowPass, TorchMovingAverage
 
 # Create some noise to filter
 duration = 2
@@ -495,7 +470,6 @@ stft_plot(noise.cpu().detach().numpy())
 # A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
 
 # +
-
 ma_filter = TorchMovingAverage(filter_length=T(32.0)).to(device)
 filtered = ma_filter(noise)
 
@@ -567,14 +541,15 @@ for p in fir1.torchparameters:
 #
 # IIR filters are really slow in Torch, so we're only testing with a shorter buffer
 
+import torch.fft
+
 # +
 from torchsynth.filter import (
-    TorchLowPassSVF,
-    TorchHighPassSVF,
     TorchBandPassSVF,
     TorchBandStopSVF,
+    TorchHighPassSVF,
+    TorchLowPassSVF,
 )
-import torch.fft
 
 # Noise for testing
 buffer = 4096
