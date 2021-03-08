@@ -140,6 +140,7 @@ class ModuleParameter(nn.Parameter):
             self.parameter_name, self.data
         )
 
+    # TODO: Pull this out?
     # Not sure if this works yet
     # def __eq__(self, other):
     #    # Should we be testing other attributes??
