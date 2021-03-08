@@ -654,15 +654,21 @@ class TorchSynth(nn.Module):
     buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, sample_rate: int = SAMPLE_RATE, buffer_size: int = BUFFER_SIZE):
+    def __init__(
+        self,
+        batch_size: int,
+        sample_rate: int = SAMPLE_RATE,
+        buffer_size: int = BUFFER_SIZE,
+    ):
         super().__init__()
+        self.batch_size = batch_size
         self.sample_rate = T(sample_rate)
         self.buffer_size = T(buffer_size)
 
         # Global Parameter Module
         self.global_params = TorchSynthParameters(sample_rate, buffer_size)
 
-    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+    def add_synth_modules(self, modules: Dict[str, TorchSynthModule1D]):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
@@ -673,7 +679,7 @@ class TorchSynth(nn.Module):
         """
 
         for name in modules:
-            if not isinstance(modules[name], TorchSynthModule):
+            if not isinstance(modules[name], TorchSynthModule1D):
                 raise TypeError(f"{modules[name]} is not a TorchSynthModule")
 
             if modules[name].sample_rate != self.sample_rate:
@@ -684,6 +690,9 @@ class TorchSynth(nn.Module):
 
             self.add_module(name, modules[name])
 
+    def forward(self, *args: Any, **kwargs: Any) -> Signal:
+        ...
+
     def randomize(self):
         """
         Randomize all parameters
@@ -692,63 +701,72 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-# class TorchDrum(TorchSynth):
-#    """
-#    A package of modules that makes one drum hit.
-#    """
-#
-#    def __init__(
-#        self,
-#        note_on_duration: float,
-#        vco_ratio: float = 0.5,
-#        pitch_adsr: TorchADSR = TorchADSR(),
-#        amp_adsr: TorchADSR = TorchADSR(),
-#        vco_1: TorchVCO = TorchSineVCO(),
-#        vco_2: TorchVCO = TorchSquareSawVCO(),
-#        noise: TorchNoise = TorchNoise(),
-#        vca: TorchVCA = TorchVCA(),
-#        **kwargs,
-#    ):
-#        super().__init__(**kwargs)
-#        assert note_on_duration >= 0
-#
-#        # We assume that sustain duration is a hyper-parameter,
-#        # with the mindset that if you are trying to learn to
-#        # synthesize a sound, you won't be adjusting the note_on_duration.
-#        # However, this is easily changed if desired.
-#        self.note_on_duration = T(note_on_duration)
-#
-#        # Add required global parameters
-#        self.global_params.add_parameters(
-#            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
-#        )
-#
-#        # Register all modules as children
-#        self.add_synth_modules(
-#            {
-#                "pitch_adsr": pitch_adsr,
-#                "amp_adsr": amp_adsr,
-#                "vco_1": vco_1,
-#                "vco_2": vco_2,
-#                "noise": noise,
-#                "vca": vca,
-#            }
-#        )
-#
-#    def forward(self) -> T:
-#        # The convention for triggering a note event is that it has
-#        # the same note_on_duration for both ADSRs.
-#        note_on_duration = self.note_on_duration
-#        pitch_envelope = self.pitch_adsr(note_on_duration)
-#        amp_envelope = self.amp_adsr(note_on_duration)
-#
-#        vco_1_out = self.vco_1(pitch_envelope)
-#        vco_2_out = self.vco_2(pitch_envelope)
-#
-#        audio_out = util.crossfade(
-#            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
-#        )
-#
-#        audio_out = self.noise(audio_out)
-#
-#        return self.vca(amp_envelope, audio_out)
+class TorchDrum(TorchSynth):
+    """
+    A package of modules that makes one drum hit.
+    """
+
+    def __init__(
+        self,
+        #       note_on_duration: float,
+        #       vco_ratio: float = 0.5,
+        #       pitch_adsr: TorchADSR = TorchADSR(),
+        #       amp_adsr: TorchADSR = TorchADSR(),
+        #       vco_1: TorchVCO = TorchSineVCO(),
+        #       vco_2: TorchVCO = TorchSquareSawVCO(),
+        #       noise: TorchNoise = TorchNoise(),
+        #       vca: TorchVCA = TorchVCA(),
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        #       assert note_on_duration >= 0
+
+        #       # We assume that sustain duration is a hyper-parameter,
+        #       # with the mindset that if you are trying to learn to
+        #       # synthesize a sound, you won't be adjusting the note_on_duration.
+        #       # However, this is easily changed if desired.
+        #       self.note_on_duration = T(note_on_duration)
+
+        note_on_duration: float
+        vco_ratio: float = 0.5
+        pitch_adsr: TorchADSR = TorchADSR()
+        amp_adsr: TorchADSR = TorchADSR()
+        vco_1: TorchVCO = TorchSineVCO()
+        vco_2: TorchVCO = TorchSquareSawVCO()
+        noise: TorchNoise = TorchNoise()
+        vca: TorchVCA = TorchVCA()
+
+        # Add required global parameters
+        self.global_params.add_parameters(
+            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
+        )
+
+        # Register all modules as children
+        self.add_synth_modules(
+            {
+                "pitch_adsr": pitch_adsr,
+                "amp_adsr": amp_adsr,
+                "vco_1": vco_1,
+                "vco_2": vco_2,
+                "noise": noise,
+                "vca": vca,
+            }
+        )
+
+    def forward(self) -> Signal:
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr(note_on_duration)
+        amp_envelope = self.amp_adsr(note_on_duration)
+
+        vco_1_out = self.vco_1(pitch_envelope)
+        vco_2_out = self.vco_2(pitch_envelope)
+
+        audio_out = util.crossfade(
+            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
+        )
+
+        audio_out = self.noise(audio_out)
+
+        return self.vca(amp_envelope, audio_out)

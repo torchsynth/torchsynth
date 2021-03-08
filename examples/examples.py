@@ -61,7 +61,14 @@ import torch.fft
 import torch.tensor as T
 
 from torchsynth.defaults import SAMPLE_RATE, BUFFER_SIZE
-from torchsynth.module import TorchADSR, TorchFmVCO, TorchNoise, TorchSineVCO, TorchVCA
+from torchsynth.module import (
+    TorchADSR,
+    TorchFmVCO,
+    TorchNoise,
+    TorchSineVCO,
+    TorchVCA,
+    TorchDrum,
+)
 
 # -
 
@@ -446,13 +453,11 @@ print(drum1.vco_1.p("pitch"))
 #
 # Let's generate some random synths
 
-"""
-drum = TorchDrum(note_on_duration=1.0).to(device)
+drum = TorchDrum(batch_size=64).to(device)
 for i in range(10):
     drum.randomize()
     drum_out = drum()
     display(ipd.Audio(drum_out.cpu().detach().numpy(), rate=drum.sample_rate.item()))
-"""
 
 # ### Filters
 
