@@ -16,7 +16,7 @@ from torchsynth.signal import Signal
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
 
-class TorchSynthModule(nn.Module):
+class TorchSynthModuleDEPRECATED(nn.Module):
     """
     Base class for synthesis modules, in torch.
 
@@ -45,7 +45,7 @@ class TorchSynthModule(nn.Module):
 
     def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
-        Each TorchSynthModule should override this.
+        Each TorchSynthModuleDEPRECATED should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -104,7 +104,7 @@ class TorchSynthModule(nn.Module):
         return self.torchparameters[parameter_id].from_0to1()
 
 
-class TorchSynthModule1D(TorchSynthModule):
+class TorchSynthModule(nn.Module):
     """
     Base class for synthesis modules, in torch.
     All parameters are assumed to be 1D tensors,
@@ -150,7 +150,7 @@ class TorchSynthModule1D(TorchSynthModule):
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each TorchSynthModule should override this.
+        Each TorchSynthModuleDEPRECATED should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -229,7 +229,7 @@ class TorchSynthModule1D(TorchSynthModule):
         return self.torchparameters[parameter_id].from_0to1()
 
 
-class TorchADSR(TorchSynthModule1D):
+class TorchADSR(TorchSynthModule):
     """
     Envelope class for building a control rate ADSR signal.
     """
@@ -366,7 +366,7 @@ class TorchADSR(TorchSynthModule1D):
         )
 
 
-class TorchVCO(TorchSynthModule1D):
+class TorchVCO(TorchSynthModule):
     """
     Base class for voltage controlled oscillators (VCO).
 
@@ -380,11 +380,11 @@ class TorchVCO(TorchSynthModule1D):
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
     phase (optional, T)       :   initial phase values
-    **kwargs        : keyword args, see TorchSynthModule1D
+    **kwargs        : keyword args, see TorchSynthModule
     """
 
     def __init__(self, midi_f0: T, mod_depth: T, phase: Optional[T] = None, **kwargs):
-        TorchSynthModule1D.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
+        TorchSynthModule.__init__(self, batch_size=midi_f0.shape[0], **kwargs)
         self.add_parameters(
             [
                 ModuleParameter(
@@ -577,13 +577,13 @@ class TorchSquareSawVCO(TorchVCO):
         return 12000 / (max_f0 * torch.log10(max_f0))
 
 
-class TorchVCA(TorchSynthModule1D):
+class TorchVCA(TorchSynthModule):
     """
     Voltage controlled amplifier.
 
     Parameters
     ----------
-    **kwargs : keyword args, see TorchSynthModule1D
+    **kwargs : keyword args, see TorchSynthModule
     """
 
     def __init__(self, **kwargs):
@@ -600,14 +600,14 @@ class TorchVCA(TorchSynthModule1D):
         return control_in * audio_in
 
 
-class TorchNoise(TorchSynthModule1D):
+class TorchNoise(TorchSynthModule):
     """
     Adds noise to a signal
 
     Parameters
     ----------
     ratio (float): mix ratio between the incoming signal and the produced noise
-    **kwargs: see TorchSynthModule
+    **kwargs: see TorchSynthModuleDEPRECATED
     """
 
     def __init__(self, ratio: T, **kwargs):
@@ -631,7 +631,7 @@ class TorchNoise(TorchSynthModule1D):
         return torch.rand_like(audio_in) * 2 - 1
 
 
-class TorchSynthParameters(TorchSynthModule):
+class TorchSynthParameters(TorchSynthModuleDEPRECATED):
     """
     A SynthModule that is strictly for managing parameters
     """
@@ -662,19 +662,19 @@ class TorchSynth(nn.Module):
         # Global Parameter Module
         self.global_params = TorchSynthParameters(sample_rate, buffer_size)
 
-    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+    def add_synth_modules(self, modules: Dict[str, TorchSynthModuleDEPRECATED]):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
         Parameters
         ----------
-        modules (Dict): A dictionary of TorchSynthModule
+        modules (Dict): A dictionary of TorchSynthModuleDEPRECATED
         """
 
         for name in modules:
-            if not isinstance(modules[name], TorchSynthModule):
-                raise TypeError(f"{modules[name]} is not a TorchSynthModule")
+            if not isinstance(modules[name], TorchSynthModuleDEPRECATED):
+                raise TypeError(f"{modules[name]} is not a TorchSynthModuleDEPRECATED")
 
             if modules[name].sample_rate != self.sample_rate:
                 raise ValueError(f"{modules[name]} sample rate does not match")
