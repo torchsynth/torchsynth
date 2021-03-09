@@ -1,10 +1,11 @@
 """
 Default parameters
 """
-SAMPLE_RATE = 44100
+DEFAULT_SAMPLE_RATE = 44100
 
 # Number of samples for fixed length synthesis.
-BUFFER_SIZE = 88200
+# 4 seconds by default
+DEFAULT_BUFFER_SIZE = 4 * DEFAULT_SAMPLE_RATE
 
 # Small value to avoid log errors.
 EPSILON = 1e-6
