@@ -1,4 +1,4 @@
-from torch._C._VariableFunctions import tensor as T
+import torch.tensor as T
 
 from torchsynth.default import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
 
