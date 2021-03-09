@@ -62,7 +62,7 @@ class TorchSynthModule(nn.Module):
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each TorchSynthModule0Ddeprecated should override this.
+        Each TorchSynthModule should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -519,7 +519,7 @@ class TorchNoise(TorchSynthModule):
     Parameters
     ----------
     ratio (float): mix ratio between the incoming signal and the produced noise
-    **kwargs: see TorchSynthModule0Ddeprecated
+    **kwargs: see TorchSynthModule
     """
 
     def __init__(self, ratio: T, **kwargs):
