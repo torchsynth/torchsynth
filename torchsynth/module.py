@@ -271,9 +271,15 @@ class TorchADSR(TorchSynthModule):
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
 
-        # TODO `note_on_duration` is set to be a paramater soon...
-        attack = self.make_attack(note_on_duration)
-        decay = self.make_decay(note_on_duration)
+        # TODO `note_on_duration` is set to be a parameter soon...
+
+        # Calculation to accommodate attack/decay phase cut by note duration.
+        attack_time = torch.minimum(self.p("attack"), note_on_duration)
+        decay_time = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
+        decay_time = torch.minimum(decay_time, self.p("decay"))
+
+        attack = self.make_attack(attack_time)
+        decay = self.make_decay(attack_time, decay_time)
         release = self.make_release(note_on_duration)
 
         return attack * decay * release
@@ -322,19 +328,14 @@ class TorchADSR(TorchSynthModule):
 
         return ramp.as_subclass(Signal)
 
-    def make_attack(self, note_on_duration) -> Signal:
-        attack = torch.minimum(self.p("attack"), note_on_duration)
-        return self._ramp(torch.zeros(self.batch_size, device=attack.device), attack)
+    def make_attack(self, attack_time) -> Signal:
+        return self._ramp(
+            torch.zeros(self.batch_size, device=attack_time.device), attack_time
+        )
 
-    def make_decay(self, note_on_duration) -> Signal:
-        attack = torch.minimum(self.p("attack"), note_on_duration)
-
-        # Calculations to accommodate a decay phase cut off by the note_on_dur.
-        decay = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
-        decay = torch.minimum(decay, self.p("decay"))
-
+    def make_decay(self, attack_time, decay_time) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
-        _b = self._ramp(attack, decay, inverse=True)
+        _b = self._ramp(attack_time, decay_time, inverse=True)
         return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
     def make_release(self, note_on_duration) -> Signal:
