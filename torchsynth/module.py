@@ -349,8 +349,6 @@ class TorchVCO(TorchSynthModule):
         phase: Optional[T] = None,
     ):
         super().__init__(synthglobals)
-        print("synthglobals", self.synthglobals)
-        print(self.batch_size)
         self.add_parameters(
             [
                 ModuleParameter(
