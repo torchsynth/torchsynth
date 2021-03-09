@@ -70,6 +70,15 @@ from torchsynth.module import (
     TorchSynthGlobals,
 )
 
+import random
+import numpy.random
+import torch
+
+# Determenistic seeds for replicable testing
+random.seed(0)
+numpy.random.seed(0)
+torch.manual_seed(0)
+
 # -
 
 
@@ -151,7 +160,9 @@ alpha = T([3.0, 4.0])
 note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
+adsr = TorchADSR(
+    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+).to(device)
 envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
@@ -170,6 +181,12 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 #    print(adsr.torchparameters[p].data.grad)
 #    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
 # -
+
+# Note that module parameters are optional. If they are not provided,
+# they will be randomly initialized (like a typical neural network module)
+adsr = TorchADSR(synthglobals=synthglobals).to(device)
+envelope = adsr.forward1D(note_on_duration)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
@@ -209,7 +226,9 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # %matplotlib inline
 
 # Reset envelope
-adsr = TorchADSR(a, d, s, r, alpha, synthglobals).to(device)
+adsr = TorchADSR(
+    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+).to(device)
 envelope = adsr.forward1D(note_on_duration)
 
 # SineVCO test
@@ -444,25 +463,25 @@ for n, p in drum1.named_parameters():
 
 """
 # Get the full ModuleParameter object by name from the module
-print(drum1.vco_1.get_parameter("pitch"))
+print(drum1.vco_1.get_parameter("midi_f0"))
 
 # Access the value as a Tensor in the full value human range
-print(drum1.vco_1.p("pitch"))
+print(drum1.vco_1.p("midi_f0"))
 
 # Access the value as a float in the range from 0 to 1
-print(drum1.vco_1.get_parameter_0to1("pitch"))
+print(drum1.vco_1.get_parameter_0to1("midi_f0"))
 """
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 """
 # Set the vco pitch using the human range, which is MIDI note number
-drum1.vco_1.set_parameter("pitch", 64)
-print(drum1.vco_1.p("pitch"))
+drum1.vco_1.set_parameter("midi_f0", 64)
+print(drum1.vco_1.p("midi_f0"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-drum1.vco_1.set_parameter_0to1("pitch", 0.5433)
-print(drum1.vco_1.p("pitch"))
+drum1.vco_1.set_parameter_0to1("midi_f0", 0.5433)
+print(drum1.vco_1.p("midi_f0"))
 """
 
 # ## Random synths
@@ -635,10 +654,10 @@ synthglobals1 = TorchSynthGlobals(
 # +
 # Bandpass with envelope
 env = TorchADSR(
-    a=T([0]),
-    d=T([0.1]),
-    s=T([0.0]),
-    r=T([0.0]),
+    attack=T([0]),
+    decay=T([0.1]),
+    sustain=T([0.0]),
+    release=T([0.0]),
     alpha=T([3.0]),
     synthglobals=synthglobals1,
 )(T([0.2]))

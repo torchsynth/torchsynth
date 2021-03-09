@@ -2,6 +2,8 @@
 Parameters for DDSP Modules
 """
 
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.tensor as T
@@ -22,6 +24,8 @@ class ModuleParameterRange:
     curve   (str)   :   relationship between parameter values and the normalized values
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
+    name    (str) : name of this parameter
+    description (str) : optional description of this parameter
     """
 
     def __init__(
@@ -29,7 +33,12 @@ class ModuleParameterRange:
         minimum: T,
         maximum: T,
         curve: str = "linear",
+        # TODO: Make this not optional
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
+        self.name = name
+        self.description = description
         self.minimum = minimum
         self.maximum = maximum
 
@@ -45,8 +54,10 @@ class ModuleParameterRange:
             raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
 
     def __repr__(self):
-        return "ModuleParameterRange(min={}, max={}, curve={})".format(
-            self.minimum, self.maximum, self.curve_type
+        return (
+            f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
+            + f"max={self.maximum}, curve={self.curve_type}, "
+            + f"description={self.description})"
         )
 
     def from_0to1(self, normalized: T) -> T:
@@ -108,10 +119,11 @@ class ModuleParameter(nn.Parameter):
 
     def __new__(
         cls,
-        value: T = None,
+        # TODO: REMOVEME
+        value: Optional[T] = None,
         parameter_name: str = "",
-        parameter_range: ModuleParameterRange = None,
-        data: torch.Tensor = None,
+        parameter_range: Optional[ModuleParameterRange] = None,
+        data: Optional[T] = None,
         requires_grad: bool = True,
     ):
         # TODO: Assert value is 1D after we have 1D'ified everything
@@ -148,6 +160,7 @@ class ModuleParameter(nn.Parameter):
     #        self.data == other.data
     #    )
 
+    # TODO: Move to ModuleRange
     def from_0to1(self) -> T:
         """
         Get the value of this parameter in the user-specified range. If no user range
@@ -158,6 +171,7 @@ class ModuleParameter(nn.Parameter):
 
         return self
 
+    # TODO: Move to ModuleRange
     def to_0to1(self, new_value: T):
         """
         Set the value of this parameter using an input that is
