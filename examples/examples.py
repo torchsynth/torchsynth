@@ -87,8 +87,6 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-device = "cpu"
-
 
 def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
     if isnotebook():  # pragma: no cover

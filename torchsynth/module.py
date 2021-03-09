@@ -377,7 +377,9 @@ class TorchVCO(TorchSynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.phase = self.p("initial_phase").unsqueeze(1)
+        self.phase = nn.Parameter(
+            data=self.get_parameter("initial_phase").unsqueeze(1), requires_grad=False
+        )
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
@@ -406,7 +408,7 @@ class TorchVCO(TorchSynthModule):
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
         control_as_frequency = self.make_control_as_frequency(mod_signal)
         cosine_argument = self.make_argument(control_as_frequency) + self.phase
-        self.phase = cosine_argument[:, -1]
+        self.phase.data = cosine_argument[:, -1]
         output = self.oscillator(cosine_argument)
         return output.as_subclass(Signal)
 
