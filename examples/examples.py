@@ -64,12 +64,12 @@ import torch.tensor as T
 
 from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
-    TorchADSR,
+    ADSR,
     TorchFmVCO,
-    TorchIdentity,
-    TorchNoise,
+    Identity,
+    Noise,
     TorchSineVCO,
-    TorchVCA,
+    VCA,
 )
 from torchsynth.globals import TorchSynthGlobals
 
@@ -168,7 +168,7 @@ alpha = T([3.0, 4.0])
 note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
-adsr = TorchADSR(
+adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
 envelope = adsr.forward1D(note_on_duration)
@@ -192,7 +192,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = TorchADSR(synthglobals=synthglobals).to(device)
+adsr = ADSR(synthglobals=synthglobals).to(device)
 envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
@@ -225,13 +225,13 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # ## Oscillators
 #
-# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`TorchSineVCO`, a square/saw oscillator: `TorchSquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `TorchNoise`.
+# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`TorchSineVCO`, a square/saw oscillator: `TorchSquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `Noise`.
 
 # +
 # %matplotlib inline
 
 # Reset envelope
-adsr = TorchADSR(
+adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
 envelope = adsr.forward1D(note_on_duration)
@@ -297,7 +297,7 @@ print(err)
 # amplitude to smooth it out.
 
 # +
-vca = TorchVCA(synthglobals)
+vca = VCA(synthglobals)
 test_output = vca.forward1D(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
@@ -344,7 +344,7 @@ env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
 vco = TorchSineVCO(
     midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-noise = TorchNoise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
+noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
 
 noisy_sine = noise.forward1D(vco.forward1D(env))
 
@@ -418,7 +418,7 @@ assert drum1.pitch_adsr
 assert drum1.amp_adsr
 assert drum1.vco_1
 assert drum1.noise
-drum1.pitch_adsr = TorchADSR(
+drum1.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
     decay=T([0.25]),
@@ -426,7 +426,7 @@ drum1.pitch_adsr = TorchADSR(
     release=T([0.25]),
     alpha=T([3]),
 ).to(device)
-drum1.amp_adsr = TorchADSR(
+drum1.amp_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
     decay=T([0.25]),
@@ -435,8 +435,8 @@ drum1.amp_adsr = TorchADSR(
 ).to(device)
 drum1.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
 # Here we disable vco2
-drum1.vco_2 = TorchIdentity(synthglobals).to(device)
-drum1.noise = TorchNoise(synthglobals1, ratio=T([0.5])).to(device)
+drum1.vco_2 = Identity(synthglobals).to(device)
+drum1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
 
 drum_out1 = drum1()
 stft_plot(drum_out1.cpu().view(-1).detach().numpy())
@@ -451,7 +451,7 @@ drum2 = TorchDrum(
     synthglobals=synthglobals1,
     note_on_duration=T([1.0]),
 ).to(device)
-drum2.pitch_adsr = TorchADSR(
+drum2.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.1]),
     decay=T([0.5]),
@@ -459,7 +459,7 @@ drum2.pitch_adsr = TorchADSR(
     release=T([0.25]),
     alpha=T([3]),
 ).to(device)
-drum2.amp_adsr = TorchADSR(
+drum2.amp_adsr = ADSR(
     synthglobals1,
     attack=T([0.15]),
     decay=T([0.25]),
@@ -470,7 +470,7 @@ drum2.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to
 drum2.vco_2 = TorchSquareSawVCO(
     synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
 ).to(device)
-drum2.noise = TorchNoise(synthglobals1, ratio=T([0.01])).to(device)
+drum2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
 
 drum_out2 = drum2()
 stft_plot(drum_out2.cpu().view(-1).detach().numpy())
@@ -694,7 +694,7 @@ stft_plot(filtered.cpu().detach().numpy())
 
 # +
 # Bandpass with envelope
-env = TorchADSR(
+env = ADSR(
     attack=T([0]),
     decay=T([0.1]),
     sustain=T([0.0]),

@@ -94,7 +94,7 @@ class TestTorchSynth:
             mod_depth=T([50.0, 50.0]),
             synthglobals=synthglobals,
         )
-        noise = synthmodule.TorchNoise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
+        noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
 
         synth.add_synth_modules({"vco": vco, "noise": noise})
         assert hasattr(synth, "vco")
@@ -137,7 +137,7 @@ class TestTorchSynth:
             synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
                 batch_size=T(1)
             )
-            adsr = synthmodule.TorchADSR(
+            adsr = synthmodule.ADSR(
                 attack=T([0.5]),
                 decay=T([0.25]),
                 sustain=T([0.5]),
@@ -152,7 +152,7 @@ class TestTorchSynth:
             synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
                 batch_size=T(1)
             )
-            adsr = synthmodule.TorchADSR(
+            adsr = synthmodule.ADSR(
                 synthglobals=synthglobals_new_batchsize,
             )
             synth.add_synth_modules({"adsr": adsr})

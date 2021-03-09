@@ -17,7 +17,7 @@ from torchsynth.signal import Signal
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
 
-class TorchSynthModule(nn.Module):
+class SynthModule(nn.Module):
     """
     Base class for synthesis modules, in torch.
     All parameters are assumed to be 1D tensors,
@@ -94,7 +94,7 @@ class TorchSynthModule(nn.Module):
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each TorchSynthModule should override this.
+        Each SynthModule should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -183,7 +183,7 @@ class TorchSynthModule(nn.Module):
         return value
 
 
-class TorchADSR(TorchSynthModule):
+class ADSR(SynthModule):
     """
     Envelope class for building a control rate ADSR signal.
     """
@@ -313,7 +313,7 @@ class TorchADSR(TorchSynthModule):
 
     def __str__(self):
         return (
-            f"""TorchADSR(a={self.torchparameters['attack']}, """
+            f"""ADSR(a={self.torchparameters['attack']}, """
             f"""d={self.torchparameters['decay']}, """
             f"""s={self.torchparameters['sustain']}, """
             f"""r={self.torchparameters['release']}, """
@@ -321,7 +321,7 @@ class TorchADSR(TorchSynthModule):
         )
 
 
-class TorchVCO(TorchSynthModule):
+class VCO(SynthModule):
     """
     Base class for voltage controlled oscillators (VCO).
 
@@ -332,7 +332,7 @@ class TorchVCO(TorchSynthModule):
 
     Parameters
     ----------
-    synthglobals: TorchSynthGlobals        : global args, see TorchSynthModule
+    synthglobals: TorchSynthGlobals        : global args, see SynthModule
     phase (optional, T)       :   initial phase values
     """
 
@@ -418,18 +418,18 @@ class TorchVCO(TorchSynthModule):
         raise NotImplementedError("Derived classes must override this method")
 
 
-class TorchSineVCO(TorchVCO):
+class TorchSineVCO(VCO):
     """
     Simple VCO that generates a pitched sinusoid.
 
-    Derives from TorchVCO, it simply implements a cosine function as oscillator.
+    Derives from VCO, it simply implements a cosine function as oscillator.
     """
 
     def oscillator(self, argument: Signal) -> Signal:
         return torch.cos(argument)
 
 
-class TorchFmVCO(TorchVCO):
+class TorchFmVCO(VCO):
     """
     Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
 
@@ -453,7 +453,7 @@ class TorchFmVCO(TorchVCO):
         return torch.cos(argument)
 
 
-class TorchSquareSawVCO(TorchVCO):
+class TorchSquareSawVCO(VCO):
     """
     VCO that can be either a square or a sawtooth waveshape.
     Tweak with the shape parameter. (0 is square.)
@@ -464,7 +464,7 @@ class TorchSquareSawVCO(TorchVCO):
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = TorchVCO.parameter_ranges + [
+    parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges + [
         ModuleParameterRange(
             0.0, 1.0, name="shape", description="Waveshape - square to saw [0,1]"
         )
@@ -489,7 +489,7 @@ class TorchSquareSawVCO(TorchVCO):
         return 12000 / (max_f0 * torch.log10(max_f0))
 
 
-class TorchVCA(TorchSynthModule):
+class VCA(SynthModule):
     """
     Voltage controlled amplifier.
     """
@@ -505,7 +505,7 @@ class TorchVCA(TorchSynthModule):
         return control_in * audio_in
 
 
-class TorchNoise(TorchSynthModule):
+class Noise(SynthModule):
     """
     Adds noise to a signal
     """
@@ -638,7 +638,7 @@ class TorchSynthParameters(TorchSynthModule0Ddeprecated):
         raise RuntimeError("TorchSynthParameters cannot be called")
 
 
-class TorchIdentity(TorchSynthModule):
+class Identity(SynthModule):
     """
     Pass through module
     """
@@ -647,7 +647,7 @@ class TorchIdentity(TorchSynthModule):
         return signal
 
 
-class TorchCrossfadeKnob(TorchSynthModule):
+class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation
     """
@@ -696,7 +696,7 @@ class TorchSynth(nn.Module):
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
-    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
+    def add_synth_modules(self, modules: Dict[str, SynthModule]):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
@@ -707,7 +707,7 @@ class TorchSynth(nn.Module):
         """
 
         for name in modules:
-            if not isinstance(modules[name], TorchSynthModule):
+            if not isinstance(modules[name], SynthModule):
                 raise TypeError(
                     f"{modules[name]} is not a TorchSynthModule0Ddeprecated"
                 )
@@ -758,13 +758,13 @@ class TorchDrum(TorchSynth):
         # Register all modules as children
         self.add_synth_modules(
             {
-                "pitch_adsr": TorchADSR(synthglobals),
-                "amp_adsr": TorchADSR(synthglobals),
+                "pitch_adsr": ADSR(synthglobals),
+                "amp_adsr": ADSR(synthglobals),
                 "vco_1": TorchSineVCO(synthglobals),
                 "vco_2": TorchSquareSawVCO(synthglobals),
-                "noise": TorchNoise(synthglobals),
-                "vca": TorchVCA(synthglobals),
-                "vca_ratio": TorchCrossfadeKnob(synthglobals),
+                "noise": Noise(synthglobals),
+                "vca": VCA(synthglobals),
+                "vca_ratio": CrossfadeKnob(synthglobals),
             }
         )
 
