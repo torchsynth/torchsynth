@@ -134,11 +134,19 @@ class TestTorchSynth:
         with pytest.raises(ValueError):
             synthglobals_new_batchsize = synthmodule.TorchSynthGlobals(batch_size=T(1))
             adsr = synthmodule.TorchADSR(
-                a=T([0.5]),
-                d=T([0.25]),
-                s=T([0.5]),
-                r=T([1.0]),
+                attack=T([0.5]),
+                decay=T([0.25]),
+                sustain=T([0.5]),
+                release=T([1.0]),
                 alpha=T([1.0]),
+                synthglobals=synthglobals_new_batchsize,
+            )
+            synth.add_synth_modules({"adsr": adsr})
+
+        # Same here
+        with pytest.raises(ValueError):
+            synthglobals_new_batchsize = synthmodule.TorchSynthGlobals(batch_size=T(1))
+            adsr = synthmodule.TorchADSR(
                 synthglobals=synthglobals_new_batchsize,
             )
             synth.add_synth_modules({"adsr": adsr})

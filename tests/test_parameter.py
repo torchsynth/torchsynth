@@ -37,7 +37,8 @@ class TestParameterRange:
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 1.0)
         assert (
-            repr(param_range) == "ModuleParameterRange(min=0.0, max=1.0, curve=linear)"
+            repr(param_range)
+            == "ModuleParameterRange(name=None, min=0.0, max=1.0, curve=linear, description=None)"
         )
 
     def test_to_0to1(self):
