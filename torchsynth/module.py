@@ -11,7 +11,7 @@ import torch.tensor as T
 import torchsynth.util as util
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPS
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
-from torchsynth.globals import TorchSynthGlobals
+from torchsynth.globals import SynthGlobals
 from torchsynth.signal import Signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
@@ -33,9 +33,9 @@ class SynthModule(nn.Module):
     parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
     # TODO: have these already moved to cuda
-    def __init__(self, synthglobals: TorchSynthGlobals, **kwargs: Dict[str, T]):
+    def __init__(self, synthglobals: SynthGlobals, **kwargs: Dict[str, T]):
         """
-        synthglobals (TorchSynthGlobals)    : These are global
+        synthglobals (SynthGlobals)    : These are global
         settings shared across all modules in the same synth.
 
         NOTE:
@@ -332,7 +332,7 @@ class VCO(SynthModule):
 
     Parameters
     ----------
-    synthglobals: TorchSynthGlobals        : global args, see SynthModule
+    synthglobals: SynthGlobals        : global args, see SynthModule
     phase (optional, T)       :   initial phase values
     """
 
@@ -356,7 +356,7 @@ class VCO(SynthModule):
 
     def __init__(
         self,
-        synthglobals: TorchSynthGlobals,
+        synthglobals: SynthGlobals,
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)

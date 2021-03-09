@@ -71,7 +71,7 @@ from torchsynth.module import (
     SineVCO,
     VCA,
 )
-from torchsynth.globals import TorchSynthGlobals
+from torchsynth.globals import SynthGlobals
 
 # Determenistic seeds for replicable testing
 random.seed(0)
@@ -109,17 +109,17 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
-synthglobals = TorchSynthGlobals(
+synthglobals = SynthGlobals(
     batch_size=T(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 
 # For a few examples, we'll only generate one sound
-synthglobals1 = TorchSynthGlobals(
+synthglobals1 = SynthGlobals(
     batch_size=T(1), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 
 # And a short one sound
-synthglobals1short = TorchSynthGlobals(
+synthglobals1short = SynthGlobals(
     batch_size=T(1), sample_rate=T(44100), buffer_size=T(4096)
 )
 
@@ -527,7 +527,7 @@ print(drum1.vco_1.p("midi_f0"))
 #
 # Let's generate some random synths in batch
 
-synthglobals16 = TorchSynthGlobals(
+synthglobals16 = SynthGlobals(
     batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 drum = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)

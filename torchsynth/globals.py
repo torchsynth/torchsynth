@@ -3,7 +3,7 @@ import torch.tensor as T
 from torchsynth.default import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
 
 
-class TorchSynthGlobals:
+class SynthGlobals:
     """
     Any synth module requires these "global" values.
     The should be the same for every module that is connected.
@@ -32,6 +32,6 @@ class TorchSynthGlobals:
 
     def __repr__(self):
         return (
-            f"TorchSynthGlobals(batch_size={self.batch_size}, "
+            f"SynthGlobals(batch_size={self.batch_size}, "
             + "sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
         )

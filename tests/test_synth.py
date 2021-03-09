@@ -21,7 +21,7 @@ class TestTorchSynth:
 
     def test_construction(self):
         # Test empty construction
-        synthglobals = torchsynth.globals.TorchSynthGlobals(
+        synthglobals = torchsynth.globals.SynthGlobals(
             sample_rate=T(16000), buffer_size=T(512), batch_size=T(2)
         )
         # Test construction with args
@@ -30,7 +30,7 @@ class TestTorchSynth:
         assert synth.buffer_size == T(512)
 
     def test_add_synth_module(self):
-        synthglobals = torchsynth.globals.TorchSynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.AbstractSynth(synthglobals)
         vco = synthmodule.SineVCO(
             midi_f0=T([12.0, 30.0]),
@@ -64,7 +64,7 @@ class TestTorchSynth:
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
-            synthglobals_weird_sr = torchsynth.globals.TorchSynthGlobals(
+            synthglobals_weird_sr = torchsynth.globals.SynthGlobals(
                 batch_size=T(2), sample_rate=T(16000)
             )
             vco_2 = synthmodule.SineVCO(
@@ -77,7 +77,7 @@ class TestTorchSynth:
         # This should raise an assertion because it has a different batch size than
         # the other modules
         with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
+            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
                 batch_size=T(1)
             )
             adsr = synthmodule.ADSR(
@@ -92,7 +92,7 @@ class TestTorchSynth:
 
         # Same here
         with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
+            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
                 batch_size=T(1)
             )
             adsr = synthmodule.ADSR(

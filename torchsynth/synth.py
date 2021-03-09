@@ -4,7 +4,7 @@ import torch
 from torch import nn as nn, tensor as T
 
 from torchsynth import util as util
-from torchsynth.globals import TorchSynthGlobals
+from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     SynthModule,
     ADSR,
@@ -29,7 +29,7 @@ class AbstractSynth(nn.Module):
 
     def __init__(
         self,
-        synthglobals: TorchSynthGlobals,
+        synthglobals: SynthGlobals,
     ):
         super().__init__()
         self.synthglobals = synthglobals
@@ -95,7 +95,7 @@ class Voice(AbstractSynth):
     def __init__(
         self,
         note_on_duration: float,
-        synthglobals=TorchSynthGlobals,
+        synthglobals=SynthGlobals,
     ):
         super().__init__(synthglobals=synthglobals)
 
