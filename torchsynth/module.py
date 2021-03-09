@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
+from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -270,10 +270,10 @@ class TorchADSR(TorchSynthModule):
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-        assert torch.all(self.p("attack") + self.p("decay") < note_on_duration)
 
-        attack = self.make_attack()
-        decay = self.make_decay()
+        # TODO `note_on_duration` is set to be a paramater soon...
+        attack = self.make_attack(note_on_duration)
+        decay = self.make_decay(note_on_duration)
         release = self.make_release(note_on_duration)
 
         return attack * decay * release
@@ -303,24 +303,29 @@ class TorchADSR(TorchSynthModule):
         # Shape ramps.
         ramp = ramp - start_[:, None]
         ramp = torch.maximum(ramp, T(0.0))
-        ramp = ramp / duration_[:, None]
+        ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
         ramp = torch.minimum(ramp, T(1.0))
 
         if inverse:
-            ramp = 1 - ramp
+            ramp = 1.0 - ramp
+            ramp[torch.sum(ramp, axis=1) == 0] = 1.0
 
         # Apply scaling factor.
         ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
         return ramp.as_subclass(Signal)
 
-    def make_attack(self) -> Signal:
-        attack = self.p("attack")
+    def make_attack(self, note_on_duration) -> Signal:
+        attack = torch.minimum(self.p("attack"), note_on_duration)
         return self._ramp(torch.zeros(self.batch_size, device=attack.device), attack)
 
-    def make_decay(self) -> Signal:
+    def make_decay(self, note_on_duration) -> Signal:
+        attack = torch.minimum(self.p("attack"), note_on_duration)
+        decay = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
+        decay = torch.minimum(decay, self.p("decay"))
+
         _a = 1.0 - self.p("sustain")[:, None]
-        _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
+        _b = self._ramp(attack, decay, inverse=True)
         return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
     def make_release(self, note_on_duration) -> Signal:
