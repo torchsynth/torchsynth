@@ -10,7 +10,7 @@ from typing import Union
 import torch
 import torch.tensor as T
 
-from torchsynth.default import EPSILON, EQ_POW
+from torchsynth.default import EPS, EQ_POW
 from torchsynth.signal import Signal
 
 
@@ -45,7 +45,7 @@ def hz_to_midi(hz: T) -> T:
     """
     Convert from frequency in Hz to midi (linear pitch).
     """
-    return 12 * torch.log2((hz + EPSILON) / 440) + 69
+    return 12 * torch.log2((hz + EPS) / 440) + 69
 
 
 def midi_to_hz(midi: T) -> T:

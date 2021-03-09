@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPS
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.globals import TorchSynthGlobals
 from torchsynth.signal import Signal
@@ -279,7 +279,7 @@ class ADSR(SynthModule):
         # Shape ramps.
         ramp = ramp - start_[:, None]
         ramp = torch.maximum(ramp, T(0.0, device=duration.device))
-        ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
+        ramp = (ramp + EPS) / (duration_[:, None] + EPS)
         ramp = torch.minimum(ramp, T(1.0, device=duration.device))
 
         """
