@@ -536,19 +536,13 @@ for i in range(synthglobals16.batch_size):
     # stft_plot(drum_out[i].cpu().view(-1).detach().numpy())
     display(ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item()))
 
-# +
-synthglobals128 = TorchSynthGlobals(
-    batch_size=T(128), sample_rate=T(44100), buffer_size=T(4 * 44100)
-)
-drum = TorchDrum(synthglobals=synthglobals128, note_on_duration=1.0).to(device)
-
-# %timeit drum()
-# -
-
 # ### Filters
 
 # +
 from torchsynth.filter import FIRLowPass, TorchMovingAverage
+
+# GPU not working for filters yet
+device = "cpu"
 
 # Create some noise to filter
 duration = 2

@@ -274,8 +274,11 @@ class TorchADSR(TorchSynthModule):
         # TODO `note_on_duration` is set to be a parameter soon...
 
         # Calculation to accommodate attack/decay phase cut by note duration.
-        attack_time = torch.minimum(self.p("attack"), note_on_duration)
-        decay_time = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
+        attack = self.p("attack")
+        attack_time = torch.minimum(attack, note_on_duration)
+        decay_time = torch.maximum(
+            note_on_duration - attack, T([0.0], device=attack.device)
+        )
         decay_time = torch.minimum(decay_time, self.p("decay"))
 
         attack = self.make_attack(attack_time)
@@ -308,9 +311,9 @@ class TorchADSR(TorchSynthModule):
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0))
+        ramp = torch.maximum(ramp, T(0.0, device=duration.device))
         ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
-        ramp = torch.minimum(ramp, T(1.0))
+        ramp = torch.minimum(ramp, T(1.0, device=duration.device))
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
