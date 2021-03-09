@@ -19,7 +19,7 @@ jobs:
 #          use-black: true
           use-black: false
           use-mypy: false
-          use-isort: true
+          use-isort: false
           extra-pylint-options: ""
           extra-pycodestyle-options: ""
           extra-flake8-options: "--max-line-length=88 --extend-ignore=E203 --per-file-ignores=__init__.py:F401"

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import DEFAULT_SAMPLE_RATE
+from torchsynth.default import DEFAULT_SAMPLE_RATE
 from torchsynth.module import TorchSynthModule0Ddeprecated
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
