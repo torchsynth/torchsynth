@@ -306,6 +306,13 @@ class TorchADSR(TorchSynthModule):
         ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
         ramp = torch.minimum(ramp, T(1.0))
 
+        """
+        The following is a workaround. In inverse mode, a ramp with 0 duration 
+        (that is all 1's) becomes all 0's, which is a problem for the 
+        ultimate calculation of the ADSR signal (a * d * r => 0's). So this 
+        replaces only rows who sum to 0 (i.e., all components are zero).
+        """
+
         if inverse:
             ramp = 1.0 - ramp
             ramp[torch.sum(ramp, axis=1) == 0] = 1.0
@@ -321,6 +328,8 @@ class TorchADSR(TorchSynthModule):
 
     def make_decay(self, note_on_duration) -> Signal:
         attack = torch.minimum(self.p("attack"), note_on_duration)
+
+        # Calculations to accommodate a decay phase cut off by the note_on_dur.
         decay = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
         decay = torch.minimum(decay, self.p("decay"))
 
