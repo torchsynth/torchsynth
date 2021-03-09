@@ -313,9 +313,9 @@ class TorchADSR(TorchSynthModule):
         ramp = torch.minimum(ramp, T(1.0))
 
         """
-        The following is a workaround. In inverse mode, a ramp with 0 duration 
-        (that is all 1's) becomes all 0's, which is a problem for the 
-        ultimate calculation of the ADSR signal (a * d * r => 0's). So this 
+        The following is a workaround. In inverse mode, a ramp with 0 duration
+        (that is all 1's) becomes all 0's, which is a problem for the
+        ultimate calculation of the ADSR signal (a * d * r => 0's). So this
         replaces only rows who sum to 0 (i.e., all components are zero).
         """
 
