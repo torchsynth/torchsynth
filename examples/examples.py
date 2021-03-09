@@ -88,6 +88,8 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
+device = "cpu"
+
 
 def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
     if isnotebook():  # pragma: no cover
@@ -400,36 +402,40 @@ print(list(noise.parameters()))
 # Alternately, you can just use the Drum class that composes all these modules
 # together automatically. The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
 
-"""
+from torchsynth.module import TorchDrum
+
 drum1 = TorchDrum(
-    pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
-    amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
-    vco_1=TorchSineVCO(midi_f0=69, mod_depth=12),
-    noise=TorchNoise(ratio=0.5),
-    note_on_duration=1.0,
+    synthglobals=synthglobals,
+    note_on_duration=T([1.0, 0.5]),
 )
+
+
+# drum1.pitch_adsr = TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
+# drum1.amp_adsr = TorchADSR(0.25, 0.25, 0.25, 0.25),
+# vco_1 = TorchSineVCO(midi_f0=69, mod_depth=12),
+# noise = TorchNoise(ratio=0.5),
 
 drum_out1 = drum1()
 stft_plot(drum_out1.detach().numpy())
 ipd.Audio(drum_out1.detach().numpy(), rate=drum1.sample_rate.item())
-"""
+
 
 # Additionally, the Drum class can take two oscillators.
 
-"""
-drum2 = TorchDrum(
-    pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
-    amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
-    vco_1=TorchSineVCO(midi_f0=40, mod_depth=12),
-    vco_2=TorchSquareSawVCO(midi_f0=40, mod_depth=12, shape=0.5),
-    noise=TorchNoise(ratio=0.01),
-    note_on_duration=1.0,
-)
 
-drum_out2 = drum2()
-stft_plot(drum_out2.detach().numpy())
-ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
-"""
+# drum2 = TorchDrum(
+#     pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
+#     amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
+#     vco_1=TorchSineVCO(midi_f0=40, mod_depth=12),
+#     vco_2=TorchSquareSawVCO(midi_f0=40, mod_depth=12, shape=0.5),
+#     noise=TorchNoise(ratio=0.01),
+#     note_on_duration=1.0,
+# )
+#
+# drum_out2 = drum2()
+# stft_plot(drum_out2.detach().numpy())
+# ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
+
 
 # Test gradients on entire drum
 
