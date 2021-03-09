@@ -68,7 +68,7 @@ from torchsynth.module import (
     TorchFmVCO,
     Identity,
     Noise,
-    TorchSineVCO,
+    SineVCO,
     VCA,
 )
 from torchsynth.globals import TorchSynthGlobals
@@ -225,7 +225,7 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # ## Oscillators
 #
-# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`TorchSineVCO`, a square/saw oscillator: `TorchSquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `Noise`.
+# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `Noise`.
 
 # +
 # %matplotlib inline
@@ -237,7 +237,7 @@ adsr = ADSR(
 envelope = adsr.forward1D(note_on_duration)
 
 # SineVCO test
-sine_vco = TorchSineVCO(
+sine_vco = SineVCO(
     midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), synthglobals=synthglobals
 ).to(device)
 sine_out = sine_vco.forward1D(envelope)
@@ -268,9 +268,9 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # interpolate between a square wave (shape = 0) and a sawtooth wave (shape = 1).
 
 # +
-from torchsynth.module import TorchSquareSawVCO
+from torchsynth.module import SquareSawVCO
 
-square_saw = TorchSquareSawVCO(
+square_saw = SquareSawVCO(
     midi_f0=T([30.0, 30.0]),
     mod_depth=T([0.0, 0.0]),
     shape=T([0.0, 1.0]),
@@ -314,7 +314,7 @@ time_plot(test_output[0].detach().cpu())
 # FmVCO test
 
 # Make steady-pitched sine (no pitch modulation).
-sine_operator = TorchSineVCO(
+sine_operator = SineVCO(
     midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
 operator_out = sine_operator.forward1D(envelope)
@@ -341,7 +341,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 
 # +
 env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
-vco = TorchSineVCO(
+vco = SineVCO(
     midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
 noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
@@ -407,9 +407,9 @@ print(list(noise.parameters()))
 # and oscillators needed to create one-shot sounds similar to a drum
 # hit generator.
 
-from torchsynth.module import TorchDrum
+from torchsynth.synth import Voice
 
-drum1 = TorchDrum(
+drum1 = Voice(
     synthglobals=synthglobals1,
     note_on_duration=1.0,
 ).to(device)
@@ -433,7 +433,7 @@ drum1.amp_adsr = ADSR(
     sustain=T([0.25]),
     release=T([0.25]),
 ).to(device)
-drum1.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
+drum1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
 # Here we disable vco2
 drum1.vco_2 = Identity(synthglobals).to(device)
 drum1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
@@ -447,7 +447,7 @@ ipd.Audio(drum_out1.cpu().detach().numpy(), rate=drum1.sample_rate.item())
 
 
 # +
-drum2 = TorchDrum(
+drum2 = Voice(
     synthglobals=synthglobals1,
     note_on_duration=T([1.0]),
 ).to(device)
@@ -466,8 +466,8 @@ drum2.amp_adsr = ADSR(
     sustain=T([0.25]),
     release=T([0.25]),
 ).to(device)
-drum2.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
-drum2.vco_2 = TorchSquareSawVCO(
+drum2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
+drum2.vco_2 = SquareSawVCO(
     synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
 ).to(device)
 drum2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
@@ -530,7 +530,7 @@ print(drum1.vco_1.p("midi_f0"))
 synthglobals16 = TorchSynthGlobals(
     batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
-drum = TorchDrum(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
+drum = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
 drum_out = drum()
 for i in range(synthglobals16.batch_size):
     stft_plot(drum_out[i].cpu().view(-1).detach().numpy())

@@ -1,79 +1,22 @@
 """
-Tests for torch synth modules.
+Tests for torch synths
 """
+
 
 import pytest
 import torch.nn
 import torch.tensor as T
 
-import torchsynth.defaults as defaults
 import torchsynth.globals
 import torchsynth.module as synthmodule
 import torchsynth.parameter
-from torchsynth.parameter import ModuleParameter, ModuleParameterRange
-
-
-class TestTorchSynthModule:
-    """
-    Tests for TorchSynthModules
-    """
-
-    def test_get_parameter(self):
-        module = synthmodule.TorchSynthModule0Ddeprecated()
-        param_1 = ModuleParameter(data=T(1.0), parameter_name="param_1")
-        module.add_parameters([param_1])
-        assert module.get_parameter("param_1") == param_1
-
-    def test_set_parameter(self):
-        module = synthmodule.TorchSynthModule0Ddeprecated()
-        param_1 = ModuleParameter(
-            value=T(5000.0),
-            parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1",
-        )
-        module.add_parameters([param_1])
-        assert module.torchparameters["param_1"] == 0.25
-
-        module.set_parameter("param_1", 10000.0)
-        assert module.torchparameters["param_1"] == 0.5
-        assert module.torchparameters["param_1"].from_0to1() == 10000.0
-
-        with pytest.raises(AssertionError):
-            module.set_parameter_0to1("param_1", -100.0)
-
-    def test_set_parameter_0to1(self):
-        module = synthmodule.TorchSynthModule0Ddeprecated()
-        param_1 = ModuleParameter(
-            value=T(5000.0),
-            parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1",
-        )
-        module.add_parameters([param_1])
-        assert module.torchparameters["param_1"] == 0.25
-
-        module.set_parameter_0to1("param_1", 0.5)
-        assert module.torchparameters["param_1"] == 0.5
-        assert module.torchparameters["param_1"].from_0to1() == 10000.0
-
-        # Passing a value outside of range should fail
-        with pytest.raises(AssertionError):
-            module.set_parameter_0to1("param_1", 5.0)
-
-    def test_p(self):
-        module = synthmodule.TorchSynthModule0Ddeprecated()
-        param_1 = ModuleParameter(
-            value=T(5000.0),
-            parameter_range=ModuleParameterRange(0.0, 20000.0),
-            parameter_name="param_1",
-        )
-        module.add_parameters([param_1])
-        assert module.torchparameters["param_1"] == 0.25
-        assert module.p("param_1") == 5000.0
+import torchsynth.synth
+from torchsynth.parameter import ModuleParameter
 
 
 class TestTorchSynth:
     """
-    Tests for TorchSynth
+    Tests for AbstractSynth
     """
 
     def test_construction(self):
@@ -82,14 +25,14 @@ class TestTorchSynth:
             sample_rate=T(16000), buffer_size=T(512), batch_size=T(2)
         )
         # Test construction with args
-        synth = synthmodule.TorchSynth(synthglobals)
+        synth = torchsynth.synth.AbstractSynth(synthglobals)
         assert synth.sample_rate == T(16000)
         assert synth.buffer_size == T(512)
 
     def test_add_synth_module(self):
         synthglobals = torchsynth.globals.TorchSynthGlobals(batch_size=T(2))
-        synth = synthmodule.TorchSynth(synthglobals)
-        vco = synthmodule.TorchSineVCO(
+        synth = torchsynth.synth.AbstractSynth(synthglobals)
+        vco = synthmodule.SineVCO(
             midi_f0=T([12.0, 30.0]),
             mod_depth=T([50.0, 50.0]),
             synthglobals=synthglobals,
@@ -124,7 +67,7 @@ class TestTorchSynth:
             synthglobals_weird_sr = torchsynth.globals.TorchSynthGlobals(
                 batch_size=T(2), sample_rate=T(16000)
             )
-            vco_2 = synthmodule.TorchSineVCO(
+            vco_2 = synthmodule.SineVCO(
                 midi_f0=T([12.0, 30.0]),
                 mod_depth=T([50.0, 50.0]),
                 synthglobals=synthglobals_weird_sr,
