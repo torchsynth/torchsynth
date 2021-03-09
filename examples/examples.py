@@ -62,7 +62,7 @@ import numpy.random
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     ADSR,
     TorchFmVCO,

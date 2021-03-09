@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.globals import TorchSynthGlobals
 from torchsynth.signal import Signal

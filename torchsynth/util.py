@@ -10,7 +10,7 @@ from typing import Union
 import torch
 import torch.tensor as T
 
-from torchsynth.defaults import EPSILON, EQ_POW
+from torchsynth.default import EPSILON, EQ_POW
 from torchsynth.signal import Signal
 
 
