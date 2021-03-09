@@ -44,7 +44,7 @@ import sphinx_rtd_theme
 
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.intersphiex",
+    "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
 ]
 
