@@ -274,8 +274,11 @@ class TorchADSR(TorchSynthModule):
         # TODO `note_on_duration` is set to be a parameter soon...
 
         # Calculation to accommodate attack/decay phase cut by note duration.
-        attack_time = torch.minimum(self.p("attack"), note_on_duration)
-        decay_time = torch.maximum(note_on_duration - self.p("attack"), T([0.0]))
+        attack = self.p("attack")
+        attack_time = torch.minimum(attack, note_on_duration)
+        decay_time = torch.maximum(
+            note_on_duration - attack, T([0.0], device=attack.device)
+        )
         decay_time = torch.minimum(decay_time, self.p("decay"))
 
         attack = self.make_attack(attack_time)
@@ -308,9 +311,9 @@ class TorchADSR(TorchSynthModule):
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0))
+        ramp = torch.maximum(ramp, T(0.0, device=duration.device))
         ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
-        ramp = torch.minimum(ramp, T(1.0))
+        ramp = torch.minimum(ramp, T(1.0, device=duration.device))
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
@@ -390,7 +393,13 @@ class TorchVCO(TorchSynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.phase = self.p("initial_phase").unsqueeze(1)
+
+        # TODO: Currently making phase a parameter with no grad
+        # Is there a way to do this without making it a param?
+        # See: https://github.com/turian/torchsynth/issues/123
+        self.phase = nn.Parameter(
+            data=self.get_parameter("initial_phase"), requires_grad=False
+        )
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
@@ -418,8 +427,9 @@ class TorchVCO(TorchSynthModule):
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
         control_as_frequency = self.make_control_as_frequency(mod_signal)
-        cosine_argument = self.make_argument(control_as_frequency) + self.phase
-        self.phase = cosine_argument[:, -1]
+        cosine_argument = self.make_argument(control_as_frequency)
+        cosine_argument += self.phase.unsqueeze(1)
+        self.phase.data = cosine_argument[:, -1]
         output = self.oscillator(cosine_argument)
         return output.as_subclass(Signal)
 
@@ -770,8 +780,12 @@ class TorchDrum(TorchSynth):
         # with the mindset that if you are trying to learn to
         # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        # TODO: Fix this later
-        self.note_on_duration = T([note_on_duration] * synthglobals.batch_size)
+
+        # TODO: Turn note on duration into a knob parameter
+        # See https://github.com/turian/torchsynth/issues/117
+        self.note_on_duration = nn.Parameter(
+            data=T([note_on_duration] * synthglobals.batch_size), requires_grad=False
+        )
         assert torch.all(self.note_on_duration >= 0)
 
         # Register all modules as children
@@ -798,7 +812,6 @@ class TorchDrum(TorchSynth):
         vco_2_out = self.vco_2.forward1D(pitch_envelope)
 
         audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
-
         audio_out = self.noise.forward1D(audio_out)
 
         return self.vca.forward1D(amp_envelope, audio_out)
