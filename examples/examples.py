@@ -393,25 +393,23 @@ print(list(noise.parameters()))
 """
 # -
 
-# ## Drum Module
+# ## Voice Module
 #
-# Alternately, you can just use the Drum class that composes all these modules
-# together automatically. The drum module comprises a set of envelopes
-# and oscillators needed to create one-shot sounds similar to a drum
-# hit generator.
+# Alternately, you can just use the Voice class that composes all these modules
+# together automatically.
 
 from torchsynth.synth import Voice
 
-drum1 = Voice(
+voice1 = Voice(
     synthglobals=synthglobals1,
     note_on_duration=1.0,
 ).to(device)
 
-assert drum1.pitch_adsr
-assert drum1.amp_adsr
-assert drum1.vco_1
-assert drum1.noise
-drum1.pitch_adsr = ADSR(
+assert voice1.pitch_adsr
+assert voice1.amp_adsr
+assert voice1.vco_1
+assert voice1.noise
+voice1.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
     decay=T([0.25]),
@@ -419,32 +417,32 @@ drum1.pitch_adsr = ADSR(
     release=T([0.25]),
     alpha=T([3]),
 ).to(device)
-drum1.amp_adsr = ADSR(
+voice1.amp_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
 ).to(device)
-drum1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
+voice1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
 # Here we disable vco2
-drum1.vco_2 = Identity(synthglobals).to(device)
-drum1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
+voice1.vco_2 = Identity(synthglobals).to(device)
+voice1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
 
-drum_out1 = drum1()
-stft_plot(drum_out1.cpu().view(-1).detach().numpy())
-ipd.Audio(drum_out1.cpu().detach().numpy(), rate=drum1.sample_rate.item())
+voice_out1 = voice1()
+stft_plot(voice_out1.cpu().view(-1).detach().numpy())
+ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 
 
-# Additionally, the Drum class can take two oscillators.
+# Additionally, the Voice class can take two oscillators.
 
 
 # +
-drum2 = Voice(
+voice2 = Voice(
     synthglobals=synthglobals1,
     note_on_duration=T([1.0]),
 ).to(device)
-drum2.pitch_adsr = ADSR(
+voice2.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.1]),
     decay=T([0.5]),
@@ -452,28 +450,28 @@ drum2.pitch_adsr = ADSR(
     release=T([0.25]),
     alpha=T([3]),
 ).to(device)
-drum2.amp_adsr = ADSR(
+voice2.amp_adsr = ADSR(
     synthglobals1,
     attack=T([0.15]),
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
 ).to(device)
-drum2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
-drum2.vco_2 = SquareSawVCO(
+voice2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
+voice2.vco_2 = SquareSawVCO(
     synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
 ).to(device)
-drum2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
+voice2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
 
-drum_out2 = drum2()
-stft_plot(drum_out2.cpu().view(-1).detach().numpy())
-ipd.Audio(drum_out2.cpu().detach().numpy(), rate=drum2.sample_rate.item())
+voice_out2 = voice2()
+stft_plot(voice_out2.cpu().view(-1).detach().numpy())
+ipd.Audio(voice_out2.cpu().detach().numpy(), rate=voice2.sample_rate.item())
 # -
 
 
-# Test gradients on entire drum
+# Test gradients on entire voice
 
-err = torch.mean(torch.abs(drum_out1 - drum_out2))
+err = torch.mean(torch.abs(voice_out1 - voice_out2))
 print(err)
 
 # Print out the gradients for all the paramters
@@ -481,16 +479,16 @@ print(err)
 err.backward(retain_graph=True)
 
 # +
-# for ((n1, p1), p2) in zip(drum1.named_parameters(), drum2.parameters()):
-#    print(f"{n1:40} Drum1: {p1.grad.item()} \tDrum2: {p2.grad.item()}")
+# for ((n1, p1), p2) in zip(voice1.named_parameters(), voice2.parameters()):
+#    print(f"{n1:40} Voice1: {p1.grad.item()} \tVoice2: {p2.grad.item()}")
 # -
 
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
-# and updated. Let's look at the parameters for the Drum we just created.
+# and updated. Let's look at the parameters for the Voice we just created.
 
-for n, p in drum1.named_parameters():
+for n, p in voice1.named_parameters():
     print(f"{n:40}")
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
@@ -498,23 +496,23 @@ for n, p in drum1.named_parameters():
 # Parameters of individual modules can be accessed in several ways:
 
 # Get the full ModuleParameter object by name from the module
-print(drum1.vco_1.get_parameter("midi_f0"))
+print(voice1.vco_1.get_parameter("midi_f0"))
 
 # Access the value as a Tensor in the full value human range
-print(drum1.vco_1.p("midi_f0"))
+print(voice1.vco_1.p("midi_f0"))
 
 # Access the value as a float in the range from 0 to 1
-print(drum1.vco_1.get_parameter_0to1("midi_f0"))
+print(voice1.vco_1.get_parameter_0to1("midi_f0"))
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
-drum1.vco_1.set_parameter("midi_f0", T([64]))
-print(drum1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter("midi_f0", T([64]))
+print(voice1.vco_1.p("midi_f0"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-drum1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
-print(drum1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
+print(voice1.vco_1.p("midi_f0"))
 
 # ## Random synths
 #
@@ -523,12 +521,12 @@ print(drum1.vco_1.p("midi_f0"))
 synthglobals16 = SynthGlobals(
     batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
-drum = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
-drum_out = drum()
+voice = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
+voice_out = voice()
 for i in range(synthglobals16.batch_size):
-    stft_plot(drum_out[i].cpu().view(-1).detach().numpy())
+    stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
-        ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item())
+        ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
 
 # ### Filters
