@@ -450,7 +450,7 @@ ipd.Audio(drum_out1.cpu().detach().numpy(), rate=drum1.sample_rate.item())
 drum2 = TorchDrum(
     synthglobals=synthglobals1,
     note_on_duration=T([1.0]),
-)
+).to(device)
 drum2.pitch_adsr = TorchADSR(
     synthglobals1,
     attack=T([0.1]),
@@ -458,23 +458,23 @@ drum2.pitch_adsr = TorchADSR(
     sustain=T([0.0]),
     release=T([0.25]),
     alpha=T([3]),
-)
+).to(device)
 drum2.amp_adsr = TorchADSR(
     synthglobals1,
     attack=T([0.15]),
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
-)
-drum2.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12]))
+).to(device)
+drum2.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
 drum2.vco_2 = TorchSquareSawVCO(
     synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
-)
-drum2.noise = TorchNoise(synthglobals1, ratio=T([0.01]))
+).to(device)
+drum2.noise = TorchNoise(synthglobals1, ratio=T([0.01])).to(device)
 
 drum_out2 = drum2()
-stft_plot(drum_out2.view(-1).detach().numpy())
-ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
+stft_plot(drum_out2.cpu().view(-1).detach().numpy())
+ipd.Audio(drum_out2.cpu().detach().numpy(), rate=drum2.sample_rate.item())
 # -
 
 
@@ -497,10 +497,8 @@ err.backward(retain_graph=True)
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Drum we just created.
 
-# +
-# for n, p in drum1.named_parameters():
-#    print(f"{n:40} Normalized = {p:.2f} Human Range = {p.from_0to1():.2f}")
-# -
+for n, p in drum1.named_parameters():
+    print(f"{n:40}")
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
 #
@@ -535,8 +533,17 @@ synthglobals16 = TorchSynthGlobals(
 drum = TorchDrum(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
 drum_out = drum()
 for i in range(synthglobals16.batch_size):
-    stft_plot(drum_out[i].view(-1).detach().numpy())
+    # stft_plot(drum_out[i].cpu().view(-1).detach().numpy())
     display(ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item()))
+
+# +
+synthglobals128 = TorchSynthGlobals(
+    batch_size=T(128), sample_rate=T(44100), buffer_size=T(4 * 44100)
+)
+drum = TorchDrum(synthglobals=synthglobals128, note_on_duration=1.0).to(device)
+
+# %timeit drum()
+# -
 
 # ### Filters
 
