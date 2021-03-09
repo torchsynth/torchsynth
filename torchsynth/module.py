@@ -177,7 +177,7 @@ class TorchSynthModule(nn.Module):
         ----------
         parameter_id (str)  :   Id of the parameter to return the value for
         """
-        value = self.torchparameters[parameter_id].item()
+        value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
         return value
 
@@ -648,6 +648,31 @@ class TorchSynthParameters(TorchSynthModule0Ddeprecated):
         raise RuntimeError("TorchSynthParameters cannot be called")
 
 
+class TorchIdentity(TorchSynthModule):
+    """
+    Pass through module
+    """
+
+    def _forward(self, signal: Signal) -> Signal:
+        return signal
+
+
+class TorchCrossfadeKnob(TorchSynthModule):
+    """
+    Crossfade knob parameter with no signal generation
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0,
+            1.0,
+            curve="linear",
+            name="ratio",
+            description="crossfade knob",
+        ),
+    ]
+
+
 class TorchSynth(nn.Module):
     """
     Base class for synthesizers that combine one or more TorchSynthModules
@@ -716,22 +741,6 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-class TorchCrossfadeKnob(TorchSynthModule):
-    """
-    Crossfade knob parameter with no signal generation
-    """
-
-    parameter_ranges: List[ModuleParameterRange] = [
-        ModuleParameterRange(
-            0.0,
-            1.0,
-            curve="linear",
-            name="ratio",
-            description="crossfade knob",
-        ),
-    ]
-
-
 class TorchDrum(TorchSynth):
     """
     A package of modules that makes one drum hit.
@@ -743,13 +752,14 @@ class TorchDrum(TorchSynth):
         synthglobals=TorchSynthGlobals,
     ):
         super().__init__(synthglobals=synthglobals)
-        assert torch.all(note_on_duration >= 0)
 
         # We assume that sustain duration is a hyper-parameter,
         # with the mindset that if you are trying to learn to
         # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        self.note_on_duration = T(note_on_duration)
+        # TODO: Fix this later
+        self.note_on_duration = T([note_on_duration] * synthglobals.batch_size)
+        assert torch.all(self.note_on_duration >= 0)
 
         # Register all modules as children
         self.add_synth_modules(
