@@ -92,6 +92,10 @@ class SynthModule(nn.Module):
         # assert seconds.ndim == 1
         return torch.round(seconds * self.sample_rate).int()
 
+    def samples_to_seconds(self, samples: T) -> T:
+        # TODO: Maybe remove this, or put into utils
+        return samples / self.sample_rate
+
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each SynthModule should override this.
@@ -211,9 +215,15 @@ class ADSR(SynthModule):
             name="alpha",
             description="envelope curve. 1 is linear, >1 is exponential.",
         ),
+        ModuleParameterRange(
+            0.0,
+            1.0,
+            name="note_on_percentage",
+            description="Length of note on as a percentage of buffer size",
+        ),
     ]
 
-    def _forward(self, note_on_duration: T) -> Signal:
+    def _forward(self) -> Signal:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -233,10 +243,15 @@ class ADSR(SynthModule):
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
         """
+
+        # TODO: Maybe doesn't make sense to convert to seconds, we convert back
+        # to samples
+        note_on_duration = self.samples_to_seconds(
+            self.p("note_on_percentage") * self.buffer_size
+        )
+
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-
-        # TODO `note_on_duration` is set to be a parameter soon...
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
