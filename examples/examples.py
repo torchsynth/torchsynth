@@ -137,8 +137,8 @@ synthglobals1short = SynthGlobals(
 #
 # By default, this envelope reacts as if it was triggered with midi, for example
 # playing a keyboard. Each midi event has a beginning and end: note-on, when you
-# press the key down; and note-off, when you release the key. `note_on_duration`
-# is the amount of time that the key is depressed. During the note-on, the
+# press the key down; and note-off, when you release the key. `note_on_percentage`
+# is the amount of time that the key is depressed as a ratio of the buffer_size. During the note-on, the
 # envelope moves through the attack and decay sections of the envelope. This
 # leads to musically-intuitive, but programatically-counterintuitive behaviour.
 #
@@ -158,13 +158,19 @@ d = T([0.1, 0.2])
 s = T([0.75, 0.8])
 r = T([0.5, 0.8])
 alpha = T([3.0, 4.0])
-note_on_duration = T([0.5, 1.5], device=device)
+note_on_percentage = T([0.125, 0.375])
 
 # Envelope test
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    note_on_percentage=note_on_percentage,
+    synthglobals=synthglobals,
 ).to(device)
-envelope = adsr.forward1D(note_on_duration)
+envelope = adsr.forward1D()
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
 
@@ -186,7 +192,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
 adsr = ADSR(synthglobals=synthglobals).to(device)
-envelope = adsr.forward1D(note_on_duration)
+envelope = adsr.forward1D()
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
@@ -225,9 +231,15 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # Reset envelope
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    note_on_percentage=note_on_percentage,
+    synthglobals=synthglobals,
 ).to(device)
-envelope = adsr.forward1D(note_on_duration)
+envelope = adsr.forward1D()
 
 # SineVCO test
 sine_vco = SineVCO(
@@ -402,7 +414,6 @@ from torchsynth.synth import Voice
 
 voice1 = Voice(
     synthglobals=synthglobals1,
-    note_on_duration=1.0,
 ).to(device)
 
 assert voice1.pitch_adsr
@@ -416,6 +427,7 @@ voice1.pitch_adsr = ADSR(
     sustain=T([0.25]),
     release=T([0.25]),
     alpha=T([3]),
+    note_on_percentage=T([0.25]),
 ).to(device)
 voice1.amp_adsr = ADSR(
     synthglobals1,
@@ -423,6 +435,7 @@ voice1.amp_adsr = ADSR(
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
+    note_on_percentage=T([0.25]),
 ).to(device)
 voice1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
 # Here we disable vco2
@@ -440,7 +453,6 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 # +
 voice2 = Voice(
     synthglobals=synthglobals1,
-    note_on_duration=T([1.0]),
 ).to(device)
 voice2.pitch_adsr = ADSR(
     synthglobals1,
@@ -449,6 +461,7 @@ voice2.pitch_adsr = ADSR(
     sustain=T([0.0]),
     release=T([0.25]),
     alpha=T([3]),
+    note_on_percentage=T([0.25]),
 ).to(device)
 voice2.amp_adsr = ADSR(
     synthglobals1,
@@ -456,6 +469,7 @@ voice2.amp_adsr = ADSR(
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
+    note_on_percentage=T([0.25]),
 ).to(device)
 voice2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
 voice2.vco_2 = SquareSawVCO(
@@ -521,7 +535,7 @@ print(voice1.vco_1.p("midi_f0"))
 synthglobals16 = SynthGlobals(
     batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
-voice = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
+voice = Voice(synthglobals=synthglobals16).to(device)
 voice_out = voice()
 for i in range(synthglobals16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
@@ -691,8 +705,9 @@ env = ADSR(
     sustain=T([0.0]),
     release=T([0.0]),
     alpha=T([3.0]),
+    note_on_percentage=T([1.0]),
     synthglobals=synthglobals1short,
-)(T([0.2]))
+)()
 bpf = TorchBandPassSVF(
     cutoff=T(20),
     resonance=T(30),

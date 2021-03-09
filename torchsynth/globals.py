@@ -35,3 +35,7 @@ class SynthGlobals:
             f"SynthGlobals(batch_size={self.batch_size}, "
             + "sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
         )
+
+    @property
+    def buffer_size_seconds(self):
+        return self.buffer_size / self.sample_rate
