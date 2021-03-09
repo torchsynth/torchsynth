@@ -14,7 +14,7 @@ import torchsynth.synth
 from torchsynth.parameter import ModuleParameter
 
 
-class TestTorchSynth:
+class TestAbstractSynth:
     """
     Tests for AbstractSynth
     """
