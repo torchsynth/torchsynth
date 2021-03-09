@@ -393,6 +393,10 @@ class TorchVCO(TorchSynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
+
+        # TODO: Currently making phase a parameter with no grad
+        # Is there a way to do this without making it a param?
+        # See: https://github.com/turian/torchsynth/issues/123
         self.phase = nn.Parameter(
             data=self.get_parameter("initial_phase"), requires_grad=False
         )
