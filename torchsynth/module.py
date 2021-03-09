@@ -69,6 +69,9 @@ class TorchSynthModule(nn.Module):
         synthglobals: TorchSynthGlobals,
     ):
         """
+        synthglobals (TorchSynthGlobals)    : These are global
+        settings shared across all modules in the same synth.
+
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -337,7 +340,7 @@ class TorchVCO(TorchSynthModule):
     ----------
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
-    synthglobals: TorchSynthGlobals        : global args, see TorchSynthModule
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     phase (optional, T)       :   initial phase values
     """
 
@@ -434,7 +437,7 @@ class TorchSineVCO(TorchVCO):
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the pitch modulation in semitones.
     phase (T)       :   initial phase values
-    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     """
 
     def __init__(
@@ -468,7 +471,7 @@ class TorchFmVCO(TorchVCO):
     midi_f0 (T)     :   pitch value in 'midi' (69 = 440Hz).
     mod_depth (T)   :   depth of the frequency (0-127)
     phase (T)       :   initial phase values
-    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     """
 
     def __init__(
@@ -510,7 +513,7 @@ class TorchSquareSawVCO(TorchVCO):
     mod_depth (T)   :   depth of the pitch modulation in semitones.
     shape (T)       :   Waveshape - square to saw [0,1]
     phase (T)       :   initial phase values
-    synthglobals: TorchSynthGlobals        :   keyword args, see TorchVCO
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     """
 
     def __init__(
@@ -559,7 +562,7 @@ class TorchVCA(TorchSynthModule):
 
     Parameters
     ----------
-    synthglobals: TorchSynthGlobals : keyword args, see TorchSynthModule
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     """
 
     def __init__(self, synthglobals: TorchSynthGlobals):
@@ -583,7 +586,7 @@ class TorchNoise(TorchSynthModule):
     Parameters
     ----------
     ratio (float): mix ratio between the incoming signal and the produced noise
-    synthglobals: TorchSynthGlobals: see TorchSynthModule
+    synthglobals (TorchSynthGlobals): global args, see TorchSynthModule
     """
 
     def __init__(self, ratio: T, synthglobals: TorchSynthGlobals):
