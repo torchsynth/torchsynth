@@ -29,7 +29,7 @@ setup(
     # },
     scripts=[],
     python_requires=">=3.6",
-    install_requires=["numpy", "scipy", "torch>=1.7"],
+    install_requires=["numpy", "scipy", "torch>=1.7", "pytorch-lightning"],
     extras_require={
         "test": [
             "pytest",

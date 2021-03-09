@@ -10,6 +10,7 @@ jupytext==v1.10.3   # Used in precommit hooks
 numpy
 scipy
 torch>=1.7
+pytorch-lightning
 pytest
 pytest-cov
 ipython
