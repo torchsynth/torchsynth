@@ -538,7 +538,9 @@ drum = TorchDrum(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
 drum_out = drum()
 for i in range(synthglobals16.batch_size):
     stft_plot(drum_out[i].view(-1).detach().numpy())
-    display(ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item()))
+    ipd.display(
+        ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item())
+    )
 
 # ### Filters
 
