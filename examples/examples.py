@@ -55,24 +55,23 @@ else:
             pass
 
     ipd = IPD()
+import random
+
 import numpy as np
-import torch
+import numpy.random
 import torch.fft
 import torch.tensor as T
 
-from torchsynth.defaults import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
+from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     TorchADSR,
     TorchFmVCO,
+    TorchIdentity,
     TorchNoise,
     TorchSineVCO,
-    TorchVCA,
     TorchSynthGlobals,
+    TorchVCA,
 )
-
-import random
-import numpy.random
-import torch
 
 # Determenistic seeds for replicable testing
 random.seed(0)
@@ -87,6 +86,8 @@ if torch.cuda.is_available():
     device = "cuda"
 else:
     device = "cpu"
+
+device = "cpu"
 
 
 def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
@@ -114,6 +115,15 @@ synthglobals = TorchSynthGlobals(
     batch_size=T(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 
+# For a few examples, we'll only generate one sound
+synthglobals1 = TorchSynthGlobals(
+    batch_size=T(1), sample_rate=T(44100), buffer_size=T(4 * 44100)
+)
+
+# And a short one sound
+synthglobals1short = TorchSynthGlobals(
+    batch_size=T(1), sample_rate=T(44100), buffer_size=T(4096)
+)
 
 # ## The Envelope
 # Our module is based on an ADSR envelope, standing for "attack, decay, sustain,
@@ -189,9 +199,6 @@ envelope = adsr.forward1D(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
-
-# +
-# # %matplotlib notebook
 
 # optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
 
@@ -398,70 +405,109 @@ print(list(noise.parameters()))
 # ## Drum Module
 #
 # Alternately, you can just use the Drum class that composes all these modules
-# together automatically. The drum module comprises a set of envelopes and oscillators needed to create one-shot sounds similar to a drum hit generator.
+# together automatically. The drum module comprises a set of envelopes
+# and oscillators needed to create one-shot sounds similar to a drum
+# hit generator.
 
-"""
+from torchsynth.module import TorchDrum
+
 drum1 = TorchDrum(
-    pitch_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25, alpha=3),
-    amp_adsr=TorchADSR(0.25, 0.25, 0.25, 0.25),
-    vco_1=TorchSineVCO(midi_f0=69, mod_depth=12),
-    noise=TorchNoise(ratio=0.5),
-    note_on_duration=1.0,
+    synthglobals=synthglobals1,
+    note_on_duration=T([1.0]),
 )
 
+assert drum1.pitch_adsr
+assert drum1.amp_adsr
+assert drum1.vco_1
+assert drum1.noise
+drum1.pitch_adsr = TorchADSR(
+    synthglobals1,
+    attack=T([0.25]),
+    decay=T([0.25]),
+    sustain=T([0.25]),
+    release=T([0.25]),
+    alpha=T([3]),
+)
+drum1.amp_adsr = TorchADSR(
+    synthglobals1,
+    attack=T([0.25]),
+    decay=T([0.25]),
+    sustain=T([0.25]),
+    release=T([0.25]),
+)
+drum1.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12]))
+# Here we disable vco2
+drum1.vco_2 = TorchIdentity(synthglobals)
+drum1.noise = TorchNoise(synthglobals1, ratio=T([0.5]))
+
 drum_out1 = drum1()
-stft_plot(drum_out1.detach().numpy())
+stft_plot(drum_out1.view(-1).detach().numpy())
 ipd.Audio(drum_out1.detach().numpy(), rate=drum1.sample_rate.item())
-"""
+
 
 # Additionally, the Drum class can take two oscillators.
 
-"""
+
+# +
 drum2 = TorchDrum(
-    pitch_adsr=TorchADSR(0.1, 0.5, 0.0, 0.25, alpha=3),
-    amp_adsr=TorchADSR(0.1, 0.25, 0.25, 0.25),
-    vco_1=TorchSineVCO(midi_f0=40, mod_depth=12),
-    vco_2=TorchSquareSawVCO(midi_f0=40, mod_depth=12, shape=0.5),
-    noise=TorchNoise(ratio=0.01),
-    note_on_duration=1.0,
+    synthglobals=synthglobals1,
+    note_on_duration=T([1.0]),
 )
+drum2.pitch_adsr = TorchADSR(
+    synthglobals1,
+    attack=T([0.1]),
+    decay=T([0.5]),
+    sustain=T([0.0]),
+    release=T([0.25]),
+    alpha=T([3]),
+)
+drum2.amp_adsr = TorchADSR(
+    synthglobals1,
+    attack=T([0.15]),
+    decay=T([0.25]),
+    sustain=T([0.25]),
+    release=T([0.25]),
+)
+drum2.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12]))
+drum2.vco_2 = TorchSquareSawVCO(
+    synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
+)
+drum2.noise = TorchNoise(synthglobals1, ratio=T([0.01]))
 
 drum_out2 = drum2()
-stft_plot(drum_out2.detach().numpy())
+stft_plot(drum_out2.view(-1).detach().numpy())
 ipd.Audio(drum_out2.detach().numpy(), rate=drum2.sample_rate.item())
-"""
+# -
+
 
 # Test gradients on entire drum
 
-"""
 err = torch.mean(torch.abs(drum_out1 - drum_out2))
 print(err)
-"""
 
 # Print out the gradients for all the paramters
 
-"""
 err.backward(retain_graph=True)
 
-for ((n1, p1), p2) in zip(drum1.named_parameters(), drum2.parameters()):
-    print(f"{n1:40} Drum1: {p1.grad.item()} \tDrum2: {p2.grad.item()}")
-    """
+# +
+# for ((n1, p1), p2) in zip(drum1.named_parameters(), drum2.parameters()):
+#    print(f"{n1:40} Drum1: {p1.grad.item()} \tDrum2: {p2.grad.item()}")
+# -
 
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Drum we just created.
 
-"""
-for n, p in drum1.named_parameters():
-    print(f"{n:40} Normalized = {p:.2f} Human Range = {p.from_0to1():.2f}")
-"""
+# +
+# for n, p in drum1.named_parameters():
+#    print(f"{n:40} Normalized = {p:.2f} Human Range = {p.from_0to1():.2f}")
+# -
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
 #
 # Parameters of individual modules can be accessed in several ways:
 
-"""
 # Get the full ModuleParameter object by name from the module
 print(drum1.vco_1.get_parameter("midi_f0"))
 
@@ -470,31 +516,31 @@ print(drum1.vco_1.p("midi_f0"))
 
 # Access the value as a float in the range from 0 to 1
 print(drum1.vco_1.get_parameter_0to1("midi_f0"))
-"""
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
-"""
 # Set the vco pitch using the human range, which is MIDI note number
-drum1.vco_1.set_parameter("midi_f0", 64)
+drum1.vco_1.set_parameter("midi_f0", T([64]))
 print(drum1.vco_1.p("midi_f0"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-drum1.vco_1.set_parameter_0to1("midi_f0", 0.5433)
+drum1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
 print(drum1.vco_1.p("midi_f0"))
-"""
 
 # ## Random synths
 #
-# Let's generate some random synths
+# Let's generate some random synths in batch
 
-"""
-drum = TorchDrum(note_on_duration=1.0).to(device)
-for i in range(10):
-    drum.randomize()
-    drum_out = drum()
-    display(ipd.Audio(drum_out.cpu().detach().numpy(), rate=drum.sample_rate.item()))
-"""
+synthglobals16 = TorchSynthGlobals(
+    batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
+)
+drum = TorchDrum(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
+drum_out = drum()
+for i in range(synthglobals16.batch_size):
+    stft_plot(drum_out[i].view(-1).detach().numpy())
+    ipd.display(
+        ipd.Audio(drum_out[i].cpu().detach().numpy(), rate=drum.sample_rate.item())
+    )
 
 # ### Filters
 
@@ -594,25 +640,26 @@ from torchsynth.filter import (
 )
 
 # Noise for testing
-buffer = 4096
-noise = torch.tensor(np.random.random(buffer) * 2 - 1, device=device).float()
+noise = torch.tensor(
+    np.random.random(synthglobals1short.buffer_size) * 2 - 1, device=device
+).float()
 stft_plot(noise.cpu().numpy())
 # -
 
 # We'll create two lowpass filters with different cutoffs and filter resonance to compare. The second filter has higher resonance at the filter cutoff, this causes the filter to ring at that frequency. This can be seen in the spectrogram as a darker line at the cutoff.
 
 # +
-lpf1 = TorchLowPassSVF(cutoff=T(500), resonance=T(1.0), buffer_size=T(buffer)).to(
-    device
-)
+lpf1 = TorchLowPassSVF(
+    cutoff=T(500), resonance=T(1.0), buffer_size=T(synthglobals1short.buffer_size)
+).to(device)
 filtered1 = lpf1(noise)
 
 stft_plot(filtered1.cpu().detach().numpy())
 
 # +
-lpf2 = TorchLowPassSVF(cutoff=T(1000), resonance=T(10), buffer_size=T(buffer)).to(
-    device
-)
+lpf2 = TorchLowPassSVF(
+    cutoff=T(1000), resonance=T(10), buffer_size=T(synthglobals1short.buffer_size)
+).to(device)
 filtered2 = lpf2(noise)
 
 stft_plot(filtered2.cpu().detach().numpy())
@@ -638,18 +685,13 @@ for p in lpf1.torchparameters:
 
 """
 # Highpass
-hpf = TorchHighPassSVF(cutoff=T(2048), buffer_size=T(buffer))
+hpf = TorchHighPassSVF(cutoff=T(2048), buffer_size=T(synthglobals1.buffer_size))
 filtered = hpf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
 """
 
 # We can also apply an envelope to the filter frequency. The mod_depth parameter determines how much effect the envelope will have on the cutoff. In this example a simple decay envelope is applied to the cutoff frequency, which has a base value of 20Hz, and has a duration of 100ms. The mod_depth is 10,000Hz, which means that as the envelope travels from 1 to 0, the cutoff will go from 10,020Hz down to 20Hz. The envelope is passed in as an extra argument to the call function on the filter.
-
-# The rest of this doesn't support batching yet, so we use batch_size 1
-synthglobals1 = TorchSynthGlobals(
-    batch_size=T(1), sample_rate=T(44100), buffer_size=T(buffer)
-)
 
 # +
 # Bandpass with envelope
@@ -659,10 +701,13 @@ env = TorchADSR(
     sustain=T([0.0]),
     release=T([0.0]),
     alpha=T([3.0]),
-    synthglobals=synthglobals1,
+    synthglobals=synthglobals1short,
 )(T([0.2]))
 bpf = TorchBandPassSVF(
-    cutoff=T(20), resonance=T(30), mod_depth=T(10000), buffer_size=T(buffer)
+    cutoff=T(20),
+    resonance=T(30),
+    mod_depth=T(10000),
+    buffer_size=T(synthglobals1short.buffer_size),
 )
 
 filtered = bpf(noise, env)
@@ -671,7 +716,9 @@ filtered = bpf(noise, env)
 
 # +
 # Bandstop
-bsf = TorchBandStopSVF(cutoff=T(2000), resonance=T(0.05), buffer_size=T(buffer))
+bsf = TorchBandStopSVF(
+    cutoff=T(2000), resonance=T(0.05), buffer_size=T(synthglobals1short.buffer_size)
+)
 filtered = bsf(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
