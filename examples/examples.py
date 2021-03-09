@@ -63,15 +63,8 @@ import torch.fft
 import torch.tensor as T
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
-from torchsynth.module import (
-    ADSR,
-    TorchFmVCO,
-    Identity,
-    Noise,
-    SineVCO,
-    VCA,
-)
 from torchsynth.globals import SynthGlobals
+from torchsynth.module import ADSR, VCA, Identity, Noise, SineVCO, TorchFmVCO
 
 # Determenistic seeds for replicable testing
 random.seed(0)

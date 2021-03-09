@@ -1,6 +1,6 @@
 import torch.tensor as T
 
-from torchsynth.default import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 
 
 class SynthGlobals:

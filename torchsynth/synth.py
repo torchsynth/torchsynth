@@ -1,18 +1,19 @@
 from typing import Dict
 
 import torch
-from torch import nn as nn, tensor as T
+from torch import nn as nn
+from torch import tensor as T
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
-    SynthModule,
     ADSR,
-    SineVCO,
-    SquareSawVCO,
-    Noise,
     VCA,
     CrossfadeKnob,
+    Noise,
+    SineVCO,
+    SquareSawVCO,
+    SynthModule,
 )
 
 
