@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
+from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -177,7 +177,7 @@ class TorchSynthModule(nn.Module):
         ----------
         parameter_id (str)  :   Id of the parameter to return the value for
         """
-        value = self.torchparameters[parameter_id].item()
+        value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
         return value
 
@@ -270,13 +270,24 @@ class TorchADSR(TorchSynthModule):
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-        assert torch.all(self.p("attack") + self.p("decay") < note_on_duration)
 
-        attack = self.make_attack()
-        decay = self.make_decay()
-        release = self.make_release(note_on_duration)
+        # TODO `note_on_duration` is set to be a parameter soon...
 
-        return attack * decay * release
+        # Calculations to accommodate attack/decay phase cut by note duration.
+        attack = self.p("attack")
+        decay = self.p("decay")
+
+        new_attack = torch.minimum(attack, note_on_duration)
+        new_decay = torch.maximum(
+            note_on_duration - attack, T([0.0], device=attack.device)
+        )
+        new_decay = torch.minimum(new_decay, decay)
+
+        attack_signal = self.make_attack(new_attack)
+        decay_signal = self.make_decay(new_attack, new_decay)
+        release_signal = self.make_release(note_on_duration)
+
+        return attack_signal * decay_signal * release_signal
 
     def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
@@ -302,25 +313,34 @@ class TorchADSR(TorchSynthModule):
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0))
-        ramp = ramp / duration_[:, None]
-        ramp = torch.minimum(ramp, T(1.0))
+        ramp = torch.maximum(ramp, T(0.0, device=duration.device))
+        ramp = (ramp + EPSILON) / (duration_[:, None] + EPSILON)
+        ramp = torch.minimum(ramp, T(1.0, device=duration.device))
+
+        """
+        The following is a workaround. In inverse mode, a ramp with 0 duration
+        (that is all 1's) becomes all 0's, which is a problem for the
+        ultimate calculation of the ADSR signal (a * d * r => 0's). So this
+        replaces only rows who sum to 0 (i.e., all components are zero).
+        """
 
         if inverse:
-            ramp = 1 - ramp
+            ramp = 1.0 - ramp
+            ramp[torch.sum(ramp, axis=1) == 0] = 1.0
 
         # Apply scaling factor.
         ramp = torch.pow(ramp, self.p("alpha")[:, None])
 
         return ramp.as_subclass(Signal)
 
-    def make_attack(self) -> Signal:
-        attack = self.p("attack")
-        return self._ramp(torch.zeros(self.batch_size, device=attack.device), attack)
+    def make_attack(self, attack_time) -> Signal:
+        return self._ramp(
+            torch.zeros(self.batch_size, device=attack_time.device), attack_time
+        )
 
-    def make_decay(self) -> Signal:
+    def make_decay(self, attack_time, decay_time) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
-        _b = self._ramp(self.p("attack"), self.p("decay"), inverse=True)
+        _b = self._ramp(attack_time, decay_time, inverse=True)
         return torch.squeeze(_a * _b + self.p("sustain")[:, None])
 
     def make_release(self, note_on_duration) -> Signal:
@@ -361,27 +381,27 @@ class TorchVCO(TorchSynthModule):
             name="mod_depth",
             description="depth of the pitch modulation in semitones",
         ),
-        # TODO: I think phase should go in here??
+        ModuleParameterRange(
+            -torch.pi,
+            torch.pi,
+            name="initial_phase",
+            description="Initial phase for this oscillator",
+        ),
     ]
 
     def __init__(
         self,
         synthglobals: TorchSynthGlobals,
-        phase: Optional[T] = None,
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
 
-        # Setup initial phase values
-        if phase is not None:
-            self.phase = nn.Parameter(data=phase.unsqueeze(1), requires_grad=False)
-        else:
-            # Create initial phase of zeros like the parameters
-            self.phase = nn.Parameter(
-                data=torch.zeros((self.batch_size,)).unsqueeze(1), requires_grad=False
-            )
-
-        assert self.phase.shape[0] == self.batch_size
+        # TODO: Currently making phase a parameter with no grad
+        # Is there a way to do this without making it a param?
+        # See: https://github.com/turian/torchsynth/issues/123
+        self.phase = nn.Parameter(
+            data=self.get_parameter("initial_phase"), requires_grad=False
+        )
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
@@ -409,7 +429,9 @@ class TorchVCO(TorchSynthModule):
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
         control_as_frequency = self.make_control_as_frequency(mod_signal)
-        cosine_argument = self.make_argument(control_as_frequency) + self.phase
+        cosine_argument = self.make_argument(control_as_frequency)
+        cosine_argument += self.phase.unsqueeze(1)
+        self.phase.data = cosine_argument[:, -1]
         output = self.oscillator(cosine_argument)
         return output.as_subclass(Signal)
 
@@ -651,6 +673,31 @@ class TorchSynthParameters(TorchSynthModule0Ddeprecated):
         raise RuntimeError("TorchSynthParameters cannot be called")
 
 
+class TorchIdentity(TorchSynthModule):
+    """
+    Pass through module
+    """
+
+    def _forward(self, signal: Signal) -> Signal:
+        return signal
+
+
+class TorchCrossfadeKnob(TorchSynthModule):
+    """
+    Crossfade knob parameter with no signal generation
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0,
+            1.0,
+            curve="linear",
+            name="ratio",
+            description="crossfade knob",
+        ),
+    ]
+
+
 class TorchSynth(nn.Module):
     """
     Base class for synthesizers that combine one or more TorchSynthModules
@@ -684,7 +731,7 @@ class TorchSynth(nn.Module):
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
-    def add_synth_modules(self, modules: Dict[str, TorchSynthModule0Ddeprecated]):
+    def add_synth_modules(self, modules: Dict[str, TorchSynthModule]):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
@@ -719,63 +766,54 @@ class TorchSynth(nn.Module):
             parameter.data = torch.rand_like(parameter)
 
 
-# class TorchDrum(TorchSynth):
-#    """
-#    A package of modules that makes one drum hit.
-#    """
-#
-#    def __init__(
-#        self,
-#        note_on_duration: float,
-#        vco_ratio: float = 0.5,
-#        pitch_adsr: TorchADSR = TorchADSR(),
-#        amp_adsr: TorchADSR = TorchADSR(),
-#        vco_1: TorchVCO = TorchSineVCO(),
-#        vco_2: TorchVCO = TorchSquareSawVCO(),
-#        noise: TorchNoise = TorchNoise(),
-#        vca: TorchVCA = TorchVCA(),
-#        synthglobals: TorchSynthGlobals,
-#    ):
-#        super().__init__(synthglobals: TorchSynthGlobals)
-#        assert note_on_duration >= 0
-#
-#        # We assume that sustain duration is a hyper-parameter,
-#        # with the mindset that if you are trying to learn to
-#        # synthesize a sound, you won't be adjusting the note_on_duration.
-#        # However, this is easily changed if desired.
-#        self.note_on_duration = T(note_on_duration)
-#
-#        # Add required global parameters
-#        self.global_params.add_parameters(
-#            [ModuleParameter(vco_ratio, "vco_ratio", ModuleParameterRange(0.0, 1.0))]
-#        )
-#
-#        # Register all modules as children
-#        self.add_synth_modules(
-#            {
-#                "pitch_adsr": pitch_adsr,
-#                "amp_adsr": amp_adsr,
-#                "vco_1": vco_1,
-#                "vco_2": vco_2,
-#                "noise": noise,
-#                "vca": vca,
-#            }
-#        )
-#
-#    def forward(self) -> T:
-#        # The convention for triggering a note event is that it has
-#        # the same note_on_duration for both ADSRs.
-#        note_on_duration = self.note_on_duration
-#        pitch_envelope = self.pitch_adsr(note_on_duration)
-#        amp_envelope = self.amp_adsr(note_on_duration)
-#
-#        vco_1_out = self.vco_1(pitch_envelope)
-#        vco_2_out = self.vco_2(pitch_envelope)
-#
-#        audio_out = util.crossfade(
-#            vco_1_out, vco_2_out, self.global_params.p("vco_ratio")
-#        )
-#
-#        audio_out = self.noise(audio_out)
-#
-#        return self.vca(amp_envelope, audio_out)
+class TorchDrum(TorchSynth):
+    """
+    A package of modules that makes one drum hit.
+    """
+
+    def __init__(
+        self,
+        note_on_duration: float,
+        synthglobals=TorchSynthGlobals,
+    ):
+        super().__init__(synthglobals=synthglobals)
+
+        # We assume that sustain duration is a hyper-parameter,
+        # with the mindset that if you are trying to learn to
+        # synthesize a sound, you won't be adjusting the note_on_duration.
+        # However, this is easily changed if desired.
+
+        # TODO: Turn note on duration into a knob parameter
+        # See https://github.com/turian/torchsynth/issues/117
+        self.note_on_duration = nn.Parameter(
+            data=T([note_on_duration] * synthglobals.batch_size), requires_grad=False
+        )
+        assert torch.all(self.note_on_duration >= 0)
+
+        # Register all modules as children
+        self.add_synth_modules(
+            {
+                "pitch_adsr": TorchADSR(synthglobals),
+                "amp_adsr": TorchADSR(synthglobals),
+                "vco_1": TorchSineVCO(synthglobals),
+                "vco_2": TorchSquareSawVCO(synthglobals),
+                "noise": TorchNoise(synthglobals),
+                "vca": TorchVCA(synthglobals),
+                "vca_ratio": TorchCrossfadeKnob(synthglobals),
+            }
+        )
+
+    def forward(self) -> T:
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on_duration
+        pitch_envelope = self.pitch_adsr.forward1D(note_on_duration)
+        amp_envelope = self.amp_adsr.forward1D(note_on_duration)
+
+        vco_1_out = self.vco_1.forward1D(pitch_envelope)
+        vco_2_out = self.vco_2.forward1D(pitch_envelope)
+
+        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
+        audio_out = self.noise.forward1D(audio_out)
+
+        return self.vca.forward1D(amp_envelope, audio_out)
