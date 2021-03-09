@@ -70,6 +70,9 @@ class TorchSynthModule(nn.Module):
     # TODO: have these already moved to cuda
     def __init__(self, synthglobals: TorchSynthGlobals, **kwargs: Dict[str, T]):
         """
+        synthglobals (TorchSynthGlobals)    : These are global
+        settings shared across all modules in the same synth.
+
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -472,7 +475,6 @@ class TorchSquareSawVCO(TorchVCO):
 
     Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
-
     """
 
     parameter_ranges: List[ModuleParameterRange] = TorchVCO.parameter_ranges + [
