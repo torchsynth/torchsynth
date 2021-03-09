@@ -273,19 +273,21 @@ class TorchADSR(TorchSynthModule):
 
         # TODO `note_on_duration` is set to be a parameter soon...
 
-        # Calculation to accommodate attack/decay phase cut by note duration.
+        # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
-        attack_time = torch.minimum(attack, note_on_duration)
-        decay_time = torch.maximum(
+        decay = self.p("decay")
+
+        new_attack = torch.minimum(attack, note_on_duration)
+        new_decay = torch.maximum(
             note_on_duration - attack, T([0.0], device=attack.device)
         )
-        decay_time = torch.minimum(decay_time, self.p("decay"))
+        new_decay = torch.minimum(new_decay, decay)
 
-        attack = self.make_attack(attack_time)
-        decay = self.make_decay(attack_time, decay_time)
-        release = self.make_release(note_on_duration)
+        attack_signal = self.make_attack(new_attack)
+        decay_signal = self.make_decay(new_attack, new_decay)
+        release_signal = self.make_release(note_on_duration)
 
-        return attack * decay * release
+        return attack_signal * decay_signal * release_signal
 
     def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
