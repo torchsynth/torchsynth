@@ -6,7 +6,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-import torch.tensor as T
+from torch import tensor as T
 
 
 class ModuleParameterRange:

@@ -69,9 +69,9 @@ from torchsynth.module import (
     TorchIdentity,
     TorchNoise,
     TorchSineVCO,
-    TorchSynthGlobals,
     TorchVCA,
 )
+from torchsynth.globals import TorchSynthGlobals
 
 # Determenistic seeds for replicable testing
 random.seed(0)

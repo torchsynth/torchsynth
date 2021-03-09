@@ -7,7 +7,9 @@ import torch.nn
 import torch.tensor as T
 
 import torchsynth.defaults as defaults
+import torchsynth.globals
 import torchsynth.module as synthmodule
+import torchsynth.parameter
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
@@ -76,7 +78,7 @@ class TestTorchSynth:
 
     def test_construction(self):
         # Test empty construction
-        synthglobals = synthmodule.TorchSynthGlobals(
+        synthglobals = torchsynth.globals.TorchSynthGlobals(
             sample_rate=T(16000), buffer_size=T(512), batch_size=T(2)
         )
         # Test construction with args
@@ -85,7 +87,7 @@ class TestTorchSynth:
         assert synth.buffer_size == T(512)
 
     def test_add_synth_module(self):
-        synthglobals = synthmodule.TorchSynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.TorchSynthGlobals(batch_size=T(2))
         synth = synthmodule.TorchSynth(synthglobals)
         vco = synthmodule.TorchSineVCO(
             midi_f0=T([12.0, 30.0]),
@@ -119,7 +121,7 @@ class TestTorchSynth:
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
-            synthglobals_weird_sr = synthmodule.TorchSynthGlobals(
+            synthglobals_weird_sr = torchsynth.globals.TorchSynthGlobals(
                 batch_size=T(2), sample_rate=T(16000)
             )
             vco_2 = synthmodule.TorchSineVCO(
@@ -132,7 +134,9 @@ class TestTorchSynth:
         # This should raise an assertion because it has a different batch size than
         # the other modules
         with pytest.raises(ValueError):
-            synthglobals_new_batchsize = synthmodule.TorchSynthGlobals(batch_size=T(1))
+            synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
+                batch_size=T(1)
+            )
             adsr = synthmodule.TorchADSR(
                 attack=T([0.5]),
                 decay=T([0.25]),
@@ -145,7 +149,9 @@ class TestTorchSynth:
 
         # Same here
         with pytest.raises(ValueError):
-            synthglobals_new_batchsize = synthmodule.TorchSynthGlobals(batch_size=T(1))
+            synthglobals_new_batchsize = torchsynth.globals.TorchSynthGlobals(
+                batch_size=T(1)
+            )
             adsr = synthmodule.TorchADSR(
                 synthglobals=synthglobals_new_batchsize,
             )

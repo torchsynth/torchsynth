@@ -11,43 +11,10 @@ import torch.tensor as T
 import torchsynth.util as util
 from torchsynth.defaults import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE, EPSILON
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
+from torchsynth.globals import TorchSynthGlobals
 from torchsynth.signal import Signal
 
 torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
-
-
-class TorchSynthGlobals:
-    """
-    Any synth module requires these "global" values.
-    The should be the same for every module that is connected.
-    """
-
-    def __init__(
-        self,
-        batch_size: T,
-        sample_rate: T = T(DEFAULT_SAMPLE_RATE),
-        buffer_size: T = T(DEFAULT_BUFFER_SIZE),
-    ):
-        """
-        Parameters
-        ----------
-        batch_size (T)  : Scalar that indicates how many parameter settings
-                          there are, i.e. how many different sounds to generate.
-        sample_rate (T) : Scalar sample rate for audio generation.
-        buffer_size (T) : Duration of the output, 4 seconds by default.
-        """
-        assert batch_size.ndim == 0
-        assert sample_rate.ndim == 0
-        assert buffer_size.ndim == 0
-        self.batch_size = batch_size
-        self.sample_rate = sample_rate
-        self.buffer_size = buffer_size
-
-    def __repr__(self):
-        return (
-            f"TorchSynthGlobals(batch_size={self.batch_size}, "
-            + "sample_rate={self.sample_rate}, buffer_size={self.buffer_size}"
-        )
 
 
 class TorchSynthModule(nn.Module):
@@ -56,11 +23,9 @@ class TorchSynthModule(nn.Module):
     All parameters are assumed to be 1D tensors,
     the dimension size being the batch size.
 
-    WARNING: For now, TorchSynthModules should be atomic and not
-    contain other SynthModules.
-
-    TODO: Later, we should deprecate SynthModule and fold everything
-    into here.
+    WARNING: TorchSynthModules should be atomic and not
+    contain other SynthModules. This is similar to a modular synth,
+    where modules don't contain submodules.
     """
 
     # This outlines all the parameters available in this module
