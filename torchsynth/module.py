@@ -759,8 +759,10 @@ class TorchDrum(TorchSynth):
         # with the mindset that if you are trying to learn to
         # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        # TODO: Fix this later
-        self.note_on_duration = T([note_on_duration] * synthglobals.batch_size)
+        # TODO: Fix this later -- should it actually be a parameter?
+        self.note_on_duration = nn.Parameter(
+            data=T([note_on_duration] * synthglobals.batch_size), requires_grad=False
+        )
         assert torch.all(self.note_on_duration >= 0)
 
         # Register all modules as children
@@ -787,7 +789,6 @@ class TorchDrum(TorchSynth):
         vco_2_out = self.vco_2.forward1D(pitch_envelope)
 
         audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
-
         audio_out = self.noise.forward1D(audio_out)
 
         return self.vca.forward1D(amp_envelope, audio_out)

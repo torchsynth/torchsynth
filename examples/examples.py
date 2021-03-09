@@ -411,8 +411,8 @@ from torchsynth.module import TorchDrum
 
 drum1 = TorchDrum(
     synthglobals=synthglobals1,
-    note_on_duration=T([1.0]),
-)
+    note_on_duration=1.0,
+).to(device)
 
 assert drum1.pitch_adsr
 assert drum1.amp_adsr
@@ -425,22 +425,22 @@ drum1.pitch_adsr = TorchADSR(
     sustain=T([0.25]),
     release=T([0.25]),
     alpha=T([3]),
-)
+).to(device)
 drum1.amp_adsr = TorchADSR(
     synthglobals1,
     attack=T([0.25]),
     decay=T([0.25]),
     sustain=T([0.25]),
     release=T([0.25]),
-)
-drum1.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12]))
+).to(device)
+drum1.vco_1 = TorchSineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
 # Here we disable vco2
-drum1.vco_2 = TorchIdentity(synthglobals)
-drum1.noise = TorchNoise(synthglobals1, ratio=T([0.5]))
+drum1.vco_2 = TorchIdentity(synthglobals).to(device)
+drum1.noise = TorchNoise(synthglobals1, ratio=T([0.5])).to(device)
 
 drum_out1 = drum1()
-stft_plot(drum_out1.view(-1).detach().numpy())
-ipd.Audio(drum_out1.detach().numpy(), rate=drum1.sample_rate.item())
+stft_plot(drum_out1.cpu().view(-1).detach().numpy())
+ipd.Audio(drum_out1.cpu().detach().numpy(), rate=drum1.sample_rate.item())
 
 
 # Additionally, the Drum class can take two oscillators.
