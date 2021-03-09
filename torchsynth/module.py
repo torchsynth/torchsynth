@@ -776,7 +776,9 @@ class TorchDrum(TorchSynth):
         # with the mindset that if you are trying to learn to
         # synthesize a sound, you won't be adjusting the note_on_duration.
         # However, this is easily changed if desired.
-        # TODO: Fix this later -- should it actually be a parameter?
+
+        # TODO: Turn note on duration into a knob parameter
+        # See https://github.com/turian/torchsynth/issues/117
         self.note_on_duration = nn.Parameter(
             data=T([note_on_duration] * synthglobals.batch_size), requires_grad=False
         )
