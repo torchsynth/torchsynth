@@ -19,7 +19,7 @@ pytorch. It is GPU-optional and differentiable.
 ```
 git clone https://github.com/turian/torchsynth
 cd torchsynth
-pip install -e ".[dev]"
+pip3 install -e ".[dev]"
 ```
 
 Make sure you have pre-commit hooks installed:
@@ -49,7 +49,7 @@ Unit testing is performed using `pytest`.
 
 `pytest` and other project development dependencies can be installed as follows: 
 ```
-pip install -e ".[test]"
+pip3 install -e ".[test]"
 ```
 
 To run tests, run `pytest` from the project root:
