@@ -97,7 +97,7 @@ class AbstractSynth(LightningModule):
         """
         if batch_idx:
             self.randomize(seed=batch_idx)
-        self._forward(*args, **kwargs)
+        return self._forward(*args, **kwargs)
 
     def randomize(self, seed: Optional[int]):
         """
