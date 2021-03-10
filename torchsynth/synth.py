@@ -100,6 +100,18 @@ class AbstractSynth(LightningModule):
         return self._forward(*args, **kwargs)
 
     # For lightning
+    def training_step(self, batch, batch_idx):
+        print("batch_idx", batch_idx)
+        import sys
+
+        sys.stdout.flush()
+        return T(0.0, device=self.device, requires_grad=True)
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
+
+    # For lightning
     def test_step(self, batch, batch_idx):
         assert batch.ndim == 1
         # TODO: Test with multiple lightning (not synth) batches

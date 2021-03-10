@@ -29,7 +29,8 @@ import torch.tensor as T
 from tqdm.auto import tqdm
 
 import torch
-import torchvision.models as models
+
+# import torchvision.models as models
 import torch.autograd.profiler as profiler
 import pytorch_lightning as pl
 
@@ -55,6 +56,7 @@ class batch_idx_dataset(torch.utils.data.Dataset):
         self.num_batches = num_batches
 
     def __getitem__(self, idx):
+        print(idx)
         return idx
 
     def __len__(self):
@@ -65,7 +67,10 @@ synth1M = batch_idx_dataset(1024 * 1024 // BATCH_SIZE)
 
 # Probably don't need to pin memory for generating ints
 # We use batch_size 1 here because the synth modules are already batched!
-test_dataloader = torch.utils.data.DataLoader(synth1M, num_workers=ncores, batch_size=1)
+train_dataloader = torch.utils.data.DataLoader(
+    batch_idx_dataset(10), num_workers=0, batch_size=1
+)
+test_dataloader = torch.utils.data.DataLoader(synth1M, num_workers=0, batch_size=1)
 
 synthglobals = SynthGlobals(batch_size=T(256))
 voice = Voice(synthglobals)
@@ -74,60 +79,7 @@ voice = Voice(synthglobals)
 # specifies all available GPUs (if only one GPU is not occupied, uses one gpu)
 # Use deterministic?
 # trainer = pl.Trainer(precision=16, gpus=-1, auto_select_gpus=True, accelerator='ddp', deterministic=True)
-trainer = pl.Trainer(precision=16, gpus=gpus, accelerator="ddp", deterministic=True)
+# trainer = pl.Trainer(precision=16, gpus=gpus, accelerator="ddp", deterministic=True)
+trainer = pl.Trainer(max_epochs=0)
+trainer.fit(voice, train_dataloader=train_dataloader)
 trainer.test(voice, test_dataloaders=test_dataloader)
-
-voice = Voice(synthglobals)
-if torch.cuda.is_available():
-    voice.cuda()
-voice.eval()
-with torch.no_grad():
-    for i in tqdm(range(10)):
-        voice()
-
-voice = Voice(synthglobals)
-if torch.cuda.is_available():
-    voice.cuda()
-voice.eval()
-with torch.no_grad():
-    for i in tqdm(range(10)):
-        voice(i)
-
-voice = Voice(synthglobals)
-voice.vco_2 = torchsynth.module.Identity(synthglobals)
-if torch.cuda.is_available():
-    voice.cuda()
-voice.eval()
-with torch.no_grad():
-    for i in tqdm(range(10)):
-        voice(i)
-
-voice = Voice(synthglobals)
-voice.vco_1 = torchsynth.module.Identity(synthglobals)
-if torch.cuda.is_available():
-    voice.cuda()
-voice.eval()
-with torch.no_grad():
-    for i in tqdm(range(10)):
-        voice(i)
-
-voice.eval()
-with torch.no_grad():
-    with profiler.profile(profile_memory=True, record_shapes=True) as prof:
-        with profiler.record_function("forward"):
-            for i in tqdm(range(10)):
-                voice(i)
-
-print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=10))
-
-print(
-    prof.key_averages(group_by_input_shape=True).table(
-        sort_by="cpu_time_total", row_limit=10
-    )
-)
-
-print(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10))
-
-print(prof.key_averages().table(sort_by="cpu_memory_usage", row_limit=10))
-
-prof.export_chrome_trace("trace.json")
