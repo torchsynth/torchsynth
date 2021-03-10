@@ -362,7 +362,9 @@ class VCO(SynthModule):
         super().__init__(synthglobals, **kwargs)
 
         # TODO: Make sure this is on GPU
-        self.phase = self.get_parameter("initial_phase")
+        # https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html#init-tensors-using-type-as-and-register-buffer
+        # Do we want to detach clone?
+        self.phase = self.get_parameter("initial_phase").detach().clone()
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
