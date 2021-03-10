@@ -101,6 +101,7 @@ class AbstractSynth(LightningModule):
         """
         if batch_idx:
             self.randomize(seed=batch_idx)
+        return self._forward(*args, **kwargs)
 
     # For lightning
     def test_step(self, batch, batch_idx):
