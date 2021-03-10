@@ -45,6 +45,7 @@ class TestTorchUtil:
                     0.2927267551422119,
                     0.5945193767547607,
                     0.9566778540611267,
-                ]
+                ],
+                device="cuda",
             )
             assert torch.mean(torch.abs(generated - expected)) < 1e-6
