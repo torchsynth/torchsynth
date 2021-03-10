@@ -110,7 +110,7 @@ class AbstractSynth(LightningModule):
         _ = torch.stack([self(i) for i in batch])
         # You probably want to do something with the results above
         # We just return 0, which lightning accumulates as the test error
-        return T(0.0)
+        return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int]):
         """
