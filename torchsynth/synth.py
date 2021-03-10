@@ -104,10 +104,6 @@ class AbstractSynth(LightningModule):
 
     # For lightning
     def training_step(self, batch, batch_idx):
-        print("batch_idx", batch_idx)
-        import sys
-
-        sys.stdout.flush()
         return T(0.0, device=self.device, requires_grad=True)
 
     def configure_optimizers(self):
