@@ -164,7 +164,7 @@ note_on_duration = T([0.5, 1.5], device=device)
 adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
-envelope = adsr.forward(note_on_duration)
+envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
 
@@ -186,7 +186,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
 adsr = ADSR(synthglobals=synthglobals).to(device)
-envelope = adsr.forward(note_on_duration)
+envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
@@ -227,13 +227,13 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
-envelope = adsr.forward(note_on_duration)
+envelope = adsr(note_on_duration)
 
 # SineVCO test
 sine_vco = SineVCO(
     midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), synthglobals=synthglobals
 ).to(device)
-sine_out = sine_vco.forward(envelope)
+sine_out = sine_vco(envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
 ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
@@ -271,7 +271,7 @@ square_saw = SquareSawVCO(
 ).to(device)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
-square_saw_out = square_saw.forward(env2)
+square_saw_out = square_saw(env2)
 stft_plot(square_saw_out[0].cpu().detach().numpy())
 ipd.Audio(square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
 stft_plot(square_saw_out[1].cpu().detach().numpy())
@@ -291,7 +291,7 @@ print(err)
 
 # +
 vca = VCA(synthglobals)
-test_output = vca.forward(envelope, sine_out)
+test_output = vca(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
 # -
@@ -310,16 +310,16 @@ time_plot(test_output[0].detach().cpu())
 sine_operator = SineVCO(
     midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-operator_out = sine_operator.forward(envelope)
+operator_out = sine_operator(envelope)
 
 # Shape the modulation depth.
-operator_out = vca.forward(envelope, operator_out)
+operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
     midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-fm_out = fm_vco.forward(operator_out)
+fm_out = fm_vco(operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
 ipd.display(ipd.Audio(fm_out[0].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
@@ -339,7 +339,7 @@ vco = SineVCO(
 ).to(device)
 noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
 
-noisy_sine = noise.forward(vco.forward(env))
+noisy_sine = noise(vco(env))
 
 stft_plot(noisy_sine[0].detach().cpu().numpy())
 ipd.display(
@@ -374,7 +374,7 @@ error_hist = []
 for i in range(100):
     optimizer.zero_grad()
 
-    noisy_sine = noise.forward(vco.forward(env))
+    noisy_sine = noise(vco(env))
     rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
     rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
     err = torch.abs(rms1 - rms0)
@@ -549,7 +549,7 @@ stft_plot(noise.cpu().detach().numpy())
 
 # +
 ma_filter = MovingAverage(filter_length=T(32.0)).to(device)
-filtered = ma_filter.forward(noise)
+filtered = ma_filter(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
 ipd.Audio(filtered.cpu().detach().numpy(), rate=44100)
