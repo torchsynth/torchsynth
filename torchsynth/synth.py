@@ -94,7 +94,6 @@ class Voice(AbstractSynth):
 
     def __init__(
         self,
-        note_on_duration: float,
         synthglobals=SynthGlobals,
     ):
         super().__init__(synthglobals=synthglobals)
