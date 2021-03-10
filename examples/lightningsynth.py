@@ -88,7 +88,7 @@ trainer = pl.Trainer(
     precision=precision,
     gpus=gpus,
     auto_select_gpus=True,
-    accelerator=None,
+    accelerator=accelerator,
     deterministic=True,
     max_epochs=0,
 )
