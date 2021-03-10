@@ -106,10 +106,13 @@ class AbstractSynth(LightningModule):
         # TODO: Test with multiple lightning (not synth) batches
         results = torch.stack([self(i) for i in batch])
         if batch_idx == 0:
-            import soundfile
+            from scipy.io.wavfile import write
 
-            for i, x in enumerate(results):
-                sf.write("%06d.flac" % i, data, self.synthglobals.sample_rate)
+            for i in range(results.shape[1]):
+                audio = torch.clamp(results[0, i], -1, 1).detach().cpu().numpy()
+                import numpy as np
+
+                write("%06d.wav" % i, self.synthglobals.sample_rate, audio.flatten())
         # You probably want to do something with the results above
         # We just return 0, which lightning accumulates as the test error
         return T(0.0)
