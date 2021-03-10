@@ -24,6 +24,8 @@ class ModuleParameterRange:
     curve   (str)   :   relationship between parameter values and the normalized values
                         in the range [0,1]. Must be one of "linear", "log", or "exp".
                         Defaults to "linear"
+                        # TODO: Give these better names so we don't mess
+                        # these up
     name    (str) : name of this parameter
     description (str) : optional description of this parameter
     """

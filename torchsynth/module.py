@@ -236,8 +236,6 @@ class ADSR(SynthModule):
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
 
-        # TODO `note_on_duration` is set to be a parameter soon...
-
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
         decay = self.p("decay")
@@ -361,12 +359,10 @@ class VCO(SynthModule):
     ):
         super().__init__(synthglobals, **kwargs)
 
-        # TODO: Currently making phase a parameter with no grad
-        # Is there a way to do this without making it a param?
-        # See: https://github.com/turian/torchsynth/issues/123
-        self.phase = nn.Parameter(
-            data=self.get_parameter("initial_phase"), requires_grad=False
-        )
+        # TODO: Make sure this is on GPU
+        # https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html#init-tensors-using-type-as-and-register-buffer
+        # Do we want to detach clone?
+        self.phase = self.get_parameter("initial_phase").detach().clone()
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
@@ -659,5 +655,25 @@ class CrossfadeKnob(SynthModule):
             curve="linear",
             name="ratio",
             description="crossfade knob",
+        ),
+    ]
+
+
+class NoteOnButton(SynthModule):
+    """
+    Note-on-duration button parameter with no signal generation.
+    (Could later be a mono keyboard that outputs the midi f0 also
+    https://github.com/turian/torchsynth/issues/117)
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0,
+            4.0,
+            # TODO: Make sure this is the correct curve
+            # curve="log",
+            curve="linear",
+            name="duration",
+            description="note-on button, in seconds",
         ),
     ]
