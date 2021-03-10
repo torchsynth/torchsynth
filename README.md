@@ -15,14 +15,16 @@ pytorch. It is GPU-optional and differentiable.
 
 You will need to install the particular version of
 [torchcsprng][https://github.com/pytorch/csprng] for your CUDA
-device. Please follow their simple installation instructions.
+device. Please follow their simple installation instructions.  But
+if you use the CPU version of torchcsprng, it probably won't affect
+performance much.
 
 ## Development Installation
 
 ```
 git clone https://github.com/turian/torchsynth
 cd torchsynth
-pip install -e ".[dev]"
+pip3 install -e ".[dev]"
 ```
 
 Make sure you have pre-commit hooks installed:
@@ -52,7 +54,7 @@ Unit testing is performed using `pytest`.
 
 `pytest` and other project development dependencies can be installed as follows: 
 ```
-pip install -e ".[test]"
+pip3 install -e ".[test]"
 ```
 
 To run tests, run `pytest` from the project root:
