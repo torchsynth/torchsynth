@@ -1,6 +1,7 @@
 from typing import Dict
 
 import torch
+from pytorch_lightning.core.lightning import LightningModule
 from torch import nn as nn
 from torch import tensor as T
 
@@ -87,7 +88,7 @@ class AbstractSynth(nn.Module):
         ...
 
 
-class Voice(AbstractSynth):
+class Voice(LightningModule, AbstractSynth):
     """
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
@@ -97,7 +98,8 @@ class Voice(AbstractSynth):
         note_on_duration: float,
         synthglobals=SynthGlobals,
     ):
-        super().__init__(synthglobals=synthglobals)
+        LightningModule.__init__()
+        AbstractSynth.__init__(synthglobals=synthglobals)
 
         # Register all modules as children
         self.add_synth_modules(
