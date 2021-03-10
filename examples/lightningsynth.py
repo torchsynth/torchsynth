@@ -70,12 +70,20 @@ test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size
 synthglobals = SynthGlobals(batch_size=T(256))
 voice = Voice(synthglobals)
 
-# TODO: Change precision?
-# specifies all available GPUs (if only one GPU is not occupied, uses one gpu)
+if gpus == 0:
+    gpus = None
+    precision = 32
+else:
+    # specifies all available GPUs (if only one GPU is not occupied,
+    # auto_select_gpus=True uses one gpu)
+    gpus = -1
+    # TODO: Change precision?
+    precision = 16
+
 # Use deterministic?
 trainer = pl.Trainer(
-    precision=16,
-    gpus=-1,
+    precision=precision,
+    gpus=gpus,
     auto_select_gpus=True,
     accelerator="ddp",
     deterministic=True,
