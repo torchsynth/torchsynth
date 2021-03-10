@@ -44,7 +44,7 @@ print("Usings %d gpus" % gpus)
 # Note this is the batch size for our synth!
 # i.e. this many synth sounds are generated at once
 # With fp16 enabled, this batch size takes 4.2GB of GPU memory.
-BATCH_SIZE = 1048576
+BATCH_SIZE = 128
 
 import multiprocessing
 
