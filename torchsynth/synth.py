@@ -99,6 +99,12 @@ class AbstractSynth(LightningModule):
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
+    # For lightning
+    def test_step(self, batch, batch_idx):
+        assert batch.ndim == 1
+        # TODO: Test with multiple lightning (not synth) batches
+        return torch.stack([self(i) for i in batch])
+
     def randomize(self, seed: Optional[int]):
         """
         Randomize all parameters
