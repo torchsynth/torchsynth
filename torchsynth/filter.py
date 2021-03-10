@@ -36,7 +36,7 @@ class FIRLowPass(SynthModule0Ddeprecated):
                 ModuleParameter(
                     value=cutoff,
                     parameter_name="cutoff",
-                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, "log"),
+                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, 0.5),
                 ),
                 ModuleParameter(
                     value=filter_length,
@@ -179,17 +179,17 @@ class SVF(SynthModule0Ddeprecated):
             [
                 ModuleParameter(
                     value=cutoff,
-                    parameter_range=ModuleParameterRange(5.0, nyquist, "log"),
+                    parameter_range=ModuleParameterRange(5.0, nyquist, 0.5),
                     parameter_name="cutoff",
                 ),
                 ModuleParameter(
                     value=resonance,
-                    parameter_range=ModuleParameterRange(0.01, 1000.0, "log"),
+                    parameter_range=ModuleParameterRange(0.01, 1000.0, 0.5),
                     parameter_name="resonance",
                 ),
                 ModuleParameter(
                     value=mod_depth,
-                    parameter_range=ModuleParameterRange(-nyquist, nyquist, "log"),
+                    parameter_range=ModuleParameterRange(-nyquist, nyquist, 0.5),
                     parameter_name="mod_depth",
                 ),
             ]

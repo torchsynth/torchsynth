@@ -16,29 +16,26 @@ class TestParameterRange:
         param_range = ModuleParameterRange(0.0, 10.0)
         assert param_range.minimum == 0.0
         assert param_range.maximum == 10.0
-        assert param_range.curve_type == "linear"
+        assert param_range.curve == 1.0
         assert param_range.curve == 1.0
 
-        param_range = ModuleParameterRange(0.0, 10.0, curve="log")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=0.5)
         assert param_range.minimum == 0.0
         assert param_range.maximum == 10.0
-        assert param_range.curve_type == "log"
+        assert param_range.curve == 0.5
         assert param_range.curve == 0.5
 
-        param_range = ModuleParameterRange(0.0, 10.0, curve="exp")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=2.0)
         assert param_range.minimum == 0.0
         assert param_range.maximum == 10.0
-        assert param_range.curve_type == "exp"
         assert param_range.curve == 2.0
-
-        with pytest.raises(ValueError):
-            ModuleParameterRange(0.0, 1.0, curve="not_a_curve")
+        assert param_range.curve == 2.0
 
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 1.0)
         assert (
             repr(param_range)
-            == "ModuleParameterRange(name=None, min=0.0, max=1.0, curve=linear, description=None)"
+            == "ModuleParameterRange(name=None, min=0.0, max=1.0, curve=1.0, description=None)"
         )
 
     def test_to_0to1(self):
@@ -47,14 +44,14 @@ class TestParameterRange:
         assert param_range.to_0to1(T(5.0)) == T(0.5)
 
         # Test with a log scaling
-        param_range = ModuleParameterRange(0.0, 10.0, curve="log")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=0.5)
         params = torch.linspace(0.0, 9.0, 10)
         norm_params = param_range.to_0to1(params)
         expected = torch.pow(params / 10.0, 0.5)
         assert torch.all(norm_params.eq(expected))
 
         # Test with an exponential scaling
-        param_range = ModuleParameterRange(0.0, 10.0, curve="exp")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=2.0)
         params = torch.linspace(0.0, 9.0, 10)
         norm_params = param_range.to_0to1(params)
         expected = torch.pow(params / 10.0, 2.0)
@@ -71,14 +68,14 @@ class TestParameterRange:
         assert torch.all(params.eq(expected))
 
         # Test with log scaling
-        param_range = ModuleParameterRange(0.0, 10.0, curve="log")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=0.5)
         norm_params = torch.linspace(0.0, 1.0, 10)
         params = param_range.from_0to1(norm_params)
         expected = torch.exp2(torch.log2(norm_params) / 0.5) * 10.0
         assert torch.all(params.eq(expected))
 
         # Test with exponential scaling
-        param_range = ModuleParameterRange(0.0, 10.0, curve="exp")
+        param_range = ModuleParameterRange(0.0, 10.0, curve=2.0)
         norm_params = torch.linspace(0.0, 1.0, 10)
         params = param_range.from_0to1(norm_params)
         expected = torch.exp2(torch.log2(norm_params) / 2.0) * 10.0

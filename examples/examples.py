@@ -499,7 +499,7 @@ synthglobals16 = SynthGlobals(
 voice = Voice(synthglobals=synthglobals16).to(device)
 voice_out = voice()
 for i in range(synthglobals16.batch_size):
-    # stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
+    stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
@@ -548,16 +548,17 @@ param_range_log = ModuleParameterRange(0.0, 127.0, curve=2.0)
 # Linearly spaced values from 0.0 1.0
 param_values = torch.linspace(0.0, 1.0, 100)
 
-fig, axes = plt.subplots(1, 3, figsize=(12, 3))
+if isnotebook():
+    fig, axes = plt.subplots(1, 3, figsize=(12, 3))
 
-axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
-axes[0].set_title("Exponential Scaling")
+    axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
+    axes[0].set_title("Exponential Scaling")
 
-axes[1].plot(param_values, param_range_lin.from_0to1(param_values))
-axes[1].set_title("Linear Scaling")
+    axes[1].plot(param_values, param_range_lin.from_0to1(param_values))
+    axes[1].set_title("Linear Scaling")
 
-axes[2].plot(param_values, param_range_log.from_0to1(param_values))
-axes[2].set_title("Logarithmic Scaling")
+    axes[2].plot(param_values, param_range_log.from_0to1(param_values))
+    axes[2].set_title("Logarithmic Scaling")
 # -
 # ### Filters
 

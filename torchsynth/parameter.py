@@ -19,9 +19,9 @@ class ModuleParameterRange:
 
     Parameters
     ----------
-    minimum (T) :   minimum value in range
-    maximum (T) :   maximum value in range
-    curve   (T)   : shape of the curve, values less than 1 place more emphasis on
+    minimum (float) :   minimum value in range
+    maximum (float) :   maximum value in range
+    curve   (float) : shape of the curve, values less than 1 place more emphasis on
         smaller values and values greater than 1 place more emphasis no larger values.
         Defaults to 1 which is linear.
     name    (str) : name of this parameter
@@ -30,9 +30,9 @@ class ModuleParameterRange:
 
     def __init__(
         self,
-        minimum: T,
-        maximum: T,
-        curve: T = T(1),
+        minimum: float,
+        maximum: float,
+        curve: float = 1.0,
         # TODO: Make this not optional
         name: Optional[str] = None,
         description: Optional[str] = None,
