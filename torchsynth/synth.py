@@ -31,7 +31,7 @@ class AbstractSynth(LightningModule):
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.synthglobals = synthglobals
 
     @property
