@@ -118,7 +118,8 @@ class AbstractSynth(LightningModule):
     def test_step(self, batch, batch_idx):
         assert batch.ndim == 1
         # TODO: Test with multiple lightning (not synth) batches
-        return torch.stack([self(i) for i in batch])
+        _ = torch.stack([self(i) for i in batch])
+        return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int]):
         """
