@@ -106,7 +106,7 @@ class AbstractSynth(LightningModule):
         if seed:
             torch.manual_seed(seed)
         for parameter in self.parameters():
-            parameter.data = torch.rand_like(parameter)
+            parameter.data = torch.rand_like(parameter, device=self.device)
 
 
 class Voice(AbstractSynth):
