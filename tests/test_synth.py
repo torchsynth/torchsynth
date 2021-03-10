@@ -39,7 +39,7 @@ class TestAbstractSynth:
         )
         noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
 
-        synth.add_synth_modules({"vco": vco, "noise": noise})
+        synth.add_synth_modules([("vco", vco), ("noise", noise)])
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
@@ -60,7 +60,7 @@ class TestAbstractSynth:
 
         # Expect a TypeError if a non SynthModule0Ddeprecated is passed in
         with pytest.raises(TypeError):
-            synth.add_synth_modules({"module": torch.nn.Module()})
+            synth.add_synth_modules([("module", torch.nn.Module())])
 
         # Expect a ValueError if the incorrect sample rate or buffer size is passed in
         with pytest.raises(ValueError):
@@ -72,7 +72,7 @@ class TestAbstractSynth:
                 mod_depth=T([50.0, 50.0]),
                 synthglobals=synthglobals_weird_sr,
             )
-            synth.add_synth_modules({"vco_2": vco_2})
+            synth.add_synth_modules([("vco_2", vco_2)])
 
         # This should raise an assertion because it has a different batch size than
         # the other modules
@@ -88,7 +88,7 @@ class TestAbstractSynth:
                 alpha=T([1.0]),
                 synthglobals=synthglobals_new_batchsize,
             )
-            synth.add_synth_modules({"adsr": adsr})
+            synth.add_synth_modules([("adsr", adsr)])
 
         # Same here
         with pytest.raises(ValueError):
@@ -98,4 +98,4 @@ class TestAbstractSynth:
             adsr = synthmodule.ADSR(
                 synthglobals=synthglobals_new_batchsize,
             )
-            synth.add_synth_modules({"adsr": adsr})
+            synth.add_synth_modules([("adsr", adsr)])
