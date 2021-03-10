@@ -36,6 +36,7 @@ class AbstractSynth(LightningModule):
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.synthglobals = synthglobals
+        self.dummy = torch.nn.parameter.Parameter(torch.zeros((1,), device=self.device))
 
     @property
     def batch_size(self) -> T:
@@ -105,7 +106,8 @@ class AbstractSynth(LightningModule):
         import sys
 
         sys.stdout.flush()
-        return T(0.0, device=self.device, requires_grad=True)
+        return self.dummy
+        #return T(0.0, device=self.device, requires_grad=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
@@ -115,7 +117,9 @@ class AbstractSynth(LightningModule):
     def test_step(self, batch, batch_idx):
         assert batch.ndim == 1
         # TODO: Test with multiple lightning (not synth) batches
-        return torch.stack([self(i) for i in batch])
+        results = torch.stack([self(i) for i in batch])
+        # You probably want to do something with the results above
+        return T(0.0)
 
     def randomize(self, seed: Optional[int]):
         """

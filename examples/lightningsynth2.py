@@ -56,7 +56,6 @@ class batch_idx_dataset(torch.utils.data.Dataset):
         self.num_batches = num_batches
 
     def __getitem__(self, idx):
-        print(idx)
         return idx
 
     def __len__(self):
@@ -65,11 +64,6 @@ class batch_idx_dataset(torch.utils.data.Dataset):
 
 synth1M = batch_idx_dataset(1024 * 1024 // BATCH_SIZE)
 
-# Probably don't need to pin memory for generating ints
-# We use batch_size 1 here because the synth modules are already batched!
-train_dataloader = torch.utils.data.DataLoader(
-    batch_idx_dataset(10), num_workers=0, batch_size=1
-)
 test_dataloader = torch.utils.data.DataLoader(synth1M, num_workers=0, batch_size=1)
 
 synthglobals = SynthGlobals(batch_size=T(256))
@@ -78,8 +72,5 @@ voice = Voice(synthglobals)
 # TODO: Change precision?
 # specifies all available GPUs (if only one GPU is not occupied, uses one gpu)
 # Use deterministic?
-# trainer = pl.Trainer(precision=16, gpus=-1, auto_select_gpus=True, accelerator='ddp', deterministic=True)
-# trainer = pl.Trainer(precision=16, gpus=gpus, accelerator="ddp", deterministic=True)
-trainer = pl.Trainer(max_epochs=0)
-trainer.fit(voice, train_dataloader=train_dataloader)
+trainer = pl.Trainer(precision=16, gpus=-1, auto_select_gpus=True, accelerator='ddp', deterministic=True, max_epochs=0)
 trainer.test(voice, test_dataloaders=test_dataloader)
