@@ -75,7 +75,7 @@ class ModuleParameterRange:
         assert torch.all(normalized <= 1.0)
 
         if self.curve != 1:
-            normalized = torch.exp2(torch.log2(normalized) / self.curve)
+            normalized = torch.pow(normalized, self.curve)
 
         return self.minimum + (self.maximum - self.minimum) * normalized
 
@@ -92,7 +92,7 @@ class ModuleParameterRange:
 
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
         if self.curve != 1:
-            normalized = torch.pow(normalized, self.curve)
+            normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
         return normalized
 

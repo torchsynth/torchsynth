@@ -73,6 +73,7 @@ from torchsynth.module import (
     SineVCO,
     TorchFmVCO,
 )
+from torchsynth.parameter import ModuleParameterRange
 
 # Determenistic seeds for replicable testing
 random.seed(0)
@@ -419,7 +420,7 @@ assert voice1.noise
 voice1.note_on = NoteOnButton(
     synthglobals1,
     duration=T([1.0]),
-)
+).to(device)
 voice1.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
@@ -528,6 +529,30 @@ print(voice1.vco_1.p("midi_f0"))
 voice1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
 print(voice1.vco_1.p("midi_f0"))
 
+# #### Parameter Ranges
+#
+# Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`. The conversion from [0,1] can occur on a linear range, or using an exponential / logarithmic scaling.
+
+# +
+# ModuleParameterRange with exponential scaling of a range from 0-127
+param_range_exp = ModuleParameterRange(0.0, 127.0, curve="exp")
+param_range_lin = ModuleParameterRange(0.0, 127.0, curve="linear")
+param_range_log = ModuleParameterRange(0.0, 127.0, curve="log")
+
+# Linearly spaced values from 0.0 1.0
+param_values = torch.linspace(0.0, 1.0, 100)
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3))
+
+axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
+axes[0].set_title("Exponential Scaling")
+
+axes[1].plot(param_values, param_range_lin.from_0to1(param_values))
+axes[1].set_title("Linear Scaling")
+
+axes[2].plot(param_values, param_range_log.from_0to1(param_values))
+axes[2].set_title("Logarithmic Scaling")
+# -
 # ## Random synths
 #
 # Let's generate some random synths in batch
