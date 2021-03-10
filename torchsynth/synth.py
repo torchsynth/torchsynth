@@ -20,9 +20,9 @@ from torchsynth.module import (
 )
 from torchsynth.signal import Signal
 
-## https://github.com/turian/torchsynth/issues/131
+# https://github.com/turian/torchsynth/issues/131
 # Lightning already handles this for us
-#torch.use_deterministic_algorithms(True)
+# torch.use_deterministic_algorithms(True)
 
 
 class AbstractSynth(LightningModule):
@@ -107,7 +107,7 @@ class AbstractSynth(LightningModule):
     def test_step(self, batch, batch_idx):
         assert batch.ndim == 1
         # TODO: Test with multiple lightning (not synth) batches
-        results = torch.stack([self(i) for i in batch])
+        _ = torch.stack([self(i) for i in batch])
         # You probably want to do something with the results above
         # We just return 0, which lightning accumulates as the test error
         return T(0.0)
