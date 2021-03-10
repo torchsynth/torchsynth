@@ -21,7 +21,8 @@ from torchsynth.module import (
 from torchsynth.signal import Signal
 
 # https://github.com/turian/torchsynth/issues/131
-torch.use_deterministic_algorithms(True)
+# Lightning already handles this for us
+# torch.use_deterministic_algorithms(True)
 
 
 class AbstractSynth(LightningModule):
@@ -101,6 +102,15 @@ class AbstractSynth(LightningModule):
         if batch_idx:
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
+
+    # For lightning
+    def test_step(self, batch, batch_idx):
+        assert batch.ndim == 1
+        # TODO: Test with multiple lightning (not synth) batches
+        _ = torch.stack([self(i) for i in batch])
+        # You probably want to do something with the results above
+        # We just return 0, which lightning accumulates as the test error
+        return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int]):
         """
