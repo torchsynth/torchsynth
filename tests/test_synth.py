@@ -58,7 +58,7 @@ class TestAbstractSynth:
                     fails = False
             assert not fails
 
-        # Expect a TypeError if a non TorchSynthModule0Ddeprecated is passed in
+        # Expect a TypeError if a non SynthModule0Ddeprecated is passed in
         with pytest.raises(TypeError):
             synth.add_synth_modules({"module": torch.nn.Module()})
 
