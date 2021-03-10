@@ -42,8 +42,9 @@ gpus = torch.cuda.device_count()
 print("Usings %d gpus" % gpus)
 
 # Note this is the batch size for our synth!
-# Not the batch size of the datasets
-BATCH_SIZE = 1024
+# i.e. this many synth sounds are generated at once
+# With fp16 enabled, this batch size takes 4.2GB of GPU memory.
+BATCH_SIZE = 1048576
 
 import multiprocessing
 
@@ -62,9 +63,9 @@ class batch_idx_dataset(torch.utils.data.Dataset):
         return self.num_batches
 
 
-synth1M = batch_idx_dataset(1024 * 1024 // BATCH_SIZE)
+synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
-test_dataloader = torch.utils.data.DataLoader(synth1M, num_workers=0, batch_size=1)
+test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
 synthglobals = SynthGlobals(batch_size=T(256))
 voice = Voice(synthglobals)
