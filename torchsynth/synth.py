@@ -88,17 +88,14 @@ class AbstractSynth(nn.Module):
         ...
 
 
-class Voice(LightningModule, AbstractSynth):
+class Voice(AbstractSynth, LightningModule):
     """
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(
-        self,
-        synthglobals=SynthGlobals,
-    ):
-        LightningModule.__init__()
-        AbstractSynth.__init__(synthglobals=synthglobals)
+    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
+        AbstractSynth.__init__(self, synthglobals=synthglobals)
+        LightningModule.__init__(self, *args, **kwargs)
 
         # Register all modules as children
         self.add_synth_modules(
