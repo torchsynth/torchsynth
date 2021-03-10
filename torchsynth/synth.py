@@ -1,8 +1,7 @@
-from typing import Dict
+from typing import Any, Dict, Optional
 
 import torch
 from pytorch_lightning.core.lightning import LightningModule
-from torch import nn as nn
 from torch import tensor as T
 
 from torchsynth import util as util
@@ -17,6 +16,10 @@ from torchsynth.module import (
     SquareSawVCO,
     SynthModule,
 )
+from torchsynth.signal import Signal
+
+# https://github.com/turian/torchsynth/issues/131
+torch.use_deterministic_algorithms(True)
 
 
 class AbstractSynth(LightningModule):
@@ -74,15 +77,36 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, modules[name])
 
-    def randomize(self):
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+        """
+        Each AbstractSynth should override this.
+        """
+        raise NotImplementedError("Derived classes must override this method")
+
+    def forward(
+        self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
+    ) -> Signal:  # pragma: no cover
+        """
+        Each AbstractSynth should override this.
+
+        Parameter:
+        batch_idx (Optional[int])   - If provided, we set the parameters of this
+                                    synth for reproducibility, in a deterministic
+                                    random way. If None (default), we just use
+                                    the current module parameter settings.
+        """
+        if batch_idx:
+            self.randomize(seed=batch_idx)
+        self._forward(*args, **kwargs)
+
+    def randomize(self, seed: Optional[int]):
         """
         Randomize all parameters
         """
+        if seed:
+            torch.manual_seed(seed)
         for parameter in self.parameters():
             parameter.data = torch.rand_like(parameter)
-
-    def forward(self) -> T:
-        ...
 
 
 class Voice(AbstractSynth):
@@ -107,7 +131,7 @@ class Voice(AbstractSynth):
             }
         )
 
-    def forward(self) -> T:
+    def _forward(self) -> T:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on.p("duration")

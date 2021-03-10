@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # # lightningsynth
 #
@@ -9,18 +10,20 @@
 # # !pip install git+https://github.com/turian/torchsynth.git@lightning-synth
 # ```
 
-from torchsynth.synth import Voice
-from torchsynth.globals import SynthGlobals
-
+import torch
+import torch.tensor as T
 from tqdm.auto import tqdm
 
-import torch.tensor as T
-import torch
+from torchsynth.globals import SynthGlobals
+from torchsynth.synth import Voice
 
 synthglobals = SynthGlobals(batch_size=T(256))
-voice = Voice(synthglobals).cuda()
+voice = Voice(synthglobals)
+
+if torch.cuda.is_available():
+    voice.cuda()
 
 voice.eval()
 with torch.no_grad():
     for i in tqdm(range(1000)):
-        voice()
+        voice(i)
