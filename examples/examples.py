@@ -64,7 +64,15 @@ import torch.tensor as T
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.globals import SynthGlobals
-from torchsynth.module import ADSR, VCA, Identity, Noise, SineVCO, TorchFmVCO
+from torchsynth.module import (
+    ADSR,
+    VCA,
+    Identity,
+    Noise,
+    NoteOnButton,
+    SineVCO,
+    TorchFmVCO,
+)
 
 # Determenistic seeds for replicable testing
 random.seed(0)
@@ -402,13 +410,16 @@ from torchsynth.synth import Voice
 
 voice1 = Voice(
     synthglobals=synthglobals1,
-    note_on_duration=1.0,
 ).to(device)
 
 assert voice1.pitch_adsr
 assert voice1.amp_adsr
 assert voice1.vco_1
 assert voice1.noise
+voice1.note_on = NoteOnButton(
+    synthglobals1,
+    duration=T([1.0]),
+)
 voice1.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
@@ -440,8 +451,11 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 # +
 voice2 = Voice(
     synthglobals=synthglobals1,
-    note_on_duration=T([1.0]),
 ).to(device)
+voice1.note_on = NoteOnButton(
+    synthglobals1,
+    duration=T([1.0]),
+)
 voice2.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.1]),
@@ -521,7 +535,7 @@ print(voice1.vco_1.p("midi_f0"))
 synthglobals16 = SynthGlobals(
     batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
-voice = Voice(synthglobals=synthglobals16, note_on_duration=1.0).to(device)
+voice = Voice(synthglobals=synthglobals16).to(device)
 voice_out = voice()
 for i in range(synthglobals16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())

@@ -95,7 +95,6 @@ class Voice(LightningModule, AbstractSynth):
 
     def __init__(
         self,
-        note_on_duration: float,
         synthglobals=SynthGlobals,
     ):
         LightningModule.__init__()
