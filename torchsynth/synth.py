@@ -19,7 +19,7 @@ from torchsynth.module import (
 )
 
 
-class AbstractSynth(nn.Module):
+class AbstractSynth(LightningModule):
     """
     Base class for synthesizers that combine one or more SynthModules
     to create a full synth architecture.
@@ -30,11 +30,8 @@ class AbstractSynth(nn.Module):
     buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(
-        self,
-        synthglobals: SynthGlobals,
-    ):
-        super().__init__()
+    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
         self.synthglobals = synthglobals
 
     @property
@@ -88,14 +85,13 @@ class AbstractSynth(nn.Module):
         ...
 
 
-class Voice(AbstractSynth, LightningModule):
+class Voice(AbstractSynth):
     """
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
-        AbstractSynth.__init__(self, synthglobals=synthglobals)
-        LightningModule.__init__(self, *args, **kwargs)
+        AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
 
         # Register all modules as children
         self.add_synth_modules(
