@@ -15,7 +15,9 @@ pytorch. It is GPU-optional and differentiable.
 
 You will need to install the particular version of
 [torchcsprng][https://github.com/pytorch/csprng] for your CUDA
-device. Please follow their simple installation instructions.
+device. Please follow their simple installation instructions.  But
+if you use the CPU version of torchcsprng, it probably won't affect
+performance much.
 
 ## Development Installation
 
