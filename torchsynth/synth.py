@@ -83,7 +83,6 @@ class AbstractSynth(nn.Module):
         Randomize all parameters
         """
         for parameter in self.parameters():
-            print(parameter)
             parameter.data = torch.rand_like(parameter)
 
     def forward(self) -> T:

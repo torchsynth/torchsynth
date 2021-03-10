@@ -361,12 +361,8 @@ class VCO(SynthModule):
     ):
         super().__init__(synthglobals, **kwargs)
 
-        # TODO: Currently making phase a parameter with no grad
-        # Is there a way to do this without making it a param?
-        # See: https://github.com/turian/torchsynth/issues/123
-        self.phase = nn.Parameter(
-            data=self.get_parameter("initial_phase"), requires_grad=False
-        )
+        # TODO: Make sure this is on GPU
+        self.phase = self.get_parameter("initial_phase")
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
