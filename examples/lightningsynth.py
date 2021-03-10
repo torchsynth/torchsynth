@@ -44,7 +44,7 @@ print("Usings %d gpus" % gpus)
 # Note this is the batch size for our synth!
 # i.e. this many synth sounds are generated at once
 # With fp16 enabled, this batch size takes 4.2GB of GPU memory.
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 import multiprocessing
 
@@ -67,7 +67,7 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
-synthglobals = SynthGlobals(batch_size=T(256))
+synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
 voice = Voice(synthglobals)
 
 if gpus == 0:
