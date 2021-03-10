@@ -58,14 +58,12 @@ class AbstractSynth(nn.Module):
 
         Parameters
         ----------
-        modules (Dict): A dictionary of TorchSynthModule0Ddeprecated
+        modules (Dict): A dictionary of SynthModule0Ddeprecated
         """
 
         for name in modules:
             if not isinstance(modules[name], SynthModule):
-                raise TypeError(
-                    f"{modules[name]} is not a TorchSynthModule0Ddeprecated"
-                )
+                raise TypeError(f"{modules[name]} is not a SynthModule0Ddeprecated")
 
             if modules[name].batch_size != self.batch_size:
                 raise ValueError(f"{modules[name]} batch_size does not match")
@@ -119,13 +117,13 @@ class Voice(AbstractSynth):
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on.p("duration")
-        pitch_envelope = self.pitch_adsr.forward1D(note_on_duration)
-        amp_envelope = self.amp_adsr.forward1D(note_on_duration)
+        pitch_envelope = self.pitch_adsr.forward(note_on_duration)
+        amp_envelope = self.amp_adsr.forward(note_on_duration)
 
-        vco_1_out = self.vco_1.forward1D(pitch_envelope)
-        vco_2_out = self.vco_2.forward1D(pitch_envelope)
+        vco_1_out = self.vco_1.forward(pitch_envelope)
+        vco_2_out = self.vco_2.forward(pitch_envelope)
 
         audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
-        audio_out = self.noise.forward1D(audio_out)
+        audio_out = self.noise.forward(audio_out)
 
-        return self.vca.forward1D(amp_envelope, audio_out)
+        return self.vca.forward(amp_envelope, audio_out)

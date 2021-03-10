@@ -4,11 +4,11 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.default import DEFAULT_SAMPLE_RATE
-from torchsynth.module import TorchSynthModule0Ddeprecated
+from torchsynth.deprecated import SynthModule0Ddeprecated
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
-class FIRLowPass(TorchSynthModule0Ddeprecated):
+class FIRLowPass(SynthModule0Ddeprecated):
     """
     A finite impulse response low-pass filter. Uses convolution with a windowed
     sinc function.
@@ -90,7 +90,7 @@ class FIRLowPass(TorchSynthModule0Ddeprecated):
         return ir * util.blackman(length)
 
 
-class TorchMovingAverage(TorchSynthModule0Ddeprecated):
+class MovingAverage(SynthModule0Ddeprecated):
     """
     A finite impulse response moving average filter.
 
@@ -139,7 +139,7 @@ class TorchMovingAverage(TorchSynthModule0Ddeprecated):
         return y[0][0]
 
 
-class TorchSVF(TorchSynthModule0Ddeprecated):
+class SVF(SynthModule0Ddeprecated):
     """
     A State Variable Filter that can do low-pass, high-pass, band-pass, and
     band-reject filtering. Allows modulation of the cutoff frequency and an
@@ -228,7 +228,7 @@ class TorchSVF(TorchSynthModule0Ddeprecated):
         for i in range(len(audio_in)):
             # If there is a cutoff modulation envelope, update coefficients
             cutoff_val = cutoff + control_in[i] * mod_depth
-            coeff0, coeff1, rho = TorchSVF.svf_coefficients(
+            coeff0, coeff1, rho = SVF.svf_coefficients(
                 cutoff_val, res_coefficient, self.sample_rate
             )
 
@@ -271,52 +271,52 @@ class TorchSVF(TorchSynthModule0Ddeprecated):
         return coeff0, g, rho
 
 
-class TorchLowPassSVF(TorchSVF):
+class TorchLowPassSVF(SVF):
     """
     IIR Low-pass using SVF architecture
 
     Parameters
     ----------
-    kwargs: see TorchSVF
+    kwargs: see SVF
     """
 
     def __init__(self, **kwargs):
         super().__init__("lpf", **kwargs)
 
 
-class TorchHighPassSVF(TorchSVF):
+class TorchHighPassSVF(SVF):
     """
     IIR High-pass using SVF architecture
 
     Parameters
     ----------
-    kwargs: see TorchSVF
+    kwargs: see SVF
     """
 
     def __init__(self, **kwargs):
         super().__init__("hpf", **kwargs)
 
 
-class TorchBandPassSVF(TorchSVF):
+class TorchBandPassSVF(SVF):
     """
     IIR Band-pass using SVF architecture
 
     Parameters
     ----------
-    kwargs: see TorchSVF
+    kwargs: see SVF
     """
 
     def __init__(self, **kwargs):
         super().__init__("bpf", **kwargs)
 
 
-class TorchBandStopSVF(TorchSVF):
+class TorchBandStopSVF(SVF):
     """
     IIR Band-stop using SVF architecture
 
     Parameters
     ----------
-    kwargs: see TorchSVF
+    kwargs: see SVF
     """
 
     def __init__(self, **kwargs):
