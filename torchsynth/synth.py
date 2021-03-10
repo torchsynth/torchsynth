@@ -105,7 +105,7 @@ class AbstractSynth(LightningModule):
         assert batch.ndim == 1
         # TODO: Test with multiple lightning (not synth) batches
         results = torch.stack([self(i) for i in batch])
-        if batch_idx == 0:
+        if batch_idx == 1:
             from scipy.io.wavfile import write
 
             for i in range(results.shape[1]):
@@ -125,6 +125,8 @@ class AbstractSynth(LightningModule):
             torch.manual_seed(seed)
         for parameter in self.parameters():
             parameter.data = torch.rand_like(parameter, device=self.device)
+            if seed == 1:
+                print(parameter, parameter.data)
 
 
 class Voice(AbstractSynth):
