@@ -182,10 +182,10 @@ class ADSR(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.0, 2.0, curve="log", name="attack", description="attack time (sec)"
+            0.0, 2.0, curve=0.5, name="attack", description="attack time (sec)"
         ),
         ModuleParameterRange(
-            0.0, 2.0, curve="log", name="decay", description="decay time (sec)"
+            0.0, 2.0, curve=0.5, name="decay", description="decay time (sec)"
         ),
         ModuleParameterRange(
             0.0,
@@ -195,7 +195,7 @@ class ADSR(SynthModule):
             + "(confusingly, by convention) is not a time value.",
         ),
         ModuleParameterRange(
-            0.0, 5.0, curve="log", name="release", description="release time (sec)"
+            0.0, 5.0, curve=0.5, name="release", description="release time (sec)"
         ),
         ModuleParameterRange(
             0.1,
@@ -333,6 +333,7 @@ class VCO(SynthModule):
         ModuleParameterRange(
             0.0,
             127.0,
+            curve=0.1,
             name="mod_depth",
             description="depth of the pitch modulation in semitones",
         ),
@@ -386,7 +387,14 @@ class VCO(SynthModule):
         """
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-        control_as_frequency = self.make_control_as_frequency(mod_signal)
+        control_as_frequency = torch.clip(
+            self.make_control_as_frequency(mod_signal), 0.0, self.sample_rate / 2.0
+        )
+
+        assert (control_as_frequency >= 0).all() and (
+            control_as_frequency <= self.sample_rate / 2.0
+        ).all()
+
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
@@ -507,6 +515,7 @@ class Noise(SynthModule):
         ModuleParameterRange(
             0.0,
             1.0,
+            curve=0.05,
             name="ratio",
             description="mix ratio between the incoming signal and the produced noise, "
             + "1 is all noise",
@@ -540,7 +549,6 @@ class CrossfadeKnob(SynthModule):
         ModuleParameterRange(
             0.0,
             1.0,
-            curve="linear",
             name="ratio",
             description="crossfade knob",
         ),
@@ -558,9 +566,7 @@ class NoteOnButton(SynthModule):
         ModuleParameterRange(
             0.0,
             4.0,
-            # TODO: Make sure this is the correct curve
-            # curve="log",
-            curve="linear",
+            curve=0.5,
             name="duration",
             description="note-on button, in seconds",
         ),

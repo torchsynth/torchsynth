@@ -21,11 +21,9 @@ class ModuleParameterRange:
     ----------
     minimum (T) :   minimum value in range
     maximum (T) :   maximum value in range
-    curve   (str)   :   relationship between parameter values and the normalized values
-                        in the range [0,1]. Must be one of "linear", "log", or "exp".
-                        Defaults to "linear"
-                        # TODO: Give these better names so we don't mess
-                        # these up
+    curve   (T)   : shape of the curve, values less than 1 place more emphasis on
+        smaller values and values greater than 1 place more emphasis no larger values.
+        Defaults to 1 which is linear.
     name    (str) : name of this parameter
     description (str) : optional description of this parameter
     """
@@ -34,7 +32,7 @@ class ModuleParameterRange:
         self,
         minimum: T,
         maximum: T,
-        curve: str = "linear",
+        curve: T = T(1),
         # TODO: Make this not optional
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -43,22 +41,12 @@ class ModuleParameterRange:
         self.description = description
         self.minimum = minimum
         self.maximum = maximum
-
-        self.curve_type = curve
-        if curve == "linear":
-            self.curve = 1
-        elif curve == "log":
-            self.curve = 0.5
-        elif curve == "exp":
-            self.curve = 2.0
-        else:
-            curve_types = ["linear", "log", "exp"]
-            raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
+        self.curve = curve
 
     def __repr__(self):
         return (
             f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
-            + f"max={self.maximum}, curve={self.curve_type}, "
+            + f"max={self.maximum}, curve={self.curve}, "
             + f"description={self.description})"
         )
 
@@ -75,7 +63,7 @@ class ModuleParameterRange:
         assert torch.all(normalized <= 1.0)
 
         if self.curve != 1:
-            normalized = torch.pow(normalized, self.curve)
+            normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
         return self.minimum + (self.maximum - self.minimum) * normalized
 
@@ -92,7 +80,7 @@ class ModuleParameterRange:
 
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
         if self.curve != 1:
-            normalized = torch.exp2(torch.log2(normalized) / self.curve)
+            normalized = torch.pow(normalized, self.curve)
 
         return normalized
 
