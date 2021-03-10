@@ -34,7 +34,7 @@ setup(
         "scipy",
         "torch>=1.7",
         "pytorch-lightning",
-        "torchcsprng",
+        "torchcsprng==0.2.0",
     ],
     extras_require={
         "test": [
