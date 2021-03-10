@@ -549,7 +549,7 @@ stft_plot(noise.cpu().detach().numpy())
 
 # +
 ma_filter = MovingAverage(filter_length=T(32.0)).to(device)
-filtered = ma_filter(noise)
+filtered = ma_filter.forward(noise)
 
 stft_plot(filtered.cpu().detach().numpy())
 ipd.Audio(filtered.cpu().detach().numpy(), rate=44100)
@@ -700,7 +700,7 @@ bpf = TorchBandPassSVF(
     buffer_size=T(synthglobals1short.buffer_size),
 )
 
-filtered = bpf(noise, env)
+filtered = bpf(noise, env[0])
 # ParameterError: Audio buffer is not finite everywhere ????
 # stft_plot(filtered.cpu().detach().numpy())
 

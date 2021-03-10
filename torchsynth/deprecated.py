@@ -46,7 +46,7 @@ class SynthModule0Ddeprecated(nn.Module):
         """
         raise NotImplementedError("Derived classes must override this method")
 
-    def forward0d(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
+    def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """
         Wrapper for _forward that ensures a buffer_size length output.
         """
