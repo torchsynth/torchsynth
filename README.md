@@ -13,6 +13,9 @@ pytorch. It is GPU-optional and differentiable.
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
 ![Snyk Vulnerabilities for GitHub Repo](https://img.shields.io/snyk/vulnerabilities/github/turian/torchsynth)
 
+You will need to install the particular version of
+[torchcsprng][https://github.com/pytorch/csprng] for your CUDA
+device. Please follow their simple installation instructions.
 
 ## Development Installation
 
