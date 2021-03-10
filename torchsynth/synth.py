@@ -1,8 +1,10 @@
-from typing import Any, Dict, Optional
+from typing import Any, List, Optional, Tuple
 
 import torch
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
+
+import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
@@ -52,30 +54,31 @@ class AbstractSynth(LightningModule):
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
-    def add_synth_modules(self, modules: Dict[str, SynthModule]):
+    def add_synth_modules(self, modules: List[Tuple[str, SynthModule]]):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
         Parameters
         ----------
-        modules (Dict): A dictionary of SynthModule0Ddeprecated
+        modules List[Tuple[str, SynthModule]]: A list of SynthModules and
+                                            their names.
         """
 
-        for name in modules:
-            if not isinstance(modules[name], SynthModule):
-                raise TypeError(f"{modules[name]} is not a SynthModule0Ddeprecated")
+        for name, module in modules:
+            if not isinstance(module, SynthModule):
+                raise TypeError(f"{module} is not a SynthModule0Ddeprecated")
 
-            if modules[name].batch_size != self.batch_size:
-                raise ValueError(f"{modules[name]} batch_size does not match")
+            if module.batch_size != self.batch_size:
+                raise ValueError(f"{module} batch_size does not match")
 
-            if modules[name].sample_rate != self.sample_rate:
-                raise ValueError(f"{modules[name]} sample rate does not match")
+            if module.sample_rate != self.sample_rate:
+                raise ValueError(f"{module} sample rate does not match")
 
-            if modules[name].buffer_size != self.buffer_size:
-                raise ValueError(f"{modules[name]} buffer size does not match")
+            if module.buffer_size != self.buffer_size:
+                raise ValueError(f"{module} buffer size does not match")
 
-            self.add_module(name, modules[name])
+            self.add_module(name, module)
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -97,16 +100,19 @@ class AbstractSynth(LightningModule):
         """
         if batch_idx:
             self.randomize(seed=batch_idx)
-        return self._forward(*args, **kwargs)
 
     def randomize(self, seed: Optional[int]):
         """
         Randomize all parameters
         """
         if seed:
-            torch.manual_seed(seed)
-        for parameter in self.parameters():
-            parameter.data = torch.rand_like(parameter, device=self.device)
+            # Profile to make sure this isn't too slow?
+            mt19937_gen = csprng.create_mt19937_generator(seed)
+            for parameter in self.parameters():
+                parameter.data.uniform_(0, 1, generator=mt19937_gen)
+        else:
+            for parameter in self.parameters():
+                parameter.data = torch.rand_like(parameter, device=self.device)
 
 
 class Voice(AbstractSynth):
@@ -119,16 +125,16 @@ class Voice(AbstractSynth):
 
         # Register all modules as children
         self.add_synth_modules(
-            {
-                "note_on": NoteOnButton(synthglobals),
-                "pitch_adsr": ADSR(synthglobals),
-                "amp_adsr": ADSR(synthglobals),
-                "vco_1": SineVCO(synthglobals),
-                "vco_2": SquareSawVCO(synthglobals),
-                "noise": Noise(synthglobals),
-                "vca": VCA(synthglobals),
-                "vca_ratio": CrossfadeKnob(synthglobals),
-            }
+            [
+                ("note_on", NoteOnButton(synthglobals)),
+                ("pitch_adsr", ADSR(synthglobals)),
+                ("amp_adsr", ADSR(synthglobals)),
+                ("vco_1", SineVCO(synthglobals)),
+                ("vco_2", SquareSawVCO(synthglobals)),
+                ("noise", Noise(synthglobals)),
+                ("vca", VCA(synthglobals)),
+                ("vca_ratio", CrossfadeKnob(synthglobals)),
+            ]
         )
 
     def _forward(self) -> T:
