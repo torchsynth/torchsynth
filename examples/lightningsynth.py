@@ -70,6 +70,7 @@ test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size
 synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
 voice = Voice(synthglobals)
 
+accelerator = None
 if gpus == 0:
     gpus = None
     precision = 32
@@ -79,13 +80,15 @@ else:
     gpus = -1
     # TODO: Change precision?
     precision = 16
+    if gpus > 1:
+        accelerator = "ddp"
 
 # Use deterministic?
 trainer = pl.Trainer(
     precision=precision,
     gpus=gpus,
     auto_select_gpus=True,
-    # accelerator="ddp",
+    accelerator=None,
     deterministic=True,
     max_epochs=0,
 )
