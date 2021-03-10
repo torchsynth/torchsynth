@@ -115,13 +115,9 @@ class Voice(AbstractSynth):
             }
         )
 
-    @property
-    def note_on_duration(self):
-        return self.note_on_percentage * 4
-
     def forward(self) -> T:
         # The convention for triggering a note event is that it has
-        # the same note_on_percentage for both ADSRs.
+        # the same note_on_duration for both ADSRs.
         note_on_duration = self.note_on.p("duration")
         pitch_envelope = self.pitch_adsr.forward1D(note_on_duration)
         amp_envelope = self.amp_adsr.forward1D(note_on_duration)

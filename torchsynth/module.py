@@ -219,7 +219,7 @@ class ADSR(SynthModule):
         By default, this envelope reacts as if it was triggered with midi, for
         example playing a keyboard. Each midi event has a beginning and end:
         note-on, when you press the key down; and note-off, when you release the
-        key. `note_on_percentage` is the amount of time that the key is depressed.
+        key. `note_on_duration` is the amount of time that the key is depressed.
 
         During the note-on, the envelope moves through the attack and decay
         sections of the envelope. This leads to musically-intuitive, but
@@ -235,8 +235,6 @@ class ADSR(SynthModule):
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
-
-        # TODO `note_on_percentage` is set to be a parameter soon...
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
