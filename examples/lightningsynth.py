@@ -72,12 +72,12 @@ voice = Voice(synthglobals)
 
 accelerator = None
 if gpus == 0:
-    gpus = None
+    use_gpus = None
     precision = 32
 else:
     # specifies all available GPUs (if only one GPU is not occupied,
     # auto_select_gpus=True uses one gpu)
-    gpus = -1
+    use_gpus = -1
     # TODO: Change precision?
     precision = 16
     if gpus > 1:
@@ -86,7 +86,7 @@ else:
 # Use deterministic?
 trainer = pl.Trainer(
     precision=precision,
-    gpus=gpus,
+    gpus=use_gpus,
     auto_select_gpus=True,
     accelerator=accelerator,
     deterministic=True,
