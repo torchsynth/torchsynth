@@ -137,7 +137,7 @@ synthglobals1short = SynthGlobals(
 #
 # By default, this envelope reacts as if it was triggered with midi, for example
 # playing a keyboard. Each midi event has a beginning and end: note-on, when you
-# press the key down; and note-off, when you release the key. `note_on_duration`
+# press the key down; and note-off, when you release the key. `note_on_percentage`
 # is the amount of time that the key is depressed. During the note-on, the
 # envelope moves through the attack and decay sections of the envelope. This
 # leads to musically-intuitive, but programatically-counterintuitive behaviour.
@@ -201,8 +201,8 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # for i in range(100):
 #     optimizer.zero_grad()
 
-#     envelope = adsr(note_on_duration)
-#     envelope2 = adsr2(note_on_duration)
+#     envelope = adsr(note_on_percentage)
+#     envelope2 = adsr2(note_on_percentage)
 #     err = torch.mean(torch.abs(envelope - envelope2))
 
 #     if i % 10 == 0:

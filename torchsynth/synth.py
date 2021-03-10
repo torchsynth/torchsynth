@@ -10,6 +10,7 @@ from torchsynth.module import (
     ADSR,
     VCA,
     CrossfadeKnob,
+    NoteOnButton,
     Noise,
     SineVCO,
     SquareSawVCO,
@@ -82,6 +83,7 @@ class AbstractSynth(nn.Module):
         Randomize all parameters
         """
         for parameter in self.parameters():
+            print(parameter)
             parameter.data = torch.rand_like(parameter)
 
     def forward(self) -> T:
@@ -100,21 +102,10 @@ class Voice(AbstractSynth):
     ):
         super().__init__(synthglobals=synthglobals)
 
-        # We assume that sustain duration is a hyper-parameter,
-        # with the mindset that if you are trying to learn to
-        # synthesize a sound, you won't be adjusting the note_on_duration.
-        # However, this is easily changed if desired.
-
-        # TODO: Turn note on duration into a knob parameter
-        # See https://github.com/turian/torchsynth/issues/117
-        self.note_on_duration = nn.Parameter(
-            data=T([note_on_duration] * synthglobals.batch_size), requires_grad=False
-        )
-        assert torch.all(self.note_on_duration >= 0)
-
         # Register all modules as children
         self.add_synth_modules(
             {
+                "note_on": NoteOnButton(synthglobals),
                 "pitch_adsr": ADSR(synthglobals),
                 "amp_adsr": ADSR(synthglobals),
                 "vco_1": SineVCO(synthglobals),
@@ -125,10 +116,14 @@ class Voice(AbstractSynth):
             }
         )
 
+    @property
+    def note_on_duration(self):
+        return self.note_on_percentage * 4
+
     def forward(self) -> T:
         # The convention for triggering a note event is that it has
-        # the same note_on_duration for both ADSRs.
-        note_on_duration = self.note_on_duration
+        # the same note_on_percentage for both ADSRs.
+        note_on_duration = self.note_on.p("duration")
         pitch_envelope = self.pitch_adsr.forward1D(note_on_duration)
         amp_envelope = self.amp_adsr.forward1D(note_on_duration)
 
