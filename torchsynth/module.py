@@ -354,7 +354,12 @@ class VCO(SynthModule):
         # TODO: Make sure this is on GPU
         # https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html#init-tensors-using-type-as-and-register-buffer
         # Do we want to detach clone?
-        self.phase = self.get_parameter("initial_phase").detach().clone()
+        # Do we want this persistent?
+        # https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_buffer
+        self.register_buffer(
+            "phase", self.get_parameter("initial_phase").detach().clone()
+        )
+        # self.phase = self.get_parameter("initial_phase").detach().clone()
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
