@@ -433,6 +433,8 @@ class SineVCO(VCO):
 
 class TorchFmVCO(VCO):
     """
+    # TODO Turn this into its own voice so we can be a bit smarter about aliasing
+    # See https://github.com/turian/torchsynth/issues/145
     Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
 
     Typical modulation is calculated in pitch-space (midi). For FM to work,
@@ -448,7 +450,7 @@ class TorchFmVCO(VCO):
         f0_hz = util.midi_to_hz(self.p("midi_f0").unsqueeze(1))
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        return f0_hz + modulation_hz
+        return torch.clamp(f0_hz + modulation_hz, 0.0, self.sample_rate / 2.0)
 
     def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.
