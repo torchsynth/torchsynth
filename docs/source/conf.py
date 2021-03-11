@@ -13,8 +13,15 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("torchsynth"))
 
+PATH_HERE = os.path.abspath(os.path.dirname(__file__))
+PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
+sys.path.insert(0, os.path.abspath(PATH_ROOT))
+# sys.path.insert(0, os.path.abspath("torchsynth"))
+
+import torchsynth  # noqa: E402
+
+import pt_lightning_sphinx_theme
 
 # -- Project information -----------------------------------------------------
 
@@ -54,14 +61,19 @@ intersphinx_mapping = {
     "torch": ("https://pytorch.org/docs/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
+    # add pytorchlightning
 }
 
 # -- Options for HTML output -------------------------------------------------
 
+
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = "sphinx_rtd_theme"
+# http://www.sphinx-doc.org/en/master/usage/theming.html#builtin-themes
+# html_theme = 'bizstyle'
+# https://sphinx-themes.org
+html_theme = "pt_lightning_sphinx_theme"
+html_theme_path = [pt_lightning_sphinx_theme.get_html_theme_path()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
