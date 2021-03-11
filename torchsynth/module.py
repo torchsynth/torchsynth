@@ -331,9 +331,10 @@ class VCO(SynthModule):
             0.0, 127.0, name="midi_f0", description="pitch value in 'midi' (69 = 440Hz)"
         ),
         ModuleParameterRange(
-            0.0,
+            -127.0,
             127.0,
             curve=0.1,
+            symmetric=True,
             name="mod_depth",
             description="depth of the pitch modulation in semitones",
         ),
@@ -387,9 +388,7 @@ class VCO(SynthModule):
         """
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-        control_as_frequency = torch.clip(
-            self.make_control_as_frequency(mod_signal), 0.0, self.sample_rate / 2.0
-        )
+        control_as_frequency = self.make_control_as_frequency(mod_signal)
 
         assert (control_as_frequency >= 0).all() and (
             control_as_frequency <= self.sample_rate / 2.0
@@ -403,7 +402,9 @@ class VCO(SynthModule):
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
-        control_as_midi = self.p("midi_f0").unsqueeze(1) + modulation
+        control_as_midi = torch.clamp(
+            self.p("midi_f0").unsqueeze(1) + modulation, 0.0, 127.0
+        )
         return util.midi_to_hz(control_as_midi)
 
     def make_argument(self, freq: Signal) -> Signal:

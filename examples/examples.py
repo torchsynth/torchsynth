@@ -540,7 +540,7 @@ print(voice1.vco_1.p("midi_f0"))
 # Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`. The conversion from [0,1] can be shaped by specifying a curve. Curve values less than 1 put more emphasis on lower values in the human range and curve values greater than 1 put more emphasis on larger values in the human range. A curve of 1 is a linear relationship between the two ranges.
 
 # +
-# ModuleParameterRange with exponential scaling of a range from 0-127
+# ModuleParameterRange with scaling of a range from 0-127
 param_range_exp = ModuleParameterRange(0.0, 127.0, curve=0.5)
 param_range_lin = ModuleParameterRange(0.0, 127.0, curve=1.0)
 param_range_log = ModuleParameterRange(0.0, 127.0, curve=2.0)
@@ -559,7 +559,24 @@ if isnotebook():
 
     axes[2].plot(param_values, param_range_log.from_0to1(param_values))
     axes[2].set_title("Logarithmic Scaling")
+# +
+# ModuleParameterRange with symmetric scaling of a range from -127 to 127
+param_range_exp = ModuleParameterRange(-127.0, 127.0, curve=0.5, symmetric=True)
+param_range_log = ModuleParameterRange(-127.0, 127.0, curve=2.0, symmetric=True)
+
+# Linearly spaced values from 0.0 1.0
+param_values = torch.linspace(0.0, 1.0, 100)
+
+if isnotebook():
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+
+    axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
+    axes[0].set_title("Exponential Scaling")
+
+    axes[1].plot(param_values, param_range_log.from_0to1(param_values))
+    axes[1].set_title("Logarithmic Scaling")
 # -
+
 # ### Filters
 
 # +

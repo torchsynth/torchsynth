@@ -33,6 +33,7 @@ class ModuleParameterRange:
         minimum: float,
         maximum: float,
         curve: float = 1.0,
+        symmetric: bool = False,
         # TODO: Make this not optional
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -42,6 +43,7 @@ class ModuleParameterRange:
         self.minimum = minimum
         self.maximum = maximum
         self.curve = curve
+        self.symmetric = symmetric
 
     def __repr__(self):
         return (
@@ -62,10 +64,22 @@ class ModuleParameterRange:
         assert torch.all(0.0 <= normalized)
         assert torch.all(normalized <= 1.0)
 
-        if self.curve != 1:
-            normalized = torch.exp2(torch.log2(normalized) / self.curve)
+        if not self.symmetric:
+            if self.curve != 1:
+                normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
-        return self.minimum + (self.maximum - self.minimum) * normalized
+            return self.minimum + (self.maximum - self.minimum) * normalized
+
+        # Compute the curve for a symmetric curve
+        dist = 2.0 * normalized - 1.0
+        if self.curve != 1:
+            normalized = torch.where(
+                dist == 0.0,
+                dist,
+                torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
+            )
+
+        return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1)
 
     def to_0to1(self, value: T) -> T:
         """
@@ -79,10 +93,14 @@ class ModuleParameterRange:
         assert torch.all(value <= self.maximum)
 
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
-        if self.curve != 1:
-            normalized = torch.pow(normalized, self.curve)
 
-        return normalized
+        if not self.symmetric:
+            if self.curve != 1:
+                normalized = torch.pow(normalized, self.curve)
+            return normalized
+
+        dist = 2.0 * normalized - 1.0
+        return 1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist) / 2.0
 
 
 class ModuleParameter(nn.Parameter):
