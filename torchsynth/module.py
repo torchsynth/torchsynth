@@ -80,6 +80,10 @@ class SynthModule(nn.Module):
         return self.synthglobals.sample_rate
 
     @property
+    def nyquist(self):
+        return self.sample_rate // 2
+
+    @property
     def buffer_size(self) -> T:
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
@@ -182,10 +186,10 @@ class ADSR(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.0, 2.0, curve="log", name="attack", description="attack time (sec)"
+            0.0, 2.0, curve=0.5, name="attack", description="attack time (sec)"
         ),
         ModuleParameterRange(
-            0.0, 2.0, curve="log", name="decay", description="decay time (sec)"
+            0.0, 2.0, curve=0.5, name="decay", description="decay time (sec)"
         ),
         ModuleParameterRange(
             0.0,
@@ -195,7 +199,7 @@ class ADSR(SynthModule):
             + "(confusingly, by convention) is not a time value.",
         ),
         ModuleParameterRange(
-            0.0, 5.0, curve="log", name="release", description="release time (sec)"
+            0.0, 5.0, curve=0.5, name="release", description="release time (sec)"
         ),
         ModuleParameterRange(
             0.1,
@@ -331,8 +335,10 @@ class VCO(SynthModule):
             0.0, 127.0, name="midi_f0", description="pitch value in 'midi' (69 = 440Hz)"
         ),
         ModuleParameterRange(
-            0.0,
+            -127.0,
             127.0,
+            curve=0.1,
+            symmetric=True,
             name="mod_depth",
             description="depth of the pitch modulation in semitones",
         ),
@@ -387,6 +393,11 @@ class VCO(SynthModule):
 
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
         control_as_frequency = self.make_control_as_frequency(mod_signal)
+
+        assert (control_as_frequency >= 0).all() and (
+            control_as_frequency <= self.nyquist
+        ).all()
+
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
@@ -395,7 +406,9 @@ class VCO(SynthModule):
 
     def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
-        control_as_midi = self.p("midi_f0").unsqueeze(1) + modulation
+        control_as_midi = torch.clamp(
+            self.p("midi_f0").unsqueeze(1) + modulation, 0.0, 127.0
+        )
         return util.midi_to_hz(control_as_midi)
 
     def make_argument(self, freq: Signal) -> Signal:
@@ -424,6 +437,8 @@ class SineVCO(VCO):
 
 class TorchFmVCO(VCO):
     """
+    # TODO Turn this into its own voice so we can be a bit smarter about aliasing
+    # See https://github.com/turian/torchsynth/issues/145
     Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
 
     Typical modulation is calculated in pitch-space (midi). For FM to work,
@@ -439,7 +454,7 @@ class TorchFmVCO(VCO):
         f0_hz = util.midi_to_hz(self.p("midi_f0").unsqueeze(1))
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        return f0_hz + modulation_hz
+        return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
     def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.
@@ -507,6 +522,7 @@ class Noise(SynthModule):
         ModuleParameterRange(
             0.0,
             1.0,
+            curve=0.05,
             name="ratio",
             description="mix ratio between the incoming signal and the produced noise, "
             + "1 is all noise",
@@ -540,7 +556,6 @@ class CrossfadeKnob(SynthModule):
         ModuleParameterRange(
             0.0,
             1.0,
-            curve="linear",
             name="ratio",
             description="crossfade knob",
         ),
@@ -558,9 +573,7 @@ class NoteOnButton(SynthModule):
         ModuleParameterRange(
             0.0,
             4.0,
-            # TODO: Make sure this is the correct curve
-            # curve="log",
-            curve="linear",
+            curve=0.5,
             name="duration",
             description="note-on button, in seconds",
         ),

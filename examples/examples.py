@@ -73,6 +73,7 @@ from torchsynth.module import (
     SineVCO,
     TorchFmVCO,
 )
+from torchsynth.parameter import ModuleParameterRange
 
 # Determenistic seeds for replicable testing
 random.seed(0)
@@ -419,7 +420,7 @@ assert voice1.noise
 voice1.note_on = NoteOnButton(
     synthglobals1,
     duration=T([1.0]),
-)
+).to(device)
 voice1.pitch_adsr = ADSR(
     synthglobals1,
     attack=T([0.25]),
@@ -488,14 +489,20 @@ ipd.Audio(voice_out2.cpu().detach().numpy(), rate=voice2.sample_rate.item())
 err = torch.mean(torch.abs(voice_out1 - voice_out2))
 print(err)
 
-# Print out the gradients for all the paramters
+# ## Random synths
+#
+# Let's generate some random synths in batch
 
-err.backward(retain_graph=True)
-
-# +
-# for ((n1, p1), p2) in zip(voice1.named_parameters(), voice2.parameters()):
-#    print(f"{n1:40} Voice1: {p1.grad.item()} \tVoice2: {p2.grad.item()}")
-# -
+synthglobals16 = SynthGlobals(
+    batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
+)
+voice = Voice(synthglobals=synthglobals16).to(device)
+voice_out = voice()
+for i in range(synthglobals16.batch_size):
+    stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
+    ipd.display(
+        ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
+    )
 
 # ### Parameters
 
@@ -528,20 +535,47 @@ print(voice1.vco_1.p("midi_f0"))
 voice1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
 print(voice1.vco_1.p("midi_f0"))
 
-# ## Random synths
+# #### Parameter Ranges
 #
-# Let's generate some random synths in batch
+# Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`. The conversion from [0,1] can be shaped by specifying a curve. Curve values less than 1 put more emphasis on lower values in the human range and curve values greater than 1 put more emphasis on larger values in the human range. A curve of 1 is a linear relationship between the two ranges.
 
-synthglobals16 = SynthGlobals(
-    batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
-)
-voice = Voice(synthglobals=synthglobals16).to(device)
-voice_out = voice()
-for i in range(synthglobals16.batch_size):
-    stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
-    ipd.display(
-        ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
-    )
+# +
+# ModuleParameterRange with scaling of a range from 0-127
+param_range_exp = ModuleParameterRange(0.0, 127.0, curve=0.5)
+param_range_lin = ModuleParameterRange(0.0, 127.0, curve=1.0)
+param_range_log = ModuleParameterRange(0.0, 127.0, curve=2.0)
+
+# Linearly spaced values from 0.0 1.0
+param_values = torch.linspace(0.0, 1.0, 100)
+
+if isnotebook():
+    fig, axes = plt.subplots(1, 3, figsize=(12, 3))
+
+    axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
+    axes[0].set_title("Exponential Scaling")
+
+    axes[1].plot(param_values, param_range_lin.from_0to1(param_values))
+    axes[1].set_title("Linear Scaling")
+
+    axes[2].plot(param_values, param_range_log.from_0to1(param_values))
+    axes[2].set_title("Logarithmic Scaling")
+# +
+# ModuleParameterRange with symmetric scaling of a range from -127 to 127
+param_range_exp = ModuleParameterRange(-127.0, 127.0, curve=0.5, symmetric=True)
+param_range_log = ModuleParameterRange(-127.0, 127.0, curve=2.0, symmetric=True)
+
+# Linearly spaced values from 0.0 1.0
+param_values = torch.linspace(0.0, 1.0, 100)
+
+if isnotebook():
+    fig, axes = plt.subplots(1, 2, figsize=(8, 3))
+
+    axes[0].plot(param_values, param_range_exp.from_0to1(param_values))
+    axes[0].set_title("Exponential Scaling")
+
+    axes[1].plot(param_values, param_range_log.from_0to1(param_values))
+    axes[1].set_title("Logarithmic Scaling")
+# -
 
 # ### Filters
 
