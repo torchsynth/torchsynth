@@ -79,7 +79,7 @@ class ModuleParameterRange:
                 torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
             )
 
-        return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1)
+        return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0)
 
     def to_0to1(self, value: T) -> T:
         """
@@ -100,7 +100,7 @@ class ModuleParameterRange:
             return normalized
 
         dist = 2.0 * normalized - 1.0
-        return 1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist) / 2.0
+        return (1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist)) / 2.0
 
 
 class ModuleParameter(nn.Parameter):

@@ -57,6 +57,24 @@ class TestParameterRange:
         expected = torch.pow(params / 10.0, 2.0)
         assert torch.all(norm_params.eq(expected))
 
+        # Test symmetric scaling can be converted back and forth
+        param_range = ModuleParameterRange(-10.0, 10.0, curve=3.0, symmetric=True)
+        norm_params = torch.linspace(0.0, 1.0, 50)
+        assert torch.all(
+            torch.isclose(
+                norm_params, param_range.to_0to1(param_range.from_0to1(norm_params))
+            )
+        )
+
+        # Test symmetric scaling can be converted back and forth
+        param_range = ModuleParameterRange(-127.0, 127.0, curve=0.25, symmetric=True)
+        norm_params = torch.linspace(0.0, 1.0, 10)
+        assert torch.all(
+            torch.isclose(
+                norm_params, param_range.to_0to1(param_range.from_0to1(norm_params))
+            )
+        )
+
     def test_from_0to1(self):
         # Test with linear range
         param_range = ModuleParameterRange(0.0, 10.0)

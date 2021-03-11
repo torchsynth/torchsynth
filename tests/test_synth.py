@@ -34,7 +34,7 @@ class TestAbstractSynth:
         synth = torchsynth.synth.AbstractSynth(synthglobals)
         vco = synthmodule.SineVCO(
             midi_f0=T([12.0, 30.0]),
-            mod_depth=T([50.0, 50.0]),
+            mod_depth=T([50.0, -50.0]),
             synthglobals=synthglobals,
         )
         noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
