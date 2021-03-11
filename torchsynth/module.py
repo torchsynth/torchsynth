@@ -80,6 +80,10 @@ class SynthModule(nn.Module):
         return self.synthglobals.sample_rate
 
     @property
+    def nyquist(self):
+        return self.sample_rate // 2
+
+    @property
     def buffer_size(self) -> T:
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
@@ -391,7 +395,7 @@ class VCO(SynthModule):
         control_as_frequency = self.make_control_as_frequency(mod_signal)
 
         assert (control_as_frequency >= 0).all() and (
-            control_as_frequency <= self.sample_rate / 2.0
+            control_as_frequency <= self.nyquist
         ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
@@ -450,7 +454,7 @@ class TorchFmVCO(VCO):
         f0_hz = util.midi_to_hz(self.p("midi_f0").unsqueeze(1))
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        return torch.clamp(f0_hz + modulation_hz, 0.0, self.sample_rate / 2.0)
+        return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
     def oscillator(self, argument: Signal) -> Signal:
         # Classically, FM operators are sine waves.
