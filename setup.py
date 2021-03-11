@@ -52,6 +52,7 @@ setup(
             "librosa",
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "optuna",
         ],
     },
 )
