@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "Joseph Turian, Jordie Shier, Max Henry"
 __contact__ = ""
 __url__ = ""
@@ -29,7 +29,13 @@ setup(
     # },
     scripts=[],
     python_requires=">=3.6",
-    install_requires=["numpy", "scipy", "torch>=1.7"],
+    install_requires=[
+        "numpy",
+        "scipy",
+        "torch>=1.7",
+        "pytorch-lightning",
+        "torchcsprng==0.2.0",
+    ],
     extras_require={
         "test": [
             "pytest",

@@ -6,7 +6,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-import torch.tensor as T
+from torch import tensor as T
 
 
 class ModuleParameterRange:
@@ -19,20 +19,23 @@ class ModuleParameterRange:
 
     Parameters
     ----------
-    minimum (T) :   minimum value in range
-    maximum (T) :   maximum value in range
-    curve   (str)   :   relationship between parameter values and the normalized values
-                        in the range [0,1]. Must be one of "linear", "log", or "exp".
-                        Defaults to "linear"
+    minimum (float) :   minimum value in range
+    maximum (float) :   maximum value in range
+    curve   (float) : shape of the curve, values less than 1 place more emphasis on
+        smaller values and values greater than 1 place more emphasis no larger values.
+        Defaults to 1 which is linear.
+    symmetric (bool) :  whether or not the parameter range is symmetric, allows for
+        curves around a center point. Defaults to False.
     name    (str) : name of this parameter
     description (str) : optional description of this parameter
     """
 
     def __init__(
         self,
-        minimum: T,
-        maximum: T,
-        curve: str = "linear",
+        minimum: float,
+        maximum: float,
+        curve: float = 1.0,
+        symmetric: bool = False,
         # TODO: Make this not optional
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -41,22 +44,13 @@ class ModuleParameterRange:
         self.description = description
         self.minimum = minimum
         self.maximum = maximum
-
-        self.curve_type = curve
-        if curve == "linear":
-            self.curve = 1
-        elif curve == "log":
-            self.curve = 0.5
-        elif curve == "exp":
-            self.curve = 2.0
-        else:
-            curve_types = ["linear", "log", "exp"]
-            raise ValueError("Curve must be one of {}".format(", ".join(curve_types)))
+        self.curve = curve
+        self.symmetric = symmetric
 
     def __repr__(self):
         return (
             f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
-            + f"max={self.maximum}, curve={self.curve_type}, "
+            + f"max={self.maximum}, curve={self.curve}, "
             + f"description={self.description})"
         )
 
@@ -72,10 +66,22 @@ class ModuleParameterRange:
         assert torch.all(0.0 <= normalized)
         assert torch.all(normalized <= 1.0)
 
-        if self.curve != 1:
-            normalized = torch.exp2(torch.log2(normalized) / self.curve)
+        if not self.symmetric:
+            if self.curve != 1:
+                normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
-        return self.minimum + (self.maximum - self.minimum) * normalized
+            return self.minimum + (self.maximum - self.minimum) * normalized
+
+        # Compute the curve for a symmetric curve
+        dist = 2.0 * normalized - 1.0
+        if self.curve != 1:
+            normalized = torch.where(
+                dist == 0.0,
+                dist,
+                torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
+            )
+
+        return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0)
 
     def to_0to1(self, value: T) -> T:
         """
@@ -89,10 +95,14 @@ class ModuleParameterRange:
         assert torch.all(value <= self.maximum)
 
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
-        if self.curve != 1:
-            normalized = torch.pow(normalized, self.curve)
 
-        return normalized
+        if not self.symmetric:
+            if self.curve != 1:
+                normalized = torch.pow(normalized, self.curve)
+            return normalized
+
+        dist = 2.0 * normalized - 1.0
+        return (1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist)) / 2.0
 
 
 class ModuleParameter(nn.Parameter):

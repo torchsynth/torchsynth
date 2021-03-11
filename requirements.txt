@@ -10,9 +10,11 @@ jupytext==v1.10.3   # Used in precommit hooks
 numpy
 scipy
 torch>=1.7
+pytorch-lightning
 pytest
 pytest-cov
 ipython
 librosa
 matplotlib
+torchcsprng==0.2.0
 numba>=0.49.0 # not directly required, pinned by Snyk to avoid a vulnerability

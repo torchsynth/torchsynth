@@ -11,15 +11,19 @@ pytorch. It is GPU-optional and differentiable.
 [![codecov.io](https://codecov.io/gh/turian/torchsynth/branch/main/graphs/badge.svg?logoWidth=18)](https://codecov.io/github/turian/torchsynth?branch=master)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
-![Snyk Vulnerabilities for GitHub Repo](https://img.shields.io/snyk/vulnerabilities/github/turian/torchsynth)
 
+You will need to install the particular version of
+[torchcsprng](https://github.com/pytorch/csprng) for your CUDA
+device. Please follow their simple installation instructions.  But
+if you use the CPU version of torchcsprng, it probably won't affect
+performance much.
 
 ## Development Installation
 
 ```
 git clone https://github.com/turian/torchsynth
 cd torchsynth
-pip install -e ".[dev]"
+pip3 install -e ".[dev]"
 ```
 
 Make sure you have pre-commit hooks installed:
@@ -49,7 +53,7 @@ Unit testing is performed using `pytest`.
 
 `pytest` and other project development dependencies can be installed as follows: 
 ```
-pip install -e ".[test]"
+pip3 install -e ".[test]"
 ```
 
 To run tests, run `pytest` from the project root:
