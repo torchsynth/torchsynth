@@ -1,45 +1,17 @@
 language:
   python
 
-matrix:
-  include:
-    - os: linux
-      dist: focal
-      python: 3.7
-    - os: linux
-      dist: focal
-      python: 3.8
-    - os: linux
-      dist: focal
-      python: 3.9
-    - os: linux
-      dist: bionic
-      python: 3.7
-    - os: linux
-      dist: bionic
-      python: 3.8
-    # Do they have it?
-    #- os: linux
-    #  dist: bionic
-    #  python: 3.9
-    - os: linux
-      dist: groovy
-      python: 3.7
-    - os: linux
-      dist: groovy
-      python: 3.8
-    - os: linux
-      dist: groovy
-      python: 3.9
-    # https://travis-ci.community/t/how-to-skip-python-download-to-osx-image-and-avoid-download-unavailable-error/9554/2
-    #- os: osx
-    #  # Would be nice to try different python versions :(
-    #  #python: 3.7
-    #  osx_image: xcode10.2
-    #- os: osx
-    #  # Would be nice to try different python versions :(
-    #  #python: 3.7
-    #  osx_image: xcode12.4
+python:
+- 3.7
+- 3.8
+- 3.9
+
+dist:
+- focal
+- bionic
+- groovy
+
+# Try osx?
 
 before_install:
   - python --version
