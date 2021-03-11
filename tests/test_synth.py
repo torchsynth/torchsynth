@@ -99,3 +99,13 @@ class TestAbstractSynth:
                 synthglobals=synthglobals_new_batchsize,
             )
             synth.add_synth_modules([("adsr", adsr)])
+
+        # Same here
+        with pytest.raises(ValueError):
+            synthglobals_new_buffersize = torchsynth.globals.SynthGlobals(
+                batch_size=T(2), buffer_size=T(2048)
+            )
+            adsr = synthmodule.ADSR(
+                synthglobals=synthglobals_new_buffersize,
+            )
+            synth.add_synth_modules([("adsr", adsr)])
