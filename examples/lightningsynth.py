@@ -24,6 +24,8 @@ If this hasn't been merged to master yet, run:
 
 #!pip install torchvision
 
+from typing import Any
+
 import torch
 import torch.tensor as T
 from tqdm.auto import tqdm
@@ -63,6 +65,20 @@ class batch_idx_dataset(torch.utils.data.Dataset):
         return self.num_batches
 
 
+class TorchSynthCallback(pl.Callback):
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module: pl.LightningModule,
+        outputs: Any,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
+    ) -> None:
+        assert batch.ndim == 1
+        _ = torch.stack([pl_module(i) for i in batch])
+
+
 synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
@@ -91,6 +107,7 @@ trainer = pl.Trainer(
     accelerator=accelerator,
     deterministic=True,
     max_epochs=0,
+    callbacks=[TorchSynthCallback()],
 )
 
 trainer.test(voice, test_dataloaders=test_dataloader)
