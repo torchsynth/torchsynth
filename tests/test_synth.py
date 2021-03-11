@@ -109,3 +109,16 @@ class TestAbstractSynth:
                 synthglobals=synthglobals_new_buffersize,
             )
             synth.add_synth_modules([("adsr", adsr)])
+
+    def test_deterministic_noise(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+
+        synth.randomize(1)
+        x11 = synth()
+        synth.randomize()
+        x2 = synth()
+        synth.randomize(1)
+        x12 = synth()
+        assert torch.mean(torch.abs(x11 - x2)) > 1e-6
+        assert torch.mean(torch.abs(x11 - x12)) < 1e-6
