@@ -103,24 +103,24 @@ class AbstractSynth(LightningModule):
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
-    # For lightning
     def test_step(self, batch, batch_idx):
-        assert batch.ndim == 1
-        # TODO: Test with multiple lightning (not synth) batches
-        _ = torch.stack([self(i) for i in batch])
-        # You probably want to do something with the results above
-        # We just return 0, which lightning accumulates as the test error
+        """
+        This is boilerplate for lightning -- this is required by lightning Trainer
+        when calling test, which we use to forward Synths on multi-gpu platforms
+        """
         return T(0.0, device=self.device)
 
-    def randomize(self, seed: Optional[int]):
+    def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
         """
-        if seed:
+        if seed is not None:
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
                 parameter.data.uniform_(0, 1, generator=mt19937_gen)
+            for module in self._modules:
+                self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
                 parameter.data = torch.rand_like(parameter, device=self.device)

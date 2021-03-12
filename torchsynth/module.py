@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 import torch
 import torch.nn as nn
 import torch.tensor as T
+import torchcsprng as csprng
 
 import torchsynth.util as util
 from torchsynth.default import EPS
@@ -48,6 +49,8 @@ class SynthModule(nn.Module):
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+        # If this module needs a random seed, here it is
+        self.seed: Optional[int] = None
 
         if self.parameter_ranges:
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
@@ -533,9 +536,12 @@ class Noise(SynthModule):
         noise = self.noise_of_length(audio_in)
         return util.crossfade2D(audio_in, noise, self.p("ratio"))
 
-    @staticmethod
-    def noise_of_length(audio_in: Signal) -> Signal:
-        return torch.rand_like(audio_in) * 2 - 1
+    def noise_of_length(self, audio_in: Signal) -> Signal:
+        if self.seed is not None:
+            mt19937_gen = csprng.create_mt19937_generator(self.seed)
+            return audio_in.data.uniform_(-1, 1, generator=mt19937_gen)
+        else:
+            return torch.rand_like(audio_in) * 2 - 1
 
 
 class Identity(SynthModule):
