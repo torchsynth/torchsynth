@@ -103,8 +103,11 @@ class AbstractSynth(LightningModule):
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
-    # For lightning
     def test_step(self, batch, batch_idx):
+        """
+        This is boilerplate for lightning -- this is required by lightning Trainer
+        when calling test, which we use to forward Synths on multi-gpu platforms
+        """
         return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int]):

@@ -65,6 +65,8 @@ class batch_idx_dataset(torch.utils.data.Dataset):
         return self.num_batches
 
 
+# TODO Add this to torchsynth API
+# see https://github.com/turian/torchsynth/issues/154
 class TorchSynthCallback(pl.Callback):
     def on_test_batch_end(
         self,
