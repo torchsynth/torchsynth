@@ -116,7 +116,7 @@ class AbstractSynth(LightningModule):
         """
         Randomize all parameters
         """
-        if seed:
+        if seed is not None:
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
