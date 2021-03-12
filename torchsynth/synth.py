@@ -110,15 +110,17 @@ class AbstractSynth(LightningModule):
         """
         return T(0.0, device=self.device)
 
-    def randomize(self, seed: Optional[int]):
+    def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
         """
-        if seed:
+        if seed is not None:
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
                 parameter.data.uniform_(0, 1, generator=mt19937_gen)
+            for module in self._modules:
+                self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
                 parameter.data = torch.rand_like(parameter, device=self.device)
