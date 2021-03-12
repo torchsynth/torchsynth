@@ -144,7 +144,7 @@ class Voice(AbstractSynth):
                 ("vco_2", SquareSawVCO(synthglobals)),
                 ("noise", Noise(synthglobals)),
                 ("vca", VCA(synthglobals)),
-                ("vca_ratio", CrossfadeKnob(synthglobals)),
+                ("vco_ratio", CrossfadeKnob(synthglobals)),
             ]
         )
 
@@ -158,7 +158,38 @@ class Voice(AbstractSynth):
         vco_1_out = self.vco_1.forward(pitch_envelope)
         vco_2_out = self.vco_2.forward(pitch_envelope)
 
-        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
+        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
         audio_out = self.noise.forward(audio_out)
 
         return self.vca.forward(amp_envelope, audio_out)
+
+
+class FmVoice(AbstractSynth):
+    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
+        AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
+
+        # Register all modules as children
+        self.add_synth_modules(
+            [
+                ("note_on", NoteOnButton(synthglobals)),
+                ("vco_1", SineVCO(synthglobals)),
+                ("vco_2", SineVCO(synthglobals)),
+                ("vco_ratio", CrossfadeKnob(synthglobals)),
+            ]
+        )
+
+    def _forward(self) -> T:
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        note_on_duration = self.note_on.p("duration")
+
+        pitch_envelope = torch.zeros(
+            (self.batch_size, self.sample_rate * note_on_duration)
+        )
+
+        vco_1_out = self.vco_1.forward(pitch_envelope)
+        vco_2_out = self.vco_2.forward(pitch_envelope)
+
+        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
+
+        return audio_out
