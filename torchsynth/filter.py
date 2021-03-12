@@ -4,7 +4,7 @@ import torch.tensor as T
 
 import torchsynth.util as util
 from torchsynth.default import DEFAULT_SAMPLE_RATE
-from torchsynth.deprecated import SynthModule0Ddeprecated
+from torchsynth.deprecated import SynthModule0Ddeprecated, SynthModule
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 

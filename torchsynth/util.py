@@ -158,3 +158,10 @@ def blackman(length: T) -> T:
     )
 
     return window
+
+
+def fft_convolve(signal: Signal, impulse_response: T) -> Signal:
+    """
+    Implements fast convolution for time-varying signals
+    """
+    pass
