@@ -67,7 +67,6 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
     VCA,
-    Disabled,
     Noise,
     Keyboard,
     SineVCO,
@@ -233,7 +232,9 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # %matplotlib inline
 
 # Set up a Keyboard module
-keyboard = Keyboard(synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration)
+keyboard = Keyboard(
+    synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration
+).to(device)
 
 # Reset envelope
 adsr = ADSR(
@@ -283,7 +284,7 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = Keyboard(synthglobals, midi_f0=T([30.0, 30.0]))
+keyboard = Keyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
 
 square_saw = SquareSawVCO(
     tuning=T([0.0, 0.0]),
@@ -336,7 +337,7 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
-keyboard = Keyboard(synthglobals, midi_f0=T([50.0, 50.0]))
+keyboard = Keyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
@@ -432,7 +433,6 @@ print(list(noise.parameters()))
 
 from torchsynth.synth import Voice
 
-# +
 voice1 = Voice(synthglobals=synthglobals1).to(device)
 voice1.set_parameters(
     {
@@ -450,13 +450,10 @@ voice1.set_parameters(
         ("amp_adsr", "alpha"): T([3.0]),
         ("vco_1", "tuning"): T([0.0]),
         ("vco_1", "mod_depth"): T([12.0]),
+        ("vco_ratio", "ratio"): T([0.0]),
         ("noise", "ratio"): T([0.05]),
     }
 )
-
-# Disable VCO 2
-voice1.vco_2 = Disabled(synthglobals1).to(device)
-# -
 
 voice_out1 = voice1()
 stft_plot(voice_out1.cpu().view(-1).detach().numpy())

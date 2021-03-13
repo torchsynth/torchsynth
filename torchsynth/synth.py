@@ -163,10 +163,9 @@ class Voice(AbstractSynth):
         pitch_envelope = self.pitch_adsr.forward(note_on_duration)
         amp_envelope = self.amp_adsr.forward(note_on_duration)
 
-        vco_1_out = self.vco_1.forward(midi_f0, pitch_envelope)
+        audio_out = self.vco_1.forward(midi_f0, pitch_envelope)
         vco_2_out = self.vco_2.forward(midi_f0, pitch_envelope)
+        audio_out = util.crossfade2D(audio_out, vco_2_out, self.vco_ratio.p("ratio"))
 
-        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
         audio_out = self.noise.forward(audio_out)
-
         return self.vca.forward(amp_envelope, audio_out)

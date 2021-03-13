@@ -548,27 +548,6 @@ class Noise(SynthModule):
             return torch.rand_like(audio_in) * 2 - 1
 
 
-class Identity(SynthModule):
-    """
-    Pass through module
-    """
-
-    # I dont' think this is what we want here -- if being used to disable a module
-    # like the VCO, the pitch envelope signal would be passed through. In the Voice
-    # this would be added to the first vco which would create an offset in the signal.
-    def _forward(self, signal: Signal) -> Signal:
-        return signal
-
-
-class Disabled(SynthModule):
-    """
-    A disabled module just outputs zeros
-    """
-
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:
-        return torch.zeros((self.batch_size, self.buffer_size)).as_subclass(Signal)
-
-
 class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation
