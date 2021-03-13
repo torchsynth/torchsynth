@@ -172,31 +172,51 @@ class Voice(AbstractSynth):
         return self.vca.forward(amp_envelope, audio_out)
 
 
-class FmVoice(AbstractSynth):
+class FmOperator(AbstractSynth):
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
 
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("op1", SineVCO(synthglobals)),
-                ("op2", FmVCO(synthglobals)),
-                ("vco_ratio", CrossfadeKnob(synthglobals)),
+                ("osc", FmVCO(synthglobals)),
+                ("env", ADSR(synthglobals)),
+                ("amp", VCA(synthglobals)),
             ]
         )
+
+    def _forward(self, midi_f0: T, duration: T, modulation: Signal) -> Signal:
+        output = self.osc(midi_f0, modulation)
+        env = self.env(duration)
+        return self.amp(env, output)
+
+
+class FmSynth(AbstractSynth):
+    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
+        AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
+
+        # Register children SynthModules
+        self.add_synth_modules(
+            [
+                ("keyboard", MonophonicKeyboard(synthglobals)),
+            ]
+        )
+
+        # Add the operators
+        self.op1 = FmOperator(synthglobals)
+        self.op2 = FmOperator(synthglobals)
 
     def _forward(self) -> T:
 
         midi_f0, note_on_duration = self.keyboard()
 
-        pitch_envelope = torch.zeros(
+        modulation = torch.zeros(
             (self.batch_size, self.buffer_size), device=self.device
         )
-
-        op1_out = self.op1.forward(midi_f0, pitch_envelope)
-        op2_out = self.op2.forward(midi_f0, op1_out)
-
-        # audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
-
+        op1_out = self.op1(
+            midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
+        )
+        op2_out = self.op2(
+            midi_f0=midi_f0, duration=note_on_duration, modulation=op1_out
+        )
         return op2_out

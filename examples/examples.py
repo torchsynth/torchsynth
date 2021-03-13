@@ -591,6 +591,17 @@ if isnotebook():
 # ## FM Voice
 
 # +
+from torchsynth.synth import FmSynth
+
+fm = FmSynth(synthglobals1).to(device)
+
+with torch.no_grad():
+    output = fm()
+
+stft_plot(output[0].detach().cpu().numpy())
+ipd.display(ipd.Audio(output[0].detach().cpu().numpy(), rate=fm.sample_rate.item()))
+
+# +
 from torchsynth.synth import FmVoice
 
 

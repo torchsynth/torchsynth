@@ -460,8 +460,6 @@ class FmVCO(VCO):
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        print(torch.min(modulation_hz))
-        print(f0_hz)
         return f0_hz + modulation_hz
         # return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
