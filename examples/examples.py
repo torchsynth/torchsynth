@@ -68,7 +68,7 @@ from torchsynth.module import (
     ADSR,
     VCA,
     Noise,
-    Keyboard,
+    MonophonicKeyboard,
     SineVCO,
     TorchFmVCO,
 )
@@ -232,7 +232,7 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # %matplotlib inline
 
 # Set up a Keyboard module
-keyboard = Keyboard(
+keyboard = MonophonicKeyboard(
     synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration
 ).to(device)
 
@@ -284,7 +284,7 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = Keyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
 
 square_saw = SquareSawVCO(
     tuning=T([0.0, 0.0]),
@@ -337,7 +337,7 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
-keyboard = Keyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(

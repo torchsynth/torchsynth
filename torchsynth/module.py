@@ -563,7 +563,7 @@ class CrossfadeKnob(SynthModule):
     ]
 
 
-class Keyboard(SynthModule):
+class MonophonicKeyboard(SynthModule):
     """
     A keyboard controller module. Mimics a mono-synth keyboard and contains
     parameters that output a midi_f0 and note duration.

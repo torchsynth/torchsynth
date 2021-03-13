@@ -12,7 +12,7 @@ from torchsynth.module import (
     ADSR,
     VCA,
     CrossfadeKnob,
-    Keyboard,
+    MonophonicKeyboard,
     Noise,
     SineVCO,
     SquareSawVCO,
@@ -145,7 +145,7 @@ class Voice(AbstractSynth):
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("keyboard", Keyboard(synthglobals)),
+                ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("pitch_adsr", ADSR(synthglobals)),
                 ("amp_adsr", ADSR(synthglobals)),
                 ("vco_1", SineVCO(synthglobals)),
