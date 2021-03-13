@@ -174,6 +174,11 @@ class Voice(AbstractSynth):
 
 
 class FmOperator(AbstractSynth):
+    """
+    An FM operator - a single unit containing a sine wave oscillator that can receive
+    an audio rate frequency modulation signal and contains an amplitude envelope
+    """
+
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
 
@@ -193,6 +198,9 @@ class FmOperator(AbstractSynth):
 
 
 class FmAlgorithmKnob(SynthModule):
+    """
+    A knob for transitioning between FM algorithms
+    """
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
@@ -206,6 +214,13 @@ class FmAlgorithmKnob(SynthModule):
 
 
 class FmSynth(AbstractSynth):
+    """
+    A four operator FM synth. Has 10 different algorithms from Ableton's Operator
+    instrument and can smoothly transition between them.
+
+    TODO: Add an LFO and maybe a pitch envelope? Try to implement DX7 style envs?
+    """
+
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
 
