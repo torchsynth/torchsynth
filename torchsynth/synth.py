@@ -213,7 +213,7 @@ class FmSynth(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("algorithm", CrossfadeKnob(synthglobals)),
+                ("algorithm", FmAlgorithmKnob(synthglobals)),
             ]
         )
 
@@ -224,23 +224,50 @@ class FmSynth(AbstractSynth):
         self.op4 = FmOperator(synthglobals)
 
         # Algorithm layouts - 11 different layouts from Ableton's Operator
-        self.op1_to_op2 = T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
+        self.register_buffer(
+            "op1_to_op2", T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
+        )
 
-        self.op1_to_op3 = T([0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
-        self.op2_to_op3 = T([1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.op1_to_op3 = T(
+            [0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], device=self.device
+        )
+        self.op2_to_op3 = T(
+            [1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], device=self.device
+        )
 
-        self.op1_to_op4 = T([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0])
-        self.op2_to_op4 = T([0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0])
-        self.op3_to_op4 = T([1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0])
+        self.op1_to_op4 = T(
+            [0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0], device=self.device
+        )
+        self.op2_to_op4 = T(
+            [0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0], device=self.device
+        )
+        self.op3_to_op4 = T(
+            [1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0], device=self.device
+        )
 
-        self.op1_out = T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25])
-        self.op2_out = T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25])
-        self.op3_out = T([0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25])
-        self.op4_out = T([1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25])
+        self.op1_out = T(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25], device=self.device
+        )
+        self.op2_out = T(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25],
+            device=self.device,
+        )
+        self.op3_out = T(
+            [0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25],
+            device=self.device,
+        )
+        self.op4_out = T(
+            [1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25],
+            device=self.device,
+        )
 
     def _forward(self) -> T:
 
         midi_f0, note_on_duration = self.keyboard()
+        algorithm = self.algorithm.p("algorithm")
+        lower = torch.floor(algorithm).long()
+        upper = torch.ceil(algorithm).long()
+        ratio = algorithm - lower
 
         modulation = torch.zeros(
             (self.batch_size, self.buffer_size), device=self.device
@@ -248,6 +275,9 @@ class FmSynth(AbstractSynth):
         op1_out = self.op1(
             midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
         )
+
+        print(lower, upper, ratio)
+        print(torch.lerp(self.op1_to_op2[lower], self.op1_to_op2[upper], ratio))
         op2_out = self.op2(
             midi_f0=midi_f0, duration=note_on_duration, modulation=op1_out
         )
