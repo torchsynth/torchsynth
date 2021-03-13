@@ -341,8 +341,8 @@ class VCO(SynthModule):
             description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
-            -64.0,
-            64.0,
+            -96.0,
+            96.0,
             curve=0.1,
             symmetric=True,
             name="mod_depth",
@@ -454,6 +454,15 @@ class FmVCO(VCO):
 
         modulation_index = frequency_deviation / modulation_frequency
     """
+
+    parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges.copy()
+    parameter_ranges[1] = ModuleParameterRange(
+        0.0,
+        12.0,
+        curve=0.75,
+        name="mod_depth",
+        description="depth of the fm modulation",
+    )
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).

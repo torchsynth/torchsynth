@@ -205,6 +205,8 @@ class FmSynth(AbstractSynth):
         # Add the operators
         self.op1 = FmOperator(synthglobals)
         self.op2 = FmOperator(synthglobals)
+        self.op3 = FmOperator(synthglobals)
+        self.op4 = FmOperator(synthglobals)
 
     def _forward(self) -> T:
 
@@ -219,4 +221,10 @@ class FmSynth(AbstractSynth):
         op2_out = self.op2(
             midi_f0=midi_f0, duration=note_on_duration, modulation=op1_out
         )
-        return op2_out
+        op3_out = self.op3(
+            midi_f0=midi_f0, duration=note_on_duration, modulation=op2_out
+        )
+        op4_out = self.op4(
+            midi_f0=midi_f0, duration=note_on_duration, modulation=op3_out
+        )
+        return op4_out
