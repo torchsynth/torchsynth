@@ -163,8 +163,6 @@ class Voice(AbstractSynth):
         pitch_envelope = self.pitch_adsr.forward(note_on_duration)
         amp_envelope = self.amp_adsr.forward(note_on_duration)
 
-        print(note_on_duration)
-
         vco_1_out = self.vco_1.forward(self.keyboard.p("midi_f0"), pitch_envelope)
         vco_2_out = self.vco_2.forward(self.keyboard.p("midi_f0"), pitch_envelope)
 
