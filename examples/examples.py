@@ -593,7 +593,9 @@ if isnotebook():
 # +
 from torchsynth.synth import FmSynth
 
-fm = FmSynth(synthglobals1).to(device)
+fm = FmSynth(synthglobals).to(device)
+
+print(fm.algorithm.get_parameter("algorithm"))
 
 with torch.no_grad():
     output = fm()

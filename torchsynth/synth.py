@@ -324,4 +324,4 @@ class FmSynth(AbstractSynth):
     def mix(self, signal: Signal, algorithm: T) -> Signal:
         return signal * torch.lerp(
             algorithm[self.lower], algorithm[self.upper], self.ratio
-        )
+        ).unsqueeze(1)

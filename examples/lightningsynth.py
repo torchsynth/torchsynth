@@ -81,12 +81,12 @@ class TorchSynthCallback(pl.Callback):
         _ = torch.stack([pl_module(i) for i in batch])
 
 
-synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
+synth1B = batch_idx_dataset(1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
 synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
-voice = Voice(synthglobals)
+voice = FmSynth(synthglobals)
 
 accelerator = None
 if gpus == 0:
