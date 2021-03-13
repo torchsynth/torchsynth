@@ -67,9 +67,8 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
     VCA,
-    Identity,
     Noise,
-    NoteOnButton,
+    MonophonicKeyboard,
     SineVCO,
     TorchFmVCO,
 )
@@ -232,22 +231,35 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # +
 # %matplotlib inline
 
+# Set up a Keyboard module
+keyboard = MonophonicKeyboard(
+    synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration
+).to(device)
+
 # Reset envelope
 adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
-envelope = adsr(note_on_duration)
+
+# Trigger the keyboard, which returns a midi_f0 and note duration
+midi_f0, duration = keyboard()
+
+envelope = adsr(duration)
 
 # SineVCO test
 sine_vco = SineVCO(
-    midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([-12.0, 12.0]), synthglobals=synthglobals
 ).to(device)
-sine_out = sine_vco(envelope)
+sine_out = sine_vco(midi_f0, envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
-ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+ipd.display(
+    ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+)
 stft_plot(sine_out[1].detach().cpu().numpy())
-ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+ipd.display(
+    ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+)
 
 # We can use auraloss instead of raw waveform loss. This is just
 # to show that gradient computations occur
@@ -272,19 +284,29 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
+keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
+
 square_saw = SquareSawVCO(
-    midi_f0=T([30.0, 30.0]),
+    tuning=T([0.0, 0.0]),
     mod_depth=T([0.0, 0.0]),
     shape=T([0.0, 1.0]),
     synthglobals=synthglobals,
 ).to(device)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
-square_saw_out = square_saw(env2)
+square_saw_out = square_saw(keyboard.p("midi_f0"), env2)
 stft_plot(square_saw_out[0].cpu().detach().numpy())
-ipd.Audio(square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+ipd.display(
+    ipd.Audio(
+        square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item()
+    )
+)
 stft_plot(square_saw_out[1].cpu().detach().numpy())
-ipd.Audio(square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+ipd.display(
+    ipd.Audio(
+        square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item()
+    )
+)
 
 
 err = torch.mean(torch.abs(square_saw_out[0] - square_saw_out[1]))
@@ -315,20 +337,22 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
+keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
+
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
-    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-operator_out = sine_operator(envelope)
+operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 
 # Shape the modulation depth.
 operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
-    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-fm_out = fm_vco(operator_out)
+fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
 ipd.display(ipd.Audio(fm_out[0].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
@@ -344,11 +368,11 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # +
 env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
 vco = SineVCO(
-    midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
 noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
 
-noisy_sine = noise(vco(env))
+noisy_sine = noise(vco(keyboard.p("midi_f0"), env))
 
 stft_plot(noisy_sine[0].detach().cpu().numpy())
 ipd.display(
@@ -409,37 +433,27 @@ print(list(noise.parameters()))
 
 from torchsynth.synth import Voice
 
-voice1 = Voice(
-    synthglobals=synthglobals1,
-).to(device)
-
-assert voice1.pitch_adsr
-assert voice1.amp_adsr
-assert voice1.vco_1
-assert voice1.noise
-voice1.note_on = NoteOnButton(
-    synthglobals1,
-    duration=T([1.0]),
-).to(device)
-voice1.pitch_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.25]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-    alpha=T([3]),
-).to(device)
-voice1.amp_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.25]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-).to(device)
-voice1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
-# Here we disable vco2
-voice1.vco_2 = Identity(synthglobals).to(device)
-voice1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
+voice1 = Voice(synthglobals=synthglobals1).to(device)
+voice1.set_parameters(
+    {
+        ("keyboard", "midi_f0"): T([69.0]),
+        ("keyboard", "duration"): T([1.0]),
+        ("pitch_adsr", "attack"): T([0.25]),
+        ("pitch_adsr", "decay"): T([0.25]),
+        ("pitch_adsr", "sustain"): T([0.25]),
+        ("pitch_adsr", "release"): T([0.25]),
+        ("pitch_adsr", "alpha"): T([3.0]),
+        ("amp_adsr", "attack"): T([0.25]),
+        ("amp_adsr", "decay"): T([0.25]),
+        ("amp_adsr", "sustain"): T([0.25]),
+        ("amp_adsr", "release"): T([0.25]),
+        ("amp_adsr", "alpha"): T([3.0]),
+        ("vco_1", "tuning"): T([0.0]),
+        ("vco_1", "mod_depth"): T([12.0]),
+        ("vco_ratio", "ratio"): T([0.0]),
+        ("noise", "ratio"): T([0.05]),
+    }
+)
 
 voice_out1 = voice1()
 stft_plot(voice_out1.cpu().view(-1).detach().numpy())
@@ -450,33 +464,30 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 
 
 # +
-voice2 = Voice(
-    synthglobals=synthglobals1,
-).to(device)
-voice1.note_on = NoteOnButton(
-    synthglobals1,
-    duration=T([1.0]),
+voice2 = Voice(synthglobals=synthglobals1).to(device)
+voice2.set_parameters(
+    {
+        ("keyboard", "midi_f0"): T([40.0]),
+        ("keyboard", "duration"): T([3.0]),
+        ("pitch_adsr", "attack"): T([0.0]),
+        ("pitch_adsr", "decay"): T([2.0]),
+        ("pitch_adsr", "sustain"): T([0.0]),
+        ("pitch_adsr", "release"): T([0.0]),
+        ("pitch_adsr", "alpha"): T([2.0]),
+        ("amp_adsr", "attack"): T([0.1]),
+        ("amp_adsr", "decay"): T([0.25]),
+        ("amp_adsr", "sustain"): T([1.0]),
+        ("amp_adsr", "release"): T([0.5]),
+        ("amp_adsr", "alpha"): T([3.0]),
+        ("vco_1", "tuning"): T([19.0]),
+        ("vco_1", "mod_depth"): T([24.0]),
+        ("vco_2", "tuning"): T([0.0]),
+        ("vco_2", "mod_depth"): T([12.0]),
+        ("vco_2", "shape"): T([1.0]),
+        ("vco_ratio", "ratio"): T([0.5]),
+        ("noise", "ratio"): T([0.0]),
+    }
 )
-voice2.pitch_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.1]),
-    decay=T([0.5]),
-    sustain=T([0.0]),
-    release=T([0.25]),
-    alpha=T([3]),
-).to(device)
-voice2.amp_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.15]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-).to(device)
-voice2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
-voice2.vco_2 = SquareSawVCO(
-    synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
-).to(device)
-voice2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
 
 voice_out2 = voice2()
 stft_plot(voice_out2.cpu().view(-1).detach().numpy())
@@ -517,23 +528,23 @@ for n, p in voice1.named_parameters():
 # Parameters of individual modules can be accessed in several ways:
 
 # Get the full ModuleParameter object by name from the module
-print(voice1.vco_1.get_parameter("midi_f0"))
+print(voice1.vco_1.get_parameter("tuning"))
 
 # Access the value as a Tensor in the full value human range
-print(voice1.vco_1.p("midi_f0"))
+print(voice1.vco_1.p("tuning"))
 
 # Access the value as a float in the range from 0 to 1
-print(voice1.vco_1.get_parameter_0to1("midi_f0"))
+print(voice1.vco_1.get_parameter_0to1("tuning"))
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
-voice1.vco_1.set_parameter("midi_f0", T([64]))
-print(voice1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter("tuning", T([64]))
+print(voice1.vco_1.p("tuning"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-voice1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
-print(voice1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter_0to1("tuning", T([0.5433]))
+print(voice1.vco_1.p("tuning"))
 
 # #### Parameter Ranges
 #
