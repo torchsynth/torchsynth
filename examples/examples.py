@@ -331,20 +331,22 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
+keyboard = Keyboard(synthglobals, midi_f0=T([50.0, 50.0]))
+
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
-    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-operator_out = sine_operator(envelope)
+operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 
 # Shape the modulation depth.
 operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
-    midi_f0=T([50.0, 50.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
 ).to(device)
-fm_out = fm_vco(operator_out)
+fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
 ipd.display(ipd.Audio(fm_out[0].cpu().detach().numpy(), rate=fm_vco.sample_rate.item()))
@@ -360,11 +362,11 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # +
 env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
 vco = SineVCO(
-    midi_f0=T([60, 50]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
 ).to(device)
 noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
 
-noisy_sine = noise(vco(env))
+noisy_sine = noise(vco(keyboard.p("midi_f0"), env))
 
 stft_plot(noisy_sine[0].detach().cpu().numpy())
 ipd.display(
