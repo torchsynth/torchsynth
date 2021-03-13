@@ -2,7 +2,7 @@
 Synth modules in Torch.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -553,6 +553,9 @@ class Identity(SynthModule):
     Pass through module
     """
 
+    # I dont' think this is what we want here -- if being used to disable a module
+    # like the VCO, the pitch envelope signal would be passed through. In the Voice
+    # this would be added to the first vco which would create an offset in the signal.
     def _forward(self, signal: Signal) -> Signal:
         return signal
 
@@ -583,19 +586,11 @@ class CrossfadeKnob(SynthModule):
 
 class Keyboard(SynthModule):
     """
-    Note-on-duration button parameter with no signal generation.
-    (Could later be a mono keyboard that outputs the midi f0 also
-    https://github.com/turian/torchsynth/issues/117)
+    A keyboard controller module. Mimics a mono-synth keyboard and contains
+    parameters that output a midi_f0 and note duration.
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
-        ModuleParameterRange(
-            0.0,
-            4.0,
-            curve=0.5,
-            name="duration",
-            description="note-on button, in seconds",
-        ),
         ModuleParameterRange(
             0.0,
             127.0,
@@ -603,4 +598,14 @@ class Keyboard(SynthModule):
             name="midi_f0",
             description="pitch value in 'midi' (69 = 440Hz)",
         ),
+        ModuleParameterRange(
+            0.0,
+            4.0,
+            curve=0.5,
+            name="duration",
+            description="note-on button, in seconds",
+        ),
     ]
+
+    def forward(self) -> Tuple[T, T]:
+        return self.p("midi_f0"), self.p("duration")

@@ -232,19 +232,24 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # +
 # %matplotlib inline
 
+# Set up a Keyboard module
 keyboard = Keyboard(synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration)
 
 # Reset envelope
 adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
-envelope = adsr(keyboard.p("duration"))
+
+# Trigger the keyboard, which returns a midi_f0 and note duration
+midi_f0, duration = keyboard()
+
+envelope = adsr(duration)
 
 # SineVCO test
 sine_vco = SineVCO(
     tuning=T([0.0, 0.0]), mod_depth=T([-12.0, 12.0]), synthglobals=synthglobals
 ).to(device)
-sine_out = sine_vco(keyboard.p("midi_f0"), envelope)
+sine_out = sine_vco(midi_f0, envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
 ipd.display(
