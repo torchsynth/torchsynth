@@ -224,10 +224,13 @@ class FmSynth(AbstractSynth):
         self.op4 = FmOperator(synthglobals)
 
         # Algorithm layouts - 11 different layouts from Ableton's Operator
+
+        # Connections to operator 2
         self.register_buffer(
             "op1_to_op2", T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
         )
 
+        # Connections to operator 3
         self.register_buffer(
             "op1_to_op3",
             T([0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
@@ -236,6 +239,7 @@ class FmSynth(AbstractSynth):
             "op2_to_op3", T([1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         )
 
+        # Connections to operator 4
         self.register_buffer(
             "op1_to_op4", T([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0])
         )
@@ -246,6 +250,7 @@ class FmSynth(AbstractSynth):
             "op3_to_op4", T([1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0])
         )
 
+        # Connections from all operators to output
         self.register_buffer(
             "op1_to_output", T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25])
         )
@@ -264,24 +269,32 @@ class FmSynth(AbstractSynth):
 
     def _forward(self) -> T:
 
+        # Trigger keyboard
         midi_f0, note_on_duration = self.keyboard()
+
+        # Determine algorithm mix
         algorithm = self.algorithm.p("algorithm")
         self.lower = torch.floor(algorithm).long()
         self.upper = torch.ceil(algorithm).long()
         self.ratio = algorithm - self.lower
 
+        # No modulation for the first operator
         modulation = torch.zeros(
             (self.batch_size, self.buffer_size), device=self.device
         )
+
+        # First operator
         op1_out = self.op1(
             midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
         )
 
+        # Second operator
         op1_to_op2 = self.mix(op1_out, self.op1_to_op2)
         op2_out = self.op2(
             midi_f0=midi_f0, duration=note_on_duration, modulation=op1_to_op2
         )
 
+        # Third operator
         op1_to_op3 = self.mix(op1_out, self.op1_to_op3)
         op2_to_op3 = self.mix(op2_out, self.op2_to_op3)
         op3_out = self.op3(
@@ -290,6 +303,7 @@ class FmSynth(AbstractSynth):
             modulation=op1_to_op3 + op2_to_op3,
         )
 
+        # Fourth operator
         op1_to_op4 = self.mix(op1_out, self.op1_to_op4)
         op2_to_op4 = self.mix(op2_out, self.op2_to_op4)
         op3_to_op4 = self.mix(op3_out, self.op3_to_op4)
@@ -299,6 +313,7 @@ class FmSynth(AbstractSynth):
             modulation=op1_to_op4 + op2_to_op4 + op3_to_op4,
         )
 
+        # Final mix
         op1_final = self.mix(op1_out, self.op1_to_output)
         op2_final = self.mix(op2_out, self.op2_to_output)
         op3_final = self.mix(op3_out, self.op3_to_output)
