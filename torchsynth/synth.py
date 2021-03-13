@@ -197,7 +197,7 @@ class FmAlgorithmKnob(SynthModule):
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0,
-            11.0,
+            10.0,
             curve=1.0,
             name="algorithm",
             description="Algorithm mapping",
@@ -228,46 +228,47 @@ class FmSynth(AbstractSynth):
             "op1_to_op2", T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
         )
 
-        self.op1_to_op3 = T(
-            [0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], device=self.device
+        self.register_buffer(
+            "op1_to_op3",
+            T([0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
         )
-        self.op2_to_op3 = T(
-            [1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], device=self.device
-        )
-
-        self.op1_to_op4 = T(
-            [0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0], device=self.device
-        )
-        self.op2_to_op4 = T(
-            [0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0], device=self.device
-        )
-        self.op3_to_op4 = T(
-            [1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0], device=self.device
+        self.register_buffer(
+            "op2_to_op3", T([1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         )
 
-        self.op1_out = T(
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25], device=self.device
+        self.register_buffer(
+            "op1_to_op4", T([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0])
         )
-        self.op2_out = T(
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25],
-            device=self.device,
+        self.register_buffer(
+            "op2_to_op4", T([0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0])
         )
-        self.op3_out = T(
-            [0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25],
-            device=self.device,
+        self.register_buffer(
+            "op3_to_op4", T([1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0])
         )
-        self.op4_out = T(
-            [1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25],
-            device=self.device,
+
+        self.register_buffer(
+            "op1_to_output", T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25])
+        )
+        self.register_buffer(
+            "op2_to_output",
+            T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25]),
+        )
+        self.register_buffer(
+            "op3_to_output",
+            T([0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25]),
+        )
+        self.register_buffer(
+            "op4_to_output",
+            T([1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25]),
         )
 
     def _forward(self) -> T:
 
         midi_f0, note_on_duration = self.keyboard()
         algorithm = self.algorithm.p("algorithm")
-        lower = torch.floor(algorithm).long()
-        upper = torch.ceil(algorithm).long()
-        ratio = algorithm - lower
+        self.lower = torch.floor(algorithm).long()
+        self.upper = torch.ceil(algorithm).long()
+        self.ratio = algorithm - self.lower
 
         modulation = torch.zeros(
             (self.batch_size, self.buffer_size), device=self.device
@@ -276,15 +277,36 @@ class FmSynth(AbstractSynth):
             midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
         )
 
-        print(lower, upper, ratio)
-        print(torch.lerp(self.op1_to_op2[lower], self.op1_to_op2[upper], ratio))
+        op1_to_op2 = self.mix(op1_out, self.op1_to_op2)
         op2_out = self.op2(
-            midi_f0=midi_f0, duration=note_on_duration, modulation=op1_out
+            midi_f0=midi_f0, duration=note_on_duration, modulation=op1_to_op2
         )
+
+        op1_to_op3 = self.mix(op1_out, self.op1_to_op3)
+        op2_to_op3 = self.mix(op2_out, self.op2_to_op3)
         op3_out = self.op3(
-            midi_f0=midi_f0, duration=note_on_duration, modulation=op2_out
+            midi_f0=midi_f0,
+            duration=note_on_duration,
+            modulation=op1_to_op3 + op2_to_op3,
         )
+
+        op1_to_op4 = self.mix(op1_out, self.op1_to_op4)
+        op2_to_op4 = self.mix(op2_out, self.op2_to_op4)
+        op3_to_op4 = self.mix(op3_out, self.op3_to_op4)
         op4_out = self.op4(
-            midi_f0=midi_f0, duration=note_on_duration, modulation=op3_out
+            midi_f0=midi_f0,
+            duration=note_on_duration,
+            modulation=op1_to_op4 + op2_to_op4 + op3_to_op4,
         )
-        return op4_out
+
+        op1_final = self.mix(op1_out, self.op1_to_output)
+        op2_final = self.mix(op2_out, self.op2_to_output)
+        op3_final = self.mix(op3_out, self.op3_to_output)
+        op4_final = self.mix(op4_out, self.op4_to_output)
+
+        return (op1_final + op2_final + op3_final + op4_final).as_subclass(Signal)
+
+    def mix(self, signal: Signal, algorithm: T) -> Signal:
+        return signal * torch.lerp(
+            algorithm[self.lower], algorithm[self.upper], self.ratio
+        )
