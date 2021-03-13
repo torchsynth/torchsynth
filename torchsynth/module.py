@@ -557,6 +557,15 @@ class Identity(SynthModule):
         return signal
 
 
+class Disabled(SynthModule):
+    """
+    A disabled module just outputs zeros
+    """
+
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:
+        return torch.zeros((self.batch_size, self.buffer_size)).as_subclass(Signal)
+
+
 class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation

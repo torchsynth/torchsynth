@@ -67,7 +67,7 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
     VCA,
-    Identity,
+    Disabled,
     Noise,
     Keyboard,
     SineVCO,
@@ -427,37 +427,31 @@ print(list(noise.parameters()))
 
 from torchsynth.synth import Voice
 
-voice1 = Voice(
-    synthglobals=synthglobals1,
-).to(device)
+# +
+voice1 = Voice(synthglobals=synthglobals1).to(device)
+voice1.set_parameters(
+    {
+        ("keyboard", "midi_f0"): T([69.0]),
+        ("keyboard", "duration"): T([1.0]),
+        ("pitch_adsr", "attack"): T([0.25]),
+        ("pitch_adsr", "decay"): T([0.25]),
+        ("pitch_adsr", "sustain"): T([0.25]),
+        ("pitch_adsr", "release"): T([0.25]),
+        ("pitch_adsr", "alpha"): T([3.0]),
+        ("amp_adsr", "attack"): T([0.25]),
+        ("amp_adsr", "decay"): T([0.25]),
+        ("amp_adsr", "sustain"): T([0.25]),
+        ("amp_adsr", "release"): T([0.25]),
+        ("amp_adsr", "alpha"): T([3.0]),
+        ("vco_1", "tuning"): T([0.0]),
+        ("vco_1", "mod_depth"): T([12.0]),
+        ("noise", "ratio"): T([0.05]),
+    }
+)
 
-assert voice1.pitch_adsr
-assert voice1.amp_adsr
-assert voice1.vco_1
-assert voice1.noise
-voice1.note_on = NoteOnButton(
-    synthglobals1,
-    duration=T([1.0]),
-).to(device)
-voice1.pitch_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.25]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-    alpha=T([3]),
-).to(device)
-voice1.amp_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.25]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-).to(device)
-voice1.vco_1 = SineVCO(synthglobals1, midi_f0=T([69]), mod_depth=T([12])).to(device)
-# Here we disable vco2
-voice1.vco_2 = Identity(synthglobals).to(device)
-voice1.noise = Noise(synthglobals1, ratio=T([0.5])).to(device)
+# Disable VCO 2
+voice1.vco_2 = Disabled(synthglobals1).to(device)
+# -
 
 voice_out1 = voice1()
 stft_plot(voice_out1.cpu().view(-1).detach().numpy())
@@ -468,33 +462,30 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 
 
 # +
-voice2 = Voice(
-    synthglobals=synthglobals1,
-).to(device)
-voice1.note_on = NoteOnButton(
-    synthglobals1,
-    duration=T([1.0]),
+voice2 = Voice(synthglobals=synthglobals1).to(device)
+voice2.set_parameters(
+    {
+        ("keyboard", "midi_f0"): T([40.0]),
+        ("keyboard", "duration"): T([3.0]),
+        ("pitch_adsr", "attack"): T([0.0]),
+        ("pitch_adsr", "decay"): T([2.0]),
+        ("pitch_adsr", "sustain"): T([0.0]),
+        ("pitch_adsr", "release"): T([0.0]),
+        ("pitch_adsr", "alpha"): T([2.0]),
+        ("amp_adsr", "attack"): T([0.1]),
+        ("amp_adsr", "decay"): T([0.25]),
+        ("amp_adsr", "sustain"): T([1.0]),
+        ("amp_adsr", "release"): T([0.5]),
+        ("amp_adsr", "alpha"): T([3.0]),
+        ("vco_1", "tuning"): T([19.0]),
+        ("vco_1", "mod_depth"): T([24.0]),
+        ("vco_2", "tuning"): T([0.0]),
+        ("vco_2", "mod_depth"): T([12.0]),
+        ("vco_2", "shape"): T([1.0]),
+        ("vco_ratio", "ratio"): T([0.5]),
+        ("noise", "ratio"): T([0.0]),
+    }
 )
-voice2.pitch_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.1]),
-    decay=T([0.5]),
-    sustain=T([0.0]),
-    release=T([0.25]),
-    alpha=T([3]),
-).to(device)
-voice2.amp_adsr = ADSR(
-    synthglobals1,
-    attack=T([0.15]),
-    decay=T([0.25]),
-    sustain=T([0.25]),
-    release=T([0.25]),
-).to(device)
-voice2.vco_1 = SineVCO(synthglobals1, midi_f0=T([40]), mod_depth=T([12])).to(device)
-voice2.vco_2 = SquareSawVCO(
-    synthglobals1, midi_f0=T([40]), mod_depth=T([12]), shape=T([0.5])
-).to(device)
-voice2.noise = Noise(synthglobals1, ratio=T([0.01])).to(device)
 
 voice_out2 = voice2()
 stft_plot(voice_out2.cpu().view(-1).detach().numpy())
@@ -535,23 +526,23 @@ for n, p in voice1.named_parameters():
 # Parameters of individual modules can be accessed in several ways:
 
 # Get the full ModuleParameter object by name from the module
-print(voice1.vco_1.get_parameter("midi_f0"))
+print(voice1.vco_1.get_parameter("tuning"))
 
 # Access the value as a Tensor in the full value human range
-print(voice1.vco_1.p("midi_f0"))
+print(voice1.vco_1.p("tuning"))
 
 # Access the value as a float in the range from 0 to 1
-print(voice1.vco_1.get_parameter_0to1("midi_f0"))
+print(voice1.vco_1.get_parameter_0to1("tuning"))
 
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
-voice1.vco_1.set_parameter("midi_f0", T([64]))
-print(voice1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter("tuning", T([64]))
+print(voice1.vco_1.p("tuning"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-voice1.vco_1.set_parameter_0to1("midi_f0", T([0.5433]))
-print(voice1.vco_1.p("midi_f0"))
+voice1.vco_1.set_parameter_0to1("tuning", T([0.5433]))
+print(voice1.vco_1.p("tuning"))
 
 # #### Parameter Ranges
 #
