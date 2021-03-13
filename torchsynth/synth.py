@@ -199,6 +199,7 @@ class FmSynth(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
+                ("algorithm", CrossfadeKnob(synthglobals)),
             ]
         )
 
@@ -207,6 +208,21 @@ class FmSynth(AbstractSynth):
         self.op2 = FmOperator(synthglobals)
         self.op3 = FmOperator(synthglobals)
         self.op4 = FmOperator(synthglobals)
+
+        # Algorithm layouts - 11 different layouts from Ableton's Operator
+        self.op1_to_op2 = T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
+
+        self.op1_to_op3 = T([0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+        self.op2_to_op3 = T([1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        self.op1_to_op4 = T([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0])
+        self.op2_to_op4 = T([0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0])
+        self.op3_to_op4 = T([1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0])
+
+        self.op1_out = T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25])
+        self.op2_out = T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25])
+        self.op3_out = T([0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25])
+        self.op4_out = T([1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25])
 
     def _forward(self) -> T:
 
