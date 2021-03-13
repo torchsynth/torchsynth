@@ -13,6 +13,7 @@ from torchsynth.module import (
     VCA,
     CrossfadeKnob,
     MonophonicKeyboard,
+    FmVCO,
     Noise,
     SineVCO,
     SquareSawVCO,
@@ -179,8 +180,8 @@ class FmVoice(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("vco_1", SineVCO(synthglobals)),
-                ("vco_2", SineVCO(synthglobals)),
+                ("op1", SineVCO(synthglobals)),
+                ("op2", FmVCO(synthglobals)),
                 ("vco_ratio", CrossfadeKnob(synthglobals)),
             ]
         )
@@ -190,12 +191,12 @@ class FmVoice(AbstractSynth):
         midi_f0, note_on_duration = self.keyboard()
 
         pitch_envelope = torch.zeros(
-            (self.batch_size, self.sample_rate * note_on_duration)
+            (self.batch_size, self.buffer_size), device=self.device
         )
 
-        vco_1_out = self.vco_1.forward(pitch_envelope)
-        vco_2_out = self.vco_2.forward(pitch_envelope)
+        op1_out = self.op1.forward(midi_f0, pitch_envelope)
+        op2_out = self.op2.forward(midi_f0, op1_out)
 
-        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
+        # audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
 
-        return audio_out
+        return op2_out

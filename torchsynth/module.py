@@ -335,14 +335,14 @@ class VCO(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            -127.0,
-            127.0,
+            -24.0,
+            24.0,
             name="tuning",
             description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
-            -127.0,
-            127.0,
+            -64.0,
+            64.0,
             curve=0.1,
             symmetric=True,
             name="mod_depth",
@@ -400,9 +400,9 @@ class VCO(SynthModule):
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        assert (control_as_frequency >= 0).all() and (
-            control_as_frequency <= self.nyquist
-        ).all()
+        # assert (control_as_frequency >= 0).all() and (
+        #    control_as_frequency <= self.nyquist
+        # ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
@@ -441,7 +441,7 @@ class SineVCO(VCO):
         return torch.cos(argument)
 
 
-class TorchFmVCO(VCO):
+class FmVCO(VCO):
     """
     # TODO Turn this into its own voice so we can be a bit smarter about aliasing
     # See https://github.com/turian/torchsynth/issues/145
@@ -460,7 +460,10 @@ class TorchFmVCO(VCO):
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
+        print(torch.min(modulation_hz))
+        print(f0_hz)
+        return f0_hz + modulation_hz
+        # return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         # Classically, FM operators are sine waves.
