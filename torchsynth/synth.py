@@ -8,6 +8,7 @@ import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
+from torchsynth.parameter import ModuleParameterRange
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -189,6 +190,19 @@ class FmOperator(AbstractSynth):
         output = self.osc(midi_f0, modulation)
         env = self.env(duration)
         return self.amp(env, output)
+
+
+class FmAlgorithmKnob(SynthModule):
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0,
+            11.0,
+            curve=1.0,
+            name="algorithm",
+            description="Algorithm mapping",
+        ),
+    ]
 
 
 class FmSynth(AbstractSynth):
