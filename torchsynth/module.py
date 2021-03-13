@@ -335,7 +335,10 @@ class VCO(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.0, 127.0, name="midi_f0", description="pitch value in 'midi' (69 = 440Hz)"
+            -127.0,
+            127.0,
+            name="tuning",
+            description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
             -127.0,
@@ -370,7 +373,7 @@ class VCO(SynthModule):
         )
         # self.phase = self.get_parameter("initial_phase").detach().clone()
 
-    def _forward(self, mod_signal: Signal) -> Signal:
+    def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -393,10 +396,10 @@ class VCO(SynthModule):
         frequency), then output sound.
 
         """
-
+        assert midi_f0.shape == (self.batch_size,)
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-        control_as_frequency = self.make_control_as_frequency(mod_signal)
 
+        control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
         assert (control_as_frequency >= 0).all() and (
             control_as_frequency <= self.nyquist
         ).all()
@@ -404,13 +407,13 @@ class VCO(SynthModule):
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
-        output = self.oscillator(cosine_argument)
+        output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
 
-    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
+    def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = torch.clamp(
-            self.p("midi_f0").unsqueeze(1) + modulation, 0.0, 127.0
+            (midi_f0 + self.p("tuning")).unsqueeze(1) + modulation, 0.0, 127.0
         )
         return util.midi_to_hz(control_as_midi)
 
@@ -420,7 +423,7 @@ class VCO(SynthModule):
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
-    def oscillator(self, argument: Signal) -> Signal:
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
         Dummy method. Overridden by child class VCO's.
         """
@@ -434,7 +437,7 @@ class SineVCO(VCO):
     Derives from VCO, it simply implements a cosine function as oscillator.
     """
 
-    def oscillator(self, argument: Signal) -> Signal:
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         return torch.cos(argument)
 
 
@@ -481,21 +484,22 @@ class SquareSawVCO(VCO):
         )
     ]
 
-    def oscillator(self, argument: Signal) -> Signal:
-        partials = self.partials_constant.unsqueeze(1)
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+        partials = self.partials_constant(midi_f0).unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
         shape = self.p("shape").unsqueeze(1)
         return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
 
-    @property
-    def partials_constant(self):
+    def partials_constant(self, midi_f0):
         """
         Constant value that determines the number of partials in the resulting
         square / saw wave in order to keep aliasing at an acceptable level.
         Higher frequencies require fewer partials whereas lower frequency sounds
         can safely have more partials without causing audible aliasing.
         """
-        max_pitch = self.p("midi_f0") + self.p("mod_depth")
+        max_pitch = (
+            midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), T(0))
+        )
         max_f0 = util.midi_to_hz(max_pitch)
         return 12000 / (max_f0 * torch.log10(max_f0))
 
@@ -568,7 +572,7 @@ class CrossfadeKnob(SynthModule):
     ]
 
 
-class NoteOnButton(SynthModule):
+class Keyboard(SynthModule):
     """
     Note-on-duration button parameter with no signal generation.
     (Could later be a mono keyboard that outputs the midi f0 also
@@ -582,5 +586,12 @@ class NoteOnButton(SynthModule):
             curve=0.5,
             name="duration",
             description="note-on button, in seconds",
+        ),
+        ModuleParameterRange(
+            0.0,
+            127.0,
+            curve=1.0,
+            name="midi_f0",
+            description="pitch value in 'midi' (69 = 440Hz)",
         ),
     ]

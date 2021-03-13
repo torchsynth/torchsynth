@@ -69,7 +69,7 @@ from torchsynth.module import (
     VCA,
     Identity,
     Noise,
-    NoteOnButton,
+    Keyboard,
     SineVCO,
     TorchFmVCO,
 )
@@ -232,22 +232,28 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # +
 # %matplotlib inline
 
+keyboard = Keyboard(synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration)
+
 # Reset envelope
 adsr = ADSR(
     attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
 ).to(device)
-envelope = adsr(note_on_duration)
+envelope = adsr(keyboard.p("duration"))
 
 # SineVCO test
 sine_vco = SineVCO(
-    midi_f0=T([12.0, 30.0]), mod_depth=T([50.0, 50.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]), mod_depth=T([-12.0, 12.0]), synthglobals=synthglobals
 ).to(device)
-sine_out = sine_vco(envelope)
+sine_out = sine_vco(keyboard.p("midi_f0"), envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
-ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+ipd.display(
+    ipd.Audio(sine_out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+)
 stft_plot(sine_out[1].detach().cpu().numpy())
-ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+ipd.display(
+    ipd.Audio(sine_out[1].detach().cpu().numpy(), rate=sine_vco.sample_rate.item())
+)
 
 # We can use auraloss instead of raw waveform loss. This is just
 # to show that gradient computations occur
@@ -272,19 +278,29 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
+keyboard = Keyboard(synthglobals, midi_f0=T([30.0, 30.0]))
+
 square_saw = SquareSawVCO(
-    midi_f0=T([30.0, 30.0]),
+    tuning=T([0.0, 0.0]),
     mod_depth=T([0.0, 0.0]),
     shape=T([0.0, 1.0]),
     synthglobals=synthglobals,
 ).to(device)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
-square_saw_out = square_saw(env2)
+square_saw_out = square_saw(keyboard.p("midi_f0"), env2)
 stft_plot(square_saw_out[0].cpu().detach().numpy())
-ipd.Audio(square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+ipd.display(
+    ipd.Audio(
+        square_saw_out[0].cpu().detach().numpy(), rate=square_saw.sample_rate.item()
+    )
+)
 stft_plot(square_saw_out[1].cpu().detach().numpy())
-ipd.Audio(square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item())
+ipd.display(
+    ipd.Audio(
+        square_saw_out[1].cpu().detach().numpy(), rate=square_saw.sample_rate.item()
+    )
+)
 
 
 err = torch.mean(torch.abs(square_saw_out[0] - square_saw_out[1]))
