@@ -11,7 +11,7 @@ import torch
 import torch.tensor as T
 
 from torchsynth.default import EPS, EQ_POW
-from torchsynth.signal import Signal
+from torchsynth.ts_signal import Signal
 
 
 # What is amin here? And maybe we should convert it to a value in defaults?
