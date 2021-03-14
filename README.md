@@ -4,7 +4,7 @@
 
 The fastest synth in the universe.
 
-<img width="200px" src="assets/logo-with-caption.jpg">
+<img width="450px" src="assets/logo-with-caption.jpg">
 
 </div>
 
