@@ -4,7 +4,7 @@
 
 The fastest synth in the universe.
 
-![](https://raw.githubusercontent.com/turian/torchsynth/main/assets/logo-with-caption.jpg =450x)
+<img width="450px" src="https://raw.githubusercontent.com/turian/torchsynth/main/assets/logo-with-caption.jpg">
 
 </div>
 
