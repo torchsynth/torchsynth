@@ -24,8 +24,6 @@ torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
 # GLOBALS (TODO inherit from OOP hell)
 
-import torchsynth.util as util
-
 
 class Dummy:
     SR = 44100
@@ -147,8 +145,6 @@ if __name__ == "__main__":
 
     import IPython.display as ipd
 
-    display(ipd.Audio(x, rate=44100))
+    # display(ipd.Audio(x, rate=44100))
 
     plt.plot(x[:20000])
-
-num_frames
