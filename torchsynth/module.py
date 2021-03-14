@@ -588,3 +588,36 @@ class MonophonicKeyboard(SynthModule):
 
     def forward(self) -> Tuple[T, T]:
         return self.p("midi_f0"), self.p("duration")
+
+
+class SoftModeSelector(SynthModule):
+    # TODO: Would be nice to sample in a way that maximizes
+    # KL-divergence from uniform
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_modes: int,
+        **kwargs: Dict[str, T],
+    ):
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"mode{i}weight",
+                description=f"mode{i} weight, before normalization",
+            )
+            for i in range(n_modes)
+        ]
+        super().__init__(synthglobals, **kwargs)
+        self.softmax = torch.nn.Softmax(dim=0)
+
+    def forward(self) -> Tuple[T, T]:
+        """
+        Normalize all mode weights so they sum to 1.0
+        """
+        # Is this tensor creation slow?
+        # But usually parameter stuff is not the bottleneck
+        params = torch.stack([p.data for p in self.torchparameters.values()])
+        return params / torch.sum(params, dim=0)
