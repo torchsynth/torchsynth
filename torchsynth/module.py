@@ -591,8 +591,13 @@ class MonophonicKeyboard(SynthModule):
 
 
 class SoftModeSelector(SynthModule):
-    # TODO: Would be nice to sample in a way that maximizes
-    # KL-divergence from uniform
+    """
+    A soft mode selector.
+    If there are n different modes, return a probability distribution over them.
+
+    TODO: Would be nice to sample in a way that maximizes
+    KL-divergence from uniform: https://github.com/turian/torchsynth/issues/165
+    """
 
     def __init__(
         self,
