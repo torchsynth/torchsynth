@@ -24,6 +24,7 @@ in terms of throughput.
 [![codecov.io](https://codecov.io/gh/turian/torchsynth/branch/main/graphs/badge.svg?logoWidth=18)](https://codecov.io/github/turian/torchsynth?branch=master)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
+![Snyk Vulnerabilities for GitHub Repo](https://img.shields.io/snyk/vulnerabilities/github/turian/torchsynth)
 
 You will need to install the particular version of
 [torchcsprng](https://github.com/pytorch/csprng) for your CUDA
