@@ -624,4 +624,5 @@ class SoftModeSelector(SynthModule):
         # Is this tensor creation slow?
         # But usually parameter stuff is not the bottleneck
         params = torch.stack([p.data for p in self.torchparameters.values()])
+        # https://github.com/turian/torchsynth/issues/165
         return params / torch.sum(params, dim=0)
