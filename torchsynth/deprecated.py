@@ -10,25 +10,21 @@ from torchsynth.parameter import ModuleParameter
 
 class SynthModule0Ddeprecated(nn.Module):
     """Base class for synthesis modules, in torch.
-    
+
     WARNING: For now, TorchSynthModules should be atomic and not contain other
     SynthModules.
     TODO: Later, we should deprecate SynthModule and fold everything into here.
 
-    Notes
-    ----------
-    __init__ should only set parameters.
-    We shouldn't be doing computations in __init__ because
-    the computations will change when the parameters change.
-
-    Parameters
-    ----------
+    NOTE:
+        __init__ should only set parameters.
+        We shouldn't be doing computations in __init__ because
+        the computations will change when the parameters change.
     """
 
     def __init__(
-        self,
-        sample_rate: int = DEFAULT_SAMPLE_RATE,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
+            self,
+            sample_rate: int = DEFAULT_SAMPLE_RATE,
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
     ):
         nn.Module.__init__(self)
         self.sample_rate = T(sample_rate)
@@ -45,15 +41,11 @@ class SynthModule0Ddeprecated(nn.Module):
     def _forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """Each SynthModule0Ddeprecated should override this.
 
-        Parameters
-        ----------
-        *args: Any :
-            
-        **kwargs: Any :
-            
+        Args:
+          *args: Any:
+          **kwargs: Any:
 
-        Returns
-        -------
+
 
         """
         raise NotImplementedError("Derived classes must override this method")
@@ -61,15 +53,11 @@ class SynthModule0Ddeprecated(nn.Module):
     def forward(self, *args: Any, **kwargs: Any) -> T:  # pragma: no cover
         """Wrapper for _forward that ensures a buffer_size length output.
 
-        Parameters
-        ----------
-        *args: Any :
-            
-        **kwargs: Any :
-            
+        Args:
+          *args: Any:
+          **kwargs: Any:
 
-        Returns
-        -------
+
 
         """
         return self.to_buffer_size(self._forward(*args, **kwargs))
@@ -77,9 +65,9 @@ class SynthModule0Ddeprecated(nn.Module):
     def add_parameters(self, parameters: List[ModuleParameter]):
         """Add parameters to this SynthModule's torch parameter dictionary.
 
-        Parameters
-        ----------
-        parameters: List[ModuleParameter] :
+        Args:
+          parameters (:obj:`ModuleParameter`): list of moduleparameter
+
 
 
         """
@@ -90,12 +78,12 @@ class SynthModule0Ddeprecated(nn.Module):
     def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """Get a single ModuleParameter for this module
 
-        Parameters
-        ----------
-        parameter_id: str
-                Id of the parameter to return
+        Args:
+          parameter_id (str) : Id of the parameter to return
 
-        
+
+
+
         """
         return self.torchparameters[parameter_id]
 
@@ -103,12 +91,12 @@ class SynthModule0Ddeprecated(nn.Module):
         """Update a specific parameter value, ensuring that it is within a specified
         range
 
-        Parameters
-        ----------
-        parameter_id: str
-                Id of the parameter to update
-        value: float
-                Value to update parameter with
+        Args:
+          parameter_id (str) : Id of the parameter to update
+          value (float) : Value to update parameter with
+
+
+
 
         """
         self.torchparameters[parameter_id].to_0to1(T(value))
@@ -116,15 +104,13 @@ class SynthModule0Ddeprecated(nn.Module):
     def set_parameter_0to1(self, parameter_id: str, value: float):
         """Update a specific parameter with a value in the range [0,1]
 
-        Parameters
-        ----------
-        parameter_id: str
-                Id of the parameter to update
-            
-        value: float
-                Value to update parameter with
+        Args:
+          parameter_id (str) : Id of the parameter to update
+          value (float) : Value to update parameter with
 
-        
+
+
+
         """
         assert 0 <= value <= 1
         self.torchparameters[parameter_id].data = T(value)
@@ -132,9 +118,10 @@ class SynthModule0Ddeprecated(nn.Module):
     def p(self, parameter_id: str) -> T:
         """Convenience method for getting the parameter value.
 
-        Parameters
-        ----------
-        parameter_id: str
+        Args:
+          parameter_id (str):
+
+
 
         """
         return self.torchparameters[parameter_id].from_0to1()
@@ -144,9 +131,9 @@ class SynthParameters(SynthModule0Ddeprecated):
     """A SynthModule that is strictly for managing parameters"""
 
     def __init__(
-        self,
-        sample_rate: int = DEFAULT_SAMPLE_RATE,
-        buffer_size: int = DEFAULT_BUFFER_SIZE,
+            self,
+            sample_rate: int = DEFAULT_SAMPLE_RATE,
+            buffer_size: int = DEFAULT_BUFFER_SIZE,
     ):
         super().__init__(sample_rate, buffer_size)
 

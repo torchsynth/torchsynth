@@ -19,12 +19,10 @@ from torchsynth.signal import Signal
 def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
     """Convert an amplitude value to decibels
 
-    Parameters
-    ----------
-    amplitude: :obj:`amplitude`
+    Args:
+        amplitude (:obj:`amplitude`):
 
-    amin : :obj:`T`
-            Default value = T(1e-10)
+        amin (:obj:`T`): Default value = T(1e-10)
     """
     return 20 * torch.log10(torch.max(amplitude, amin))
 
@@ -43,9 +41,8 @@ def db_to_amplitude(db: T) -> T:
 def peak_gain_for_Q(Q: T) -> T:
     """Calculate the peak gain for a given filter quality factor.
 
-    Parameters
-    ----------
-    Q : :obj:`T`
+    Args:
+        Q (:obj:`T`):
     """
     # No gain added for quality factor less then 1/sqrt(2)
     if Q <= 0.707:
@@ -57,9 +54,8 @@ def peak_gain_for_Q(Q: T) -> T:
 def hz_to_midi(hz: T) -> T:
     """Convert from frequency in Hz to midi (linear pitch).
 
-    Parameters
-    ----------
-    hz: :obj:`T`
+    Args:
+        hz (:obj:`T`):
 
     """
     return 12 * torch.log2((hz + EPS) / 440) + 69
@@ -68,9 +64,8 @@ def hz_to_midi(hz: T) -> T:
 def midi_to_hz(midi: T) -> T:
     """Convert from midi (linear pitch) to frequency in Hz.
 
-    Parameters
-    ----------
-    midi: :obj:`T`
+    Args:
+        midi (:obj:`T`):
 
     """
     return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
@@ -79,11 +74,10 @@ def midi_to_hz(midi: T) -> T:
 def fix_length(signal: T, length: Union[int, T]) -> T:
     """Pad or truncate array to specified length.
 
-    Parameters
-    ----------
-    signal: :obj:`T`
-        
-    length: Union[int :T]
+    Args:
+        signal (:obj:`T`):
+
+        length (Union[int :T]):
 
     """
     if isinstance(length, int):
@@ -105,11 +99,10 @@ def fix_length2D(signal: Signal, length: Union[int, T]) -> Signal:
     everywhere. I think that will be the move for performance
     https://github.com/turian/torchsynth/issues/108
 
-    Parameters
-    ----------
-    signal: :obj:`Signal`
-        
-    length: Union[int : T] :
+    Args:
+        signal (:obj:`Signal`):
+
+        length (Union[int : T]):
 
     """
     if isinstance(length, int):
@@ -128,13 +121,12 @@ def fix_length2D(signal: Signal, length: Union[int, T]) -> Signal:
 def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """Equal power cross-fade.
 
-    Parameters
-    ----------
-    in_1: T
-        
-    in_2: T
-        
-    ratio: T
+    Args:
+        in_1 (T):
+
+        in_2 (T):
+
+        ratio (T):
 
     """
     assert 0.0 <= ratio <= 1.0
@@ -146,13 +138,12 @@ def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
     
     TODO: Replace crossfade with this once everything is 2D
 
-    Parameters
-    ----------
-    in_1 : :obj:`Signal`
-        
-    in_2 : :obj:`Signal`
-        
-    ratio : T
+    Args:
+        in_1 (:obj:`Signal`):
+
+        in_2 (:obj:`Signal`):
+
+        ratio (T):
 
     """
     assert in_1.ndim == 2 and in_2.ndim == 2 and ratio.ndim == 1
@@ -164,17 +155,14 @@ def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
 def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
     """Wrapper for torch.linspace that allows to count to `stop` non-inclusive.
 
-    Parameters
-    ----------
-    start : T
-        
-    stop : T :
-        
-    num : T
-        
-    endpoint : T
-            Default value = False
+    Args:
+        start (T) :
 
+        stop (T) :
+
+        num (T) :
+
+        endpoint (bool) : Default value = False
     """
 
     # Need to use `==` rather than `is` for correct behaviour w/ tensors.

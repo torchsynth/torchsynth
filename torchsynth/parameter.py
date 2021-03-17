@@ -16,20 +16,14 @@ class ModuleParameterRange:
     1. This class does not store the value of a parameter, just the
     range.
 
-    Parameters
-    ----------
-    minimum : float
-            minimum value in range
-    maximum : float
-            maximum value in range
-    curve : float
-            shape of the curve, values less than 1 place more emphasis on smaller values and values greater than 1 place more emphasis no larger values. Defaults to 1 which is linear.
-    symmetric : bool
-            whether or not the parameter range is symmetric, allows for curves around a center point. Defaults to False.
-    name : str
-            name of this parameter
-    description : str
-            optional description of this parameter
+    Args:
+        minimum (float) :   minimum value in range
+        maximum (float) :   maximum value in range
+        curve   (float) : shape of the curve, values less than 1 place more emphasis on smaller values and values greater than 1 place more emphasis no larger values. Defaults to 1 which is linear.
+        symmetric (bool) :  whether or not the parameter range is symmetric, allows for curves around a center point. Defaults to False.
+        name    (str) : name of this parameter
+        description (str) : optional description of this parameter
+
 
 
     """
@@ -61,12 +55,12 @@ class ModuleParameterRange:
     def from_0to1(self, normalized: T) -> T:
         """Set value of this parameter using a normalized value in the range [0,1]
 
-        Parameters
-        ----------
-        normalized: T
-                value within [0,1] range to convert to range
-                defined by minimum and maximum
-        
+        Args:
+          normalized (T): value within [0,1] range to convert to range defined by
+            minimum and maximum
+
+
+
         """
         assert torch.all(0.0 <= normalized)
         assert torch.all(normalized <= 1.0)
@@ -91,16 +85,13 @@ class ModuleParameterRange:
     def to_0to1(self, value: T) -> T:
         """Convert a ranged parameter to a normalized range from 0 to 1
 
-        Parameters
-        ----------
-         value: :obj:`T`
-                value within the range defined by minimum and maximum
+        Args:
+          value (T): value within the range defined by minimum and maximum
 
-        Returns
-        -------
-         value : :obj:`T`
-                normalize range between (0-1)
-        
+        Returns:
+            value (T): normalize range between (0-1)
+
+
         """
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
@@ -122,18 +113,13 @@ class ModuleParameter(nn.Parameter):
     object to help convert from a 0 to 1 range which is expected
     internally and an external user specified range.
 
-    Parameters
-    ----------
-    value : :obj:`T`
-            initial value of this parameter in the user-specific range. Must pass in a ModuleParameterRange object when using this to provide conversion to and from 0-to-1 range
-    parameter_name : str
-            A name for this parameter
-    parameter_range : :obj:`ModuleParameterRange`
-            A ModuleParameterRange object that supports conversion to and from 0-to-1 range and a user-specified range.
-    data : :obj:`Tensor`
-            directly add data to this parameter without a user-range
-    requires_grad : bool
-            whether or not a gradient is required for this parameter
+    Args:
+        value (T) : initial value of this parameter in the user-specific range. Must pass in a ModuleParameterRange object when using this to provide conversion to and from 0-to-1 range
+        parameter_name (str) : A name for this parameter
+        parameter_range (:obj:`ModuleParameterRange`) : A ModuleParameterRange object that supports conversion to and from 0-to-1 range and a user-specified range.
+        parameter_range (:obj:`ModuleParameterRange`) : A ModuleParameterRange object that supports conversion to and from 0-to-1 range and a user-specified range.
+        data (:obj:`Tensor`) : directly add data to this parameter without a user-range
+        requires_grad (bool) : whether or not a gradient is required for this parameter
 
     """
 
@@ -184,6 +170,7 @@ class ModuleParameter(nn.Parameter):
     def from_0to1(self) -> T:
         """Get the value of this parameter in the user-specified range. If no user range
         was specified, then the original parameter is returned.
+
         """
         if self.parameter_range is not None:
             return self.parameter_range.from_0to1(self)
@@ -196,11 +183,12 @@ class ModuleParameter(nn.Parameter):
         within the user-specified range. It will be converted to a
         0-to-1 range and stored internally.
 
-        Parameters
-        ----------
-        new_value: :obj:`T`
-                new value to update this parameter with
-        
+        Args:
+          new_value (T): new value to update this parameter with
+
+
+
+
         """
         if self.parameter_range is not None:
             self.data = self.parameter_range.to_0to1(new_value)
