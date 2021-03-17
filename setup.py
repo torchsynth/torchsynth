@@ -52,7 +52,8 @@ setup(
             "librosa",
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
-            "git+https://github.com/PyTorchLightning/lightning_sphinx_theme",
+            "sphinx",
+            "lightning_sphinx_theme @ git+https://github.com/PyTorchLightning/lightning_sphinx_theme.git",
         ],
     },
 )
