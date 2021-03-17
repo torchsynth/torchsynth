@@ -616,7 +616,6 @@ class SoftModeSelector(SynthModule):
             for i in range(n_modes)
         ]
         super().__init__(synthglobals, **kwargs)
-        self.softmax = torch.nn.Softmax(dim=0)
 
     def forward(self) -> Tuple[T, T]:
         """
