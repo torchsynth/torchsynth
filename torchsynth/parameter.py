@@ -10,8 +10,7 @@ from torch import tensor as T
 
 
 class ModuleParameterRange:
-    """
-    ModuleParameterRange class is a structure for keeping track of
+    """ModuleParameterRange class is a structure for keeping track of
     the specific range that a parameter might take on. Also handles
     functionality for converting to and from a range between 0 and
     1. This class does not store the value of a parameter, just the
@@ -19,15 +18,20 @@ class ModuleParameterRange:
 
     Parameters
     ----------
-    minimum (float) :   minimum value in range
-    maximum (float) :   maximum value in range
-    curve   (float) : shape of the curve, values less than 1 place more emphasis on
-        smaller values and values greater than 1 place more emphasis no larger values.
-        Defaults to 1 which is linear.
-    symmetric (bool) :  whether or not the parameter range is symmetric, allows for
-        curves around a center point. Defaults to False.
-    name    (str) : name of this parameter
-    description (str) : optional description of this parameter
+    minimum : float
+            minimum value in range
+    maximum : float
+            maximum value in range
+    curve : float
+            shape of the curve, values less than 1 place more emphasis on smaller values and values greater than 1 place more emphasis no larger values. Defaults to 1 which is linear.
+    symmetric : bool
+            whether or not the parameter range is symmetric, allows for curves around a center point. Defaults to False.
+    name : str
+            name of this parameter
+    description : str
+            optional description of this parameter
+
+
     """
 
     def __init__(
@@ -55,13 +59,14 @@ class ModuleParameterRange:
         )
 
     def from_0to1(self, normalized: T) -> T:
-        """
-        Set value of this parameter using a normalized value in the range [0,1]
+        """Set value of this parameter using a normalized value in the range [0,1]
 
         Parameters
         ----------
-        normalized (T)     : value within [0,1] range to convert to range defined by
-            minimum and maximum
+        normalized: T
+                value within [0,1] range to convert to range
+                defined by minimum and maximum
+        
         """
         assert torch.all(0.0 <= normalized)
         assert torch.all(normalized <= 1.0)
@@ -84,12 +89,18 @@ class ModuleParameterRange:
         return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0)
 
     def to_0to1(self, value: T) -> T:
-        """
-        Convert a ranged parameter to a normalized range from 0 to 1
+        """Convert a ranged parameter to a normalized range from 0 to 1
 
         Parameters
         ----------
-        value (T)      : value within the range defined by minimum and maximum
+         value: :obj:`T`
+                value within the range defined by minimum and maximum
+
+        Returns
+        -------
+         value : :obj:`T`
+                normalize range between (0-1)
+        
         """
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
@@ -106,25 +117,24 @@ class ModuleParameterRange:
 
 
 class ModuleParameter(nn.Parameter):
-    """
-    ModuleParameter class that inherits from pytorch nn.Parameter
+    """ModuleParameter class that inherits from pytorch nn.Parameter
     so it can be used for training. Can use a ModuleParameterRange
     object to help convert from a 0 to 1 range which is expected
     internally and an external user specified range.
 
     Parameters
     ----------
-    value (T) : initial value of this parameter in the user-specific
-    range. Must pass in a ModuleParameterRange object when using
-    this to provide conversion to and from 0-to-1 range
+    value : :obj:`T`
+            initial value of this parameter in the user-specific range. Must pass in a ModuleParameterRange object when using this to provide conversion to and from 0-to-1 range
+    parameter_name : str
+            A name for this parameter
+    parameter_range : :obj:`ModuleParameterRange`
+            A ModuleParameterRange object that supports conversion to and from 0-to-1 range and a user-specified range.
+    data : :obj:`Tensor`
+            directly add data to this parameter without a user-range
+    requires_grad : bool
+            whether or not a gradient is required for this parameter
 
-    parameter_name (str) : A name for this parameter
-    parameter_range (ModuleParameterRange) : A ModuleParameterRange
-        object that supports conversion to and from 0-to-1 range
-        and a user-specified range.
-
-    data (Tensor) : directly add data to this parameter without a user-range
-    requires_grad (bool) : whether or not a gradient is required for this parameter
     """
 
     def __new__(
@@ -172,8 +182,7 @@ class ModuleParameter(nn.Parameter):
 
     # TODO: Move to ModuleRange
     def from_0to1(self) -> T:
-        """
-        Get the value of this parameter in the user-specified range. If no user range
+        """Get the value of this parameter in the user-specified range. If no user range
         was specified, then the original parameter is returned.
         """
         if self.parameter_range is not None:
@@ -183,14 +192,15 @@ class ModuleParameter(nn.Parameter):
 
     # TODO: Move to ModuleRange
     def to_0to1(self, new_value: T):
-        """
-        Set the value of this parameter using an input that is
+        """Set the value of this parameter using an input that is
         within the user-specified range. It will be converted to a
         0-to-1 range and stored internally.
 
         Parameters
         ----------
-        new_value (Tensor) : new value to update this parameter with
+        new_value: :obj:`T`
+                new value to update this parameter with
+        
         """
         if self.parameter_range is not None:
             self.data = self.parameter_range.to_0to1(new_value)

@@ -26,14 +26,16 @@ from torchsynth.signal import Signal
 
 
 class AbstractSynth(LightningModule):
-    """
-    Base class for synthesizers that combine one or more SynthModules
+    """Base class for synthesizers that combine one or more SynthModules
     to create a full synth architecture.
 
     Parameters
     ----------
-    sample_rate (int): sample rate to run this synth at
-    buffer_size (int): number of samples expected at output of child modules
+    sample_rate : int
+            sample rate to run this synth at
+    buffer_size : int
+            number of samples expected at output of child modules
+    
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
@@ -56,14 +58,14 @@ class AbstractSynth(LightningModule):
         return self.synthglobals.buffer_size
 
     def add_synth_modules(self, modules: List[Tuple[str, SynthModule]]):
-        """
-        Add a set of named children TorchSynthModules to this synth. Registers them
+        """Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
         Parameters
         ----------
-        modules List[Tuple[str, SynthModule]]: A list of SynthModules and
-                                            their names.
+        modules : List[Tuple[str, SynthModule]]
+                A list of SynthModules and their names.
+        
         """
 
         for name, module in modules:
@@ -82,8 +84,14 @@ class AbstractSynth(LightningModule):
             self.add_module(name, module)
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
-        """
-        Each AbstractSynth should override this.
+        """Each AbstractSynth should override this.
+
+        Parameters
+        ----------
+        *args: Any
+            
+        **kwargs: Any
+
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -93,26 +101,38 @@ class AbstractSynth(LightningModule):
         """
         Each AbstractSynth should override this.
 
-        Parameter:
-        batch_idx (Optional[int])   - If provided, we set the parameters of this
-                                    synth for reproducibility, in a deterministic
-                                    random way. If None (default), we just use
-                                    the current module parameter settings.
+        Parameter
+        ---------
+        batch_idx : :obj:`int`, optional
+                If provided, we set the parameters of this
+                synth for reproducibility, in a deterministic
+                random way. If None (default), we just use
+                the current module parameter settings.
         """
         if batch_idx:
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
-        """
-        This is boilerplate for lightning -- this is required by lightning Trainer
+        """This is boilerplate for lightning -- this is required by lightning Trainer
         when calling test, which we use to forward Synths on multi-gpu platforms
+
+        Parameters
+        ----------
+        batch : int
+            
+        batch_idx : int
+
         """
         return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int] = None):
-        """
-        Randomize all parameters
+        """Randomize all parameters
+
+        Parameters
+        ----------
+        seed : Optional[int]
+                Default value = None
         """
         if seed is not None:
             # Profile to make sure this isn't too slow?
@@ -127,9 +147,7 @@ class AbstractSynth(LightningModule):
 
 
 class Voice(AbstractSynth):
-    """
-    In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
-    """
+    """In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice."""
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
