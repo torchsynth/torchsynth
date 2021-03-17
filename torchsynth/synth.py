@@ -42,17 +42,17 @@ class AbstractSynth(LightningModule):
 
     @property
     def batch_size(self) -> T:
-        assert self.synthglobals.batch_size.ndim == 0
+        # assert self.synthglobals.batch_size.ndim == 0
         return self.synthglobals.batch_size
 
     @property
     def sample_rate(self) -> T:
-        assert self.synthglobals.sample_rate.ndim == 0
+        # assert self.synthglobals.sample_rate.ndim == 0
         return self.synthglobals.sample_rate
 
     @property
     def buffer_size(self) -> T:
-        assert self.synthglobals.buffer_size.ndim == 0
+        # assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
     def add_synth_modules(self, modules: List[Tuple[str, SynthModule]]):

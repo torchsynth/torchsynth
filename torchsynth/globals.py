@@ -23,9 +23,9 @@ class SynthGlobals:
         sample_rate (T) : Scalar sample rate for audio generation.
         buffer_size (T) : Duration of the output, 4 seconds by default.
         """
-        assert batch_size.ndim == 0
-        assert sample_rate.ndim == 0
-        assert buffer_size.ndim == 0
+        # assert batch_size.ndim == 0
+        # assert sample_rate.ndim == 0
+        # assert buffer_size.ndim == 0
         self.batch_size = batch_size
         self.sample_rate = sample_rate
         self.buffer_size = buffer_size

@@ -57,7 +57,7 @@ class SynthModule0Ddeprecated(nn.Module):
         Add parameters to this SynthModule's torch parameter dictionary.
         """
         for parameter in parameters:
-            assert parameter.parameter_name not in self.torchparameters
+            # assert parameter.parameter_name not in self.torchparameters
             self.torchparameters[parameter.parameter_name] = parameter
 
     def get_parameter(self, parameter_id: str) -> ModuleParameter:
@@ -91,7 +91,7 @@ class SynthModule0Ddeprecated(nn.Module):
         parameter_id (str)  : Id of the parameter to update
         value (float)       : Value to update parameter with
         """
-        assert 0 <= value <= 1
+        # assert 0 <= value <= 1
         self.torchparameters[parameter_id].data = T(value)
 
     def p(self, parameter_id: str) -> T:

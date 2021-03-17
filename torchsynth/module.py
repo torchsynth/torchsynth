@@ -56,7 +56,7 @@ class SynthModule(nn.Module):
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
                 p.name: p for p in self.parameter_ranges
             }
-            assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
+            # assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
             self.add_parameters(
                 [
                     ModuleParameter(
@@ -74,12 +74,12 @@ class SynthModule(nn.Module):
 
     @property
     def batch_size(self) -> T:
-        assert self.synthglobals.batch_size.ndim == 0
+        # assert self.synthglobals.batch_size.ndim == 0
         return self.synthglobals.batch_size
 
     @property
     def sample_rate(self) -> T:
-        assert self.synthglobals.sample_rate.ndim == 0
+        # assert self.synthglobals.sample_rate.ndim == 0
         return self.synthglobals.sample_rate
 
     @property
@@ -88,7 +88,7 @@ class SynthModule(nn.Module):
 
     @property
     def buffer_size(self) -> T:
-        assert self.synthglobals.buffer_size.ndim == 0
+        # assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
@@ -117,8 +117,8 @@ class SynthModule(nn.Module):
         Add parameters to this SynthModule's torch parameter dictionary.
         """
         for parameter in parameters:
-            assert parameter.parameter_name not in self.torchparameters
-            assert parameter.shape == (self.batch_size,)
+            # assert parameter.parameter_name not in self.torchparameters
+            # assert parameter.shape == (self.batch_size,)
             self.torchparameters[parameter.parameter_name] = parameter
 
     def get_parameter(self, parameter_id: str) -> ModuleParameter:
@@ -130,7 +130,7 @@ class SynthModule(nn.Module):
         parameter_id (str)  :   Id of the parameter to return
         """
         value = self.torchparameters[parameter_id]
-        assert value.shape == (self.batch_size,)
+        # assert value.shape == (self.batch_size,)
         return value
 
     def get_parameter_0to1(self, parameter_id: str) -> T:
@@ -142,7 +142,7 @@ class SynthModule(nn.Module):
         parameter_id (str)  :   Id of the parameter to return the value for
         """
         value = self.torchparameters[parameter_id]
-        assert value.shape == (self.batch_size,)
+        # assert value.shape == (self.batch_size,)
         return value
 
     def set_parameter(self, parameter_id: str, value: T):
@@ -157,8 +157,8 @@ class SynthModule(nn.Module):
         """
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
-        assert torch.all(0 <= value) and torch.all(value <= 1)
-        assert value.shape == (self.batch_size,)
+        # assert torch.all(0 <= value) and torch.all(value <= 1)
+        # assert value.shape == (self.batch_size,)
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
         """
@@ -169,8 +169,8 @@ class SynthModule(nn.Module):
         parameter_id (str)  : Id of the parameter to update
         value (T)           : Value to update parameter with
         """
-        assert torch.all(0 <= value) and torch.all(value <= 1)
-        assert value.shape == (self.batch_size,)
+        # assert torch.all(0 <= value) and torch.all(value <= 1)
+        # assert value.shape == (self.batch_size,)
         self.torchparameters[parameter_id].data = value
 
     def p(self, parameter_id: str) -> T:
@@ -178,7 +178,7 @@ class SynthModule(nn.Module):
         Convenience method for getting the parameter value.
         """
         value = self.torchparameters[parameter_id].from_0to1()
-        assert value.shape == (self.batch_size,)
+        # assert value.shape == (self.batch_size,)
         return value
 
 
@@ -232,8 +232,8 @@ class ADSR(SynthModule):
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
         """
-        assert note_on_duration.ndim == 1
-        assert torch.all(note_on_duration > 0)
+        # assert note_on_duration.ndim == 1
+        # assert torch.all(note_on_duration > 0)
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
@@ -262,8 +262,8 @@ class ADSR(SynthModule):
         `duration` is the length of the ramp up, also in seconds.
         """
 
-        assert start.ndim == 1
-        assert duration.ndim == 1
+        # assert start.ndim == 1
+        # assert duration.ndim == 1
 
         # Convert to number of samples.
         start_ = self.seconds_to_samples(start)
@@ -396,13 +396,13 @@ class VCO(SynthModule):
         frequency), then output sound.
 
         """
-        assert midi_f0.shape == (self.batch_size,)
-        assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
+        # assert midi_f0.shape == (self.batch_size,)
+        # assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        assert (control_as_frequency >= 0).all() and (
-            control_as_frequency <= self.nyquist
-        ).all()
+        # assert (control_as_frequency >= 0).all() and (
+        #    control_as_frequency <= self.nyquist
+        # ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
@@ -510,7 +510,7 @@ class VCA(SynthModule):
     """
 
     def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
-        assert (control_in >= 0).all() and (control_in <= 1).all()
+        # assert (control_in >= 0).all() and (control_in <= 1).all()
 
         # Should VCA be responsible for this?
         if (audio_in <= -1).any() or (audio_in >= 1).any():

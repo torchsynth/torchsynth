@@ -172,7 +172,7 @@ class SVF(SynthModule0Ddeprecated):
 
         # Set the filter type
         self.mode = mode.lower()
-        assert mode in ["lpf", "hpf", "bpf", "bsf"]
+        # assert mode in ["lpf", "hpf", "bpf", "bsf"]
 
         nyquist = self.sample_rate / 2.0
         self.add_parameters(
@@ -218,7 +218,8 @@ class SVF(SynthModule0Ddeprecated):
         if control_in is None:
             control_in = torch.zeros_like(audio_in, device=audio_in.device)
         else:
-            assert control_in.size() == audio_in.size()
+            # assert control_in.size() == audio_in.size()
+            pass
 
         cutoff = self.p("cutoff")
         mod_depth = self.p("mod_depth")

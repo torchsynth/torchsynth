@@ -62,13 +62,14 @@ def fix_length(signal: T, length: Union[int, T]) -> T:
     if isinstance(length, int):
         pass
     else:
-        assert length.ndim == 0
-    assert signal.ndim == 1
+        # assert length.ndim == 0
+        pass
+    # assert signal.ndim == 1
     if len(signal) < length:
         signal = torch.nn.functional.pad(signal, [0, length - len(signal)])
     elif len(signal) > length:
         signal = signal[:length]
-    assert signal.shape == (length,)
+    # assert signal.shape == (length,)
     return signal
 
 
@@ -82,13 +83,14 @@ def fix_length2D(signal: Signal, length: Union[int, T]) -> Signal:
     if isinstance(length, int):
         pass
     else:
-        assert length.ndim == 0
-    assert signal.ndim == 2
+        # assert length.ndim == 0
+        pass
+    # assert signal.ndim == 2
     if signal.num_samples < length:
         signal = torch.nn.functional.pad(signal, (0, length - signal.num_samples))
     elif signal.num_samples > length:
         signal = signal[:, :length]
-    assert signal.shape == (signal.batch_size, length)
+    # assert signal.shape == (signal.batch_size, length)
     return signal
 
 
@@ -96,7 +98,7 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
     """
     Equal power cross-fade.
     """
-    assert 0.0 <= ratio <= 1.0
+    # assert 0.0 <= ratio <= 1.0
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
 
 
@@ -106,8 +108,8 @@ def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
 
     TODO: Replace crossfade with this once everything is 2D
     """
-    assert in_1.ndim == 2 and in_2.ndim == 2 and ratio.ndim == 1
-    assert torch.all(0.0 <= ratio) and torch.all(ratio <= 1.0)
+    # assert in_1.ndim == 2 and in_2.ndim == 2 and ratio.ndim == 1
+    # assert torch.all(0.0 <= ratio) and torch.all(ratio <= 1.0)
     ratio = ratio.unsqueeze(1)
     return EQ_POW * (torch.sqrt(1 - ratio) * in_1 + torch.sqrt(ratio) * in_2)
 
@@ -126,13 +128,13 @@ def linspace(start: T, stop: T, num: T, endpoint: T = False) -> T:
 
 
 def reverse_signal(signal: T) -> T:
-    assert signal.ndim == 1
+    # assert signal.ndim == 1
     return torch.flip(signal, (0,))
 
 
 def normalize(signal: T) -> T:
     max_ = torch.max(torch.abs(signal))
-    assert max_.item() != 0
+    # assert max_.item() != 0
     return signal / max_
 
 

@@ -15,10 +15,10 @@ class Signal(torch.Tensor):
 
     @property
     def batch_size(self):
-        assert self.ndim == 2
+        # assert self.ndim == 2
         return self.shape[0]
 
     @property
     def num_samples(self):
-        assert self.ndim == 2
+        # assert self.ndim == 2
         return self.shape[1]

@@ -63,8 +63,8 @@ class ModuleParameterRange:
         normalized (T)     : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
-        assert torch.all(0.0 <= normalized)
-        assert torch.all(normalized <= 1.0)
+        # assert torch.all(0.0 <= normalized)
+        # assert torch.all(normalized <= 1.0)
 
         if not self.symmetric:
             if self.curve != 1:
@@ -91,8 +91,8 @@ class ModuleParameterRange:
         ----------
         value (T)      : value within the range defined by minimum and maximum
         """
-        assert torch.all(self.minimum <= value)
-        assert torch.all(value <= self.maximum)
+        # assert torch.all(self.minimum <= value)
+        # assert torch.all(value <= self.maximum)
 
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
 
@@ -149,10 +149,10 @@ class ModuleParameter(nn.Parameter):
 
         # Additional members -- check to make sure they don't exist first
         # (This is sanity check in case something changes in pytorch in the future)
-        assert "parameter_range" not in self.__dict__
+        # assert "parameter_range" not in self.__dict__
         self.parameter_range = parameter_range
 
-        assert "parameter_name" not in self.__dict__
+        # assert "parameter_name" not in self.__dict__
         self.parameter_name = parameter_name
 
         return self
