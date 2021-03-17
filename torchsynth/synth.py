@@ -244,60 +244,10 @@ class FmSynth(AbstractSynth):
         self.op3 = FmOperator(synthglobals)
         self.op4 = FmOperator(synthglobals)
 
-        # Algorithm layouts - 11 different layouts from Ableton's Operator
-
-        # Connections to operator 2
-        self.register_buffer(
-            "op1_to_op2", T([1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0])
-        )
-
-        # Connections to operator 3
-        self.register_buffer(
-            "op1_to_op3",
-            T([0.0, 0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-        )
-        self.register_buffer(
-            "op2_to_op3", T([1.0, 0.5, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        )
-
-        # Connections to operator 4
-        self.register_buffer(
-            "op1_to_op4", T([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.33, 0.0, 1.0, 0.0, 0.0])
-        )
-        self.register_buffer(
-            "op2_to_op4", T([0.0, 0.0, 0.0, 0.5, 1.0, 0.0, 0.33, 0.0, 0.0, 0.0, 0.0])
-        )
-        self.register_buffer(
-            "op3_to_op4", T([1.0, 1.0, 0.5, 0.5, 0.0, 0.0, 0.33, 1.0, 0.0, 0.0, 0.0])
-        )
-
-        # Connections from all operators to output
-        self.register_buffer(
-            "op1_to_output", T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25])
-        )
-        self.register_buffer(
-            "op2_to_output",
-            T([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.33, 0.33, 0.25]),
-        )
-        self.register_buffer(
-            "op3_to_output",
-            T([0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.33, 0.33, 0.25]),
-        )
-        self.register_buffer(
-            "op4_to_output",
-            T([1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 1.0, 0.5, 0.33, 0.33, 0.25]),
-        )
-
     def _forward(self) -> T:
 
         # Trigger keyboard
         midi_f0, note_on_duration = self.keyboard()
-
-        # Determine algorithm mix
-        algorithm = self.algorithm.p("algorithm")
-        self.lower = torch.floor(algorithm).long()
-        self.upper = torch.ceil(algorithm).long()
-        self.ratio = algorithm - self.lower
 
         # No modulation for the first operator
         modulation = torch.zeros(
