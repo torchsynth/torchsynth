@@ -37,7 +37,7 @@ import torch.autograd.profiler as profiler
 import pytorch_lightning as pl
 
 from torchsynth.globals import SynthGlobals
-from torchsynth.synth import Voice
+from torchsynth.synth import Voice, FmSynth
 import torchsynth.module
 
 gpus = torch.cuda.device_count()
@@ -86,7 +86,7 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
 synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
-voice = Voice(synthglobals)
+voice = FmSynth(synthglobals)
 
 accelerator = None
 if gpus == 0:

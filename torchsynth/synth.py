@@ -197,7 +197,7 @@ class FmOperator(AbstractSynth):
         return self.amp(env, output)
 
 
-class FmAlgorithmKnob(SynthModule):
+class FmControl(SynthModule):
     """
     A knob for transitioning between FM algorithms
     """
@@ -209,6 +209,12 @@ class FmAlgorithmKnob(SynthModule):
             curve=1.0,
             name="algorithm",
             description="Algorithm mapping",
+        ),
+        ModuleParameterRange(
+            -48.0,
+            48.0,
+            curve=0.25,
+            symmetric=True,
         ),
     ]
 
@@ -228,7 +234,7 @@ class FmSynth(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("algorithm", FmAlgorithmKnob(synthglobals)),
+                ("algorithm", FmControl(synthglobals)),
             ]
         )
 
