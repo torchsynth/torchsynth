@@ -598,3 +598,48 @@ class MonophonicKeyboard(SynthModule):
 
     def forward(self) -> Tuple[T, T]:
         return self.p("midi_f0"), self.p("duration")
+
+
+class SoftModeSelector(SynthModule):
+    """
+    A soft mode selector.
+    If there are n different modes, return a probability distribution over them.
+
+    TODO: Would be nice to sample in a way that maximizes
+    KL-divergence from uniform: https://github.com/turian/torchsynth/issues/165
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_modes: int,
+        exponent: T = T(2.718281828),  # e
+        **kwargs: Dict[str, T],
+    ):
+        """
+        exponent determines how strongly to scale each [0,1] value prior
+        to normalization. We should probably tune this:
+        https://github.com/turian/torchsynth/issues/165
+        """
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"mode{i}weight",
+                description=f"mode{i} weight, before normalization",
+            )
+            for i in range(n_modes)
+        ]
+        super().__init__(synthglobals, **kwargs)
+        self.exponent = exponent
+
+    def forward(self) -> Tuple[T, T]:
+        """
+        Normalize all mode weights so they sum to 1.0
+        """
+        # Is this tensor creation slow?
+        # But usually parameter stuff is not the bottleneck
+        params = torch.stack([p.data for p in self.torchparameters.values()])
+        params = torch.pow(params, exponent=self.exponent)
+        return params / torch.sum(params, dim=0)
