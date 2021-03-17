@@ -603,8 +603,14 @@ class SoftModeSelector(SynthModule):
         self,
         synthglobals: SynthGlobals,
         n_modes: int,
+        exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
+        """
+        exponent determines how strongly to scale each [0,1] value prior
+        to normalization. We should probably tune this:
+        https://github.com/turian/torchsynth/issues/165
+        """
         # Need to create the parameter ranges before calling super().__init
         self.parameter_ranges = [
             ModuleParameterRange(
@@ -616,6 +622,7 @@ class SoftModeSelector(SynthModule):
             for i in range(n_modes)
         ]
         super().__init__(synthglobals, **kwargs)
+        self.exponent = exponent
 
     def forward(self) -> Tuple[T, T]:
         """
@@ -624,5 +631,5 @@ class SoftModeSelector(SynthModule):
         # Is this tensor creation slow?
         # But usually parameter stuff is not the bottleneck
         params = torch.stack([p.data for p in self.torchparameters.values()])
-        # https://github.com/turian/torchsynth/issues/165
+        params = torch.pow(params, exponent=self.exponent)
         return params / torch.sum(params, dim=0)
