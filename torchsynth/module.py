@@ -452,17 +452,24 @@ class FmVCO(VCO):
     """
 
     parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges.copy()
+    parameter_ranges[0] = ModuleParameterRange(
+        0.0,
+        24.0,
+        curve=0.25,
+        name="ratio",
+        description="Oscillator tuning relative to fundamental frequency",
+    )
     parameter_ranges[1] = ModuleParameterRange(
         0.0,
         12.0,
-        curve=0.75,
+        curve=0.5,
         name="mod_depth",
         description="depth of the fm modulation",
     )
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
+        f0_hz = (util.midi_to_hz(midi_f0) * self.p("ratio")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
         # This may go below zero or above the nyquist frequency and wrap around.
