@@ -594,7 +594,6 @@ if isnotebook():
 from torchsynth.synth import FmSynth
 
 fm = FmSynth(synthglobals16).to(device)
-fm.randomize(2)
 
 with torch.no_grad():
     output = fm()
