@@ -14,6 +14,7 @@ from torchsynth.module import (
     VCA,
     CrossfadeKnob,
     MonophonicKeyboard,
+    FaderBank,
     FmVCO,
     Noise,
     SineVCO,
@@ -237,6 +238,9 @@ class FmSynth(AbstractSynth):
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("algorithm", FmControl(synthglobals)),
+                ("op4_inputs", FaderBank(synthglobals, n_faders=3)),
+                ("op3_inputs", FaderBank(synthglobals, n_faders=2)),
+                ("op2_inputs", FaderBank(synthglobals, n_faders=1)),
                 ("mixer", SoftModeSelector(synthglobals, n_modes=4)),
             ]
         )
@@ -264,25 +268,30 @@ class FmSynth(AbstractSynth):
 
         # Second operator
         op2_out = self.op2(
-            midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
+            midi_f0=midi_f0,
+            duration=note_on_duration,
+            modulation=op1_out * self.op2_inputs()[0].unsqueeze(1),
         )
 
         # Third operator
+        op3_mix = self.op3_inputs().unsqueeze(2)
         op3_out = self.op3(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=modulation,
+            modulation=op1_out * op3_mix[0] + op2_out * op3_mix[1],
         )
 
         # Fourth operator
+        op4_mix = self.op4_inputs().unsqueeze(2)
         op4_out = self.op4(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=modulation,
+            modulation=op1_out * op4_mix[0]
+            + op2_out * op4_mix[1]
+            + op3_out * op4_mix[2],
         )
 
         mix_weights = self.mixer().unsqueeze(2)
-
         return (
             op1_out * mix_weights[0]
             + op2_out * mix_weights[1]
