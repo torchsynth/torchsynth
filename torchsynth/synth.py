@@ -92,6 +92,9 @@ class AbstractSynth(LightningModule):
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
+
+            # Supports nesting of AbstractSynths -- pass through the parameter to
+            # the set_parameters method in the child AbstractSynth
             if isinstance(module, AbstractSynth):
                 module.set_parameters({param_name: value})
             else:
@@ -271,6 +274,7 @@ class FmSynth(AbstractSynth):
             + op3_out * op4_mix[2],
         )
 
+        # Mix all the operators to the output
         mix_weights = self.mixer().unsqueeze(2)
         return (
             op1_out * mix_weights[0]

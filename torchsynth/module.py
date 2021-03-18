@@ -400,10 +400,6 @@ class VCO(SynthModule):
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        # assert (control_as_frequency >= 0).all() and (
-        #    control_as_frequency <= self.nyquist
-        # ).all()
-
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
@@ -469,8 +465,9 @@ class FmVCO(VCO):
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
+        # This may go below zero or above the nyquist frequency and wrap around.
+        # Desirable behaviour based on experiments with existing synths
         return f0_hz + modulation_hz
-        # return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         # Classically, FM operators are sine waves.
@@ -685,7 +682,8 @@ class NormalizedFaderBank(SynthModule):
 
 class FmControl(SynthModule):
     """
-    A knob for transitioning between FM algorithms
+    A knob for controlling an FM Synth
+    TODO: This isn't being used yet
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
