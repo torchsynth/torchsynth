@@ -17,6 +17,10 @@ import sys
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
 sys.path.insert(0, os.path.abspath(PATH_ROOT))
+sys.path.insert(0, os.path.abspath('../../'))
+
+# sys.path.insert(0, os.path.abspath("torchsynth"))
+
 # sys.path.insert(0, os.path.abspath("torchsynth"))
 
 import torchsynth  # noqa: E402
@@ -39,7 +43,6 @@ release = "0.0.1"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = []
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -52,6 +55,8 @@ import sphinx_rtd_theme
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinxcontrib.napoleon",
+    "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
 ]
