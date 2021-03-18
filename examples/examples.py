@@ -590,8 +590,6 @@ if isnotebook():
 
 # ## FM Voice
 
-np.log2(0.25) / np.log2(2)
-
 # +
 from torchsynth.synth import FmSynth
 

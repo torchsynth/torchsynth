@@ -645,9 +645,12 @@ class SoftModeSelector(SynthModule):
         return params / torch.sum(params, dim=0)
 
 
-class CurvedFaderBank(SynthModule):
+class NormalizedFaderBank(SynthModule):
     """
-    A bank of faders with values between 0 and 1
+    A bank of faders with values between 0 and 1. Each fader parameter has a
+    curve which puts more emphasis on lower values or higher values. The output
+    of the faders is normalized to sum to 1.0 if the sum of the faders is greater
+    than 1.0 prior to normalization.
     """
 
     def __init__(
@@ -661,7 +664,7 @@ class CurvedFaderBank(SynthModule):
             ModuleParameterRange(
                 0.0,
                 1.0,
-                curve=-1.0 / torch.log2(T(curves[i])),
+                curve=curves[i],
                 name=f"fader{i}",
                 description=f"fader {i} value",
             )
@@ -674,8 +677,23 @@ class CurvedFaderBank(SynthModule):
         Return all the fader values
         """
         params = torch.stack([self.p(p) for p in self.torchparameters])
+
+        # If the sum of faders is greater then 1.0 then normalize
         summed = torch.sum(params, dim=0)
-        print(summed)
-        params = torch.where(summed > 1.0, params / summed, params)
-        print(torch.sum(params, dim=0))
-        return params
+        return torch.where(summed > 1.0, params / summed, params)
+
+
+class FmControl(SynthModule):
+    """
+    A knob for transitioning between FM algorithms
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            -48.0,
+            48.0,
+            curve=0.25,
+            name="pitch_env",
+            symmetric=True,
+        ),
+    ]

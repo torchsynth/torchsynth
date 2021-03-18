@@ -14,7 +14,8 @@ from torchsynth.module import (
     VCA,
     CrossfadeKnob,
     MonophonicKeyboard,
-    CurvedFaderBank,
+    NormalizedFaderBank,
+    FmControl,
     FmVCO,
     Noise,
     SineVCO,
@@ -199,33 +200,9 @@ class FmOperator(AbstractSynth):
         return self.amp(env, output)
 
 
-class FmControl(SynthModule):
-    """
-    A knob for transitioning between FM algorithms
-    """
-
-    parameter_ranges: List[ModuleParameterRange] = [
-        ModuleParameterRange(
-            0.0,
-            10.0,
-            curve=1.0,
-            name="algorithm",
-            description="Algorithm mapping",
-        ),
-        ModuleParameterRange(
-            -48.0,
-            48.0,
-            curve=0.25,
-            name="pitch_env",
-            symmetric=True,
-        ),
-    ]
-
-
 class FmSynth(AbstractSynth):
     """
-    A four operator FM synth. Has 10 different algorithms from Ableton's Operator
-    instrument and can smoothly transition between them.
+    A four operator FM synth.
 
     TODO: Add an LFO and maybe a pitch envelope? Try to implement DX7 style envs?
     """
@@ -237,10 +214,10 @@ class FmSynth(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("algorithm", FmControl(synthglobals)),
-                ("op4_inputs", CurvedFaderBank(synthglobals, [2 / 11, 3 / 11, 6 / 11])),
-                ("op3_inputs", CurvedFaderBank(synthglobals, [3 / 11, 5 / 11])),
-                ("op2_inputs", CurvedFaderBank(synthglobals, [6 / 11])),
+                ("modulation", FmControl(synthglobals)),
+                ("op2_inputs", NormalizedFaderBank(synthglobals, [1.0])),
+                ("op3_inputs", NormalizedFaderBank(synthglobals, [0.25, 0.75])),
+                ("op4_inputs", NormalizedFaderBank(synthglobals, [0.25, 0.33, 0.5])),
                 ("mixer", SoftModeSelector(synthglobals, n_modes=4)),
             ]
         )
