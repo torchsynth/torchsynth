@@ -594,6 +594,7 @@ if isnotebook():
 from torchsynth.synth import FmSynth
 
 fm = FmSynth(synthglobals16).to(device)
+fm.randomize(1)
 
 with torch.no_grad():
     output = fm()
@@ -605,15 +606,14 @@ for i in range(fm.batch_size.item()):
 # +
 from torchsynth.synth import FmSynth
 
-
 fm = FmSynth(synthglobals1).to(device)
 
 fm.set_parameters(
     {
         ("keyboard", "midi_f0"): T([60.0]),
-        ("op1", "tuning"): T([0.0]),
-        ("op2", "tuning"): T([0.0]),
-        ("op2", "mod_depth"): T([12.0]),
+        ("op1", ("osc", "tuning")): T([0.0]),
+        ("op2", ("osc", "tuning")): T([0.0]),
+        ("op2", ("osc", "mod_depth")): T([12.0]),
     }
 )
 

@@ -92,7 +92,10 @@ class AbstractSynth(LightningModule):
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
-            module.set_parameter(param_name, value.to(self.device))
+            if isinstance(module, AbstractSynth):
+                module.set_parameters({param_name: value})
+            else:
+                module.set_parameter(param_name, value.to(self.device))
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -215,8 +218,8 @@ class FmSynth(AbstractSynth):
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("modulation", FmControl(synthglobals)),
-                ("op2_inputs", NormalizedFaderBank(synthglobals, [1.0])),
-                ("op3_inputs", NormalizedFaderBank(synthglobals, [0.25, 0.75])),
+                ("op2_inputs", NormalizedFaderBank(synthglobals, [0.5])),
+                ("op3_inputs", NormalizedFaderBank(synthglobals, [0.25, 0.5])),
                 ("op4_inputs", NormalizedFaderBank(synthglobals, [0.25, 0.33, 0.5])),
                 ("mixer", SoftModeSelector(synthglobals, n_modes=4)),
             ]
