@@ -7,7 +7,7 @@ Submodules
 torchsynth.defaults module
 --------------------------
 
-.. automodule:: torchsynth.defaults
+.. automodule:: torchsynth.default
    :members:
    :undoc-members:
    :show-inheritance:
