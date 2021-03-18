@@ -21,7 +21,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     url=__url__,
-    licence=__license__,
+    license=__license__,
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
     # package_data={
