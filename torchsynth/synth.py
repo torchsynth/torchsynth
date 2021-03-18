@@ -14,7 +14,7 @@ from torchsynth.module import (
     VCA,
     CrossfadeKnob,
     MonophonicKeyboard,
-    FaderBank,
+    CurvedFaderBank,
     FmVCO,
     Noise,
     SineVCO,
@@ -238,9 +238,9 @@ class FmSynth(AbstractSynth):
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("algorithm", FmControl(synthglobals)),
-                ("op4_inputs", FaderBank(synthglobals, n_faders=3)),
-                ("op3_inputs", FaderBank(synthglobals, n_faders=2)),
-                ("op2_inputs", FaderBank(synthglobals, n_faders=1)),
+                ("op4_inputs", CurvedFaderBank(synthglobals, [2 / 11, 3 / 11, 6 / 11])),
+                ("op3_inputs", CurvedFaderBank(synthglobals, [3 / 11, 5 / 11])),
+                ("op2_inputs", CurvedFaderBank(synthglobals, [6 / 11])),
                 ("mixer", SoftModeSelector(synthglobals, n_modes=4)),
             ]
         )
