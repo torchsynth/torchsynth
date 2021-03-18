@@ -17,6 +17,7 @@ from torchsynth.module import (
     FmVCO,
     Noise,
     SineVCO,
+    SoftModeSelector,
     SquareSawVCO,
     SynthModule,
 )
@@ -214,6 +215,7 @@ class FmControl(SynthModule):
             -48.0,
             48.0,
             curve=0.25,
+            name="pitch_env",
             symmetric=True,
         ),
     ]
@@ -235,6 +237,7 @@ class FmSynth(AbstractSynth):
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("algorithm", FmControl(synthglobals)),
+                ("mixer", SoftModeSelector(synthglobals, n_modes=4)),
             ]
         )
 
@@ -260,39 +263,29 @@ class FmSynth(AbstractSynth):
         )
 
         # Second operator
-        op1_to_op2 = self.mix(op1_out, self.op1_to_op2)
         op2_out = self.op2(
-            midi_f0=midi_f0, duration=note_on_duration, modulation=op1_to_op2
+            midi_f0=midi_f0, duration=note_on_duration, modulation=modulation
         )
 
         # Third operator
-        op1_to_op3 = self.mix(op1_out, self.op1_to_op3)
-        op2_to_op3 = self.mix(op2_out, self.op2_to_op3)
         op3_out = self.op3(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=op1_to_op3 + op2_to_op3,
+            modulation=modulation,
         )
 
         # Fourth operator
-        op1_to_op4 = self.mix(op1_out, self.op1_to_op4)
-        op2_to_op4 = self.mix(op2_out, self.op2_to_op4)
-        op3_to_op4 = self.mix(op3_out, self.op3_to_op4)
         op4_out = self.op4(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=op1_to_op4 + op2_to_op4 + op3_to_op4,
+            modulation=modulation,
         )
 
-        # Final mix
-        op1_final = self.mix(op1_out, self.op1_to_output)
-        op2_final = self.mix(op2_out, self.op2_to_output)
-        op3_final = self.mix(op3_out, self.op3_to_output)
-        op4_final = self.mix(op4_out, self.op4_to_output)
+        mix_weights = self.mixer().unsqueeze(2)
 
-        return (op1_final + op2_final + op3_final + op4_final).as_subclass(Signal)
-
-    def mix(self, signal: Signal, algorithm: T) -> Signal:
-        return signal * torch.lerp(
-            algorithm[self.lower], algorithm[self.upper], self.ratio
-        ).unsqueeze(1)
+        return (
+            op1_out * mix_weights[0]
+            + op2_out * mix_weights[1]
+            + op3_out * mix_weights[2]
+            + op4_out * mix_weights[3]
+        ).as_subclass(Signal)

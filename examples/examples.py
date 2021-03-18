@@ -603,10 +603,10 @@ for i in range(fm.batch_size.item()):
     ipd.display(ipd.Audio(output[i].detach().cpu().numpy(), rate=fm.sample_rate.item()))
 
 # +
-from torchsynth.synth import FmVoice
+from torchsynth.synth import FmSynth
 
 
-fm = FmVoice(synthglobals1).to(device)
+fm = FmSynth(synthglobals1).to(device)
 
 fm.set_parameters(
     {

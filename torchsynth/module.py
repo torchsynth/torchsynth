@@ -643,3 +643,33 @@ class SoftModeSelector(SynthModule):
         params = torch.stack([p.data for p in self.torchparameters.values()])
         params = torch.pow(params, exponent=self.exponent)
         return params / torch.sum(params, dim=0)
+
+
+class FaderBank(SynthModule):
+    """
+    A bank of faders with values between 0 and 1
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_faders: int,
+        **kwargs: Dict[str, T],
+    ):
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"fader{i}",
+                description=f"fader {i} value",
+            )
+            for i in range(n_faders)
+        ]
+        super().__init__(synthglobals, **kwargs)
+
+    def forward(self) -> T:
+        """
+        Return all the fader values
+        """
+        return torch.stack([p.data for p in self.torchparameters.values()])
