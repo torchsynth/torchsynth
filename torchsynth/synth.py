@@ -253,7 +253,7 @@ class FmSynth(AbstractSynth):
         op2_out = self.op2(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=op1_out * self.op2_inputs()[0].unsqueeze(1),
+            modulation=op1_out * self.op2_inputs()[:, 0].unsqueeze(1),
         )
 
         # Third operator
@@ -261,7 +261,7 @@ class FmSynth(AbstractSynth):
         op3_out = self.op3(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=op1_out * op3_mix[0] + op2_out * op3_mix[1],
+            modulation=op1_out * op3_mix[:, 0] + op2_out * op3_mix[:, 1],
         )
 
         # Fourth operator
@@ -269,9 +269,9 @@ class FmSynth(AbstractSynth):
         op4_out = self.op4(
             midi_f0=midi_f0,
             duration=note_on_duration,
-            modulation=op1_out * op4_mix[0]
-            + op2_out * op4_mix[1]
-            + op3_out * op4_mix[2],
+            modulation=op1_out * op4_mix[:, 0]
+            + op2_out * op4_mix[:, 1]
+            + op3_out * op4_mix[:, 2],
         )
 
         # Mix all the operators to the output

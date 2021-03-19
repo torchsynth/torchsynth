@@ -80,3 +80,17 @@ class TestSynthModule:
             )
             < 1e-6
         )
+
+    def test_normalizedfaderbank(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(3))
+        faders = synthmodule.NormalizedFaderBank(synthglobals, curves=[1.0, 1.0])
+        assert faders.p("fader0").shape == (3,)
+
+        faders.set_parameter("fader0", T([0.2, 0.75, 0.5]))
+        faders.set_parameter("fader1", T([0.4, 0.75, 0.5]))
+
+        values = faders()
+        assert values.shape == (3, 2)
+        assert torch.all(values[0].eq(T([0.2, 0.4])))
+        assert torch.all(values[1].eq(T([0.5, 0.5])))
+        assert torch.all(values[2].eq(T([0.5, 0.5])))

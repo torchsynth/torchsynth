@@ -646,6 +646,9 @@ class SoftModeSelector(SynthModule):
         # But usually parameter stuff is not the bottleneck
         params = torch.stack([p.data for p in self.torchparameters.values()])
         params = torch.pow(params, exponent=self.exponent)
+
+        # This returns a tensor with shape (n_modes, batch_size), should it
+        # (batch_size, n_modes) to be more aligned with the rest of the code base?
         return params / torch.sum(params, dim=0)
 
 
@@ -678,13 +681,13 @@ class NormalizedFaderBank(SynthModule):
 
     def forward(self) -> T:
         """
-        Return all the fader values
+        Return all the fader values in a tensor with shape (batch_size, n_faders)
         """
         params = torch.stack([self.p(p) for p in self.torchparameters])
 
         # If the sum of faders is greater then 1.0 then normalize
         summed = torch.sum(params, dim=0)
-        return torch.where(summed > 1.0, params / summed, params)
+        return torch.where(summed > 1.0, params / summed, params).T
 
 
 class FmControl(SynthModule):

@@ -122,3 +122,18 @@ class TestAbstractSynth:
         x12 = synth()
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
+
+
+class TestFM:
+    def testFmOperator(self):
+
+        # Construction
+        synthglobals = torchsynth.globals.SynthGlobals(
+            batch_size=T(1), buffer_size=T(512)
+        )
+        op = torchsynth.synth.FmOperator(synthglobals)
+        assert hasattr(op, "osc")
+        assert hasattr(op, "env")
+        assert hasattr(op, "amp")
+        assert op.sample_rate == synthglobals.sample_rate
+        assert op.buffer_size == synthglobals.buffer_size

@@ -350,7 +350,7 @@ operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = FmVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
+    ratio=T([1.0, 1.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
 ).to(device)
 fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
