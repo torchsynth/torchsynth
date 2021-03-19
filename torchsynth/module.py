@@ -36,9 +36,9 @@ class SynthModule(nn.Module):
     # TODO: have these already moved to cuda
     def __init__(self, synthglobals: SynthGlobals, **kwargs: Dict[str, T]):
         """
-        synthglobals (SynthGlobals)    : These are global
-        settings shared across all modules in the same synth.
-
+        Args:
+            synthglobals (:obj:`SynthGlobals`) :These are global settings
+            shared across all modules in the same synth.
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -125,9 +125,8 @@ class SynthModule(nn.Module):
         """
         Get a single ModuleParameter for this module
 
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return
+        Args:
+            parameter_id: str: Id of the parameter to return
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -137,9 +136,8 @@ class SynthModule(nn.Module):
         """
         Get the value of a parameter in the range of [0,1]
 
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return the value for
+        Args:
+            parameter_id (str)  :   Id of the parameter to return the value for
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -150,10 +148,9 @@ class SynthModule(nn.Module):
         Update a specific parameter value, ensuring that it is within a specified
         range
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (T)           : Value to update parameter with
+        Args:
+            parameter_id (str)  : Id of the parameter to update
+            value (T)           : Value to update parameter with
         """
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
@@ -164,10 +161,9 @@ class SynthModule(nn.Module):
         """
         Update a specific parameter with a value in the range [0,1]
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (T)           : Value to update parameter with
+        Args:
+            parameter_id (str)  : Id of the parameter to update
+            value (T)           : Value to update parameter with
         """
         assert torch.all(0 <= value) and torch.all(value <= 1)
         assert value.shape == (self.batch_size,)
@@ -224,10 +220,11 @@ class ADSR(SynthModule):
         sections of the envelope. This leads to musically-intuitive, but
         programatically-counterintuitive behaviour:
 
-        E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
-        held for .75 seconds, the envelope won't pass through the entire
-        attack-and-decay (specifically, it will execute the entire attack, and
-        only .25 seconds of the decay).
+        Example:
+            E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+            held for .75 seconds, the envelope won't pass through the entire
+            attack-and-decay (specifically, it will execute the entire attack, and
+            only .25 seconds of the decay).
 
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
@@ -327,10 +324,9 @@ class VCO(SynthModule):
     accepts a modulation signal between [-1, 1]. An array of 0's returns a
     stationary audio signal at its base pitch.
 
-    Parameters
-    ----------
-    synthglobals: SynthGlobals        : global args, see SynthModule
-    phase (optional, T)       :   initial phase values
+    Args:
+        synthglobals (SynthGlobals) : global args, see SynthModule
+        phase (:obj:'T',optional) :   initial phase values
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
