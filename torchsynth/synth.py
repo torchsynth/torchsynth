@@ -8,7 +8,6 @@ import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
-from torchsynth.parameter import ModuleParameterRange
 from torchsynth.module import (
     ADSR,
     VCA,
