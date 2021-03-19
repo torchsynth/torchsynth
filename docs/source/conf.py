@@ -19,7 +19,7 @@ PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
 sys.path.insert(0, os.path.abspath(PATH_ROOT))
 sys.path.insert(0, os.path.abspath('../..'))
 
-# sys.path.insert(0, os.path.abspath("torchsynth"))
+sys.path.insert(0, os.path.abspath("torchsynth"))
 
 # sys.path.insert(0, os.path.abspath("torchsynth"))
 
