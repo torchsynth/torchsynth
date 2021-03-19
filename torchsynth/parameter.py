@@ -19,8 +19,11 @@ class ModuleParameterRange:
     Args:
         minimum (float) :   minimum value in range
         maximum (float) :   maximum value in range
-        curve   (float) : shape of the curve, values less than 1 place more emphasis on smaller values and values greater than 1 place more emphasis no larger values. Defaults to 1 which is linear.
-        symmetric (bool) :  whether or not the parameter range is symmetric, allows for curves around a center point. Defaults to False.
+        curve   (float) : shape of the curve, values less than 1
+        place more emphasis on smaller values and values greater than 1
+        place more emphasis no larger values. Defaults to 1 which is linear.
+        symmetric (bool) :  whether or not the parameter range is symmetric,
+         allows for curves around a center point. Defaults to False.
         name    (str) : name of this parameter
         description (str) : optional description of this parameter
 

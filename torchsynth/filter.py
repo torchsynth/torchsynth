@@ -22,7 +22,8 @@ class FIRLowPass(SynthModule0Ddeprecated):
 
     """
 
-    def __init__(self, cutoff: float = 1000.0, filter_length: int = 512, sample_rate: int = DEFAULT_SAMPLE_RATE, ):
+    def __init__(self, cutoff: float = 1000.0, filter_length: int = 512,
+                 sample_rate: int = DEFAULT_SAMPLE_RATE, ):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
             [

@@ -1,10 +1,9 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+import torchcsprng as csprng
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
-
-import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
@@ -155,8 +154,8 @@ class AbstractSynth(LightningModule):
 
 
 class Voice(AbstractSynth):
-    """In a synthesizer, one combination of VCO, VCA, VCF's is typically
-     called a voice."""
+    """In a synthesizer, one combination of VCO, VCA, VCF's is
+    typically  called a voice."""
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)

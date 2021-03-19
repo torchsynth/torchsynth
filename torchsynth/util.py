@@ -4,9 +4,9 @@ Utility functions for torch DSP related things
 TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
-import math
 from typing import Union
 
+import math
 import torch
 import torch.tensor as T
 
@@ -128,7 +128,6 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
 
 def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
     """Equal power cross-fade.
-    
     TODO: Replace crossfade with this once everything is 2D
 
     Args:
