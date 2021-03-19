@@ -1,4 +1,4 @@
- These are the packages needed to develop torchsynth
+ #These are the packages needed to develop torchsynth
 # User requirements are in setup.py
 # If we want to use snyk, we need a requirements.txt file
 # Otherwise we could just do this:
