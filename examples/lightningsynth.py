@@ -78,7 +78,9 @@ class TorchSynthCallback(pl.Callback):
         dataloader_idx: int,
     ) -> None:
         assert batch.ndim == 1
-        _ = torch.stack([pl_module(i) for i in batch])
+        _ = pl_module(batch_idx)
+        # I don't think the following is correct
+        # _ = torch.stack([pl_module(i) for i in batch])
 
 
 synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
