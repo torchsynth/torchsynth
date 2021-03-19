@@ -226,7 +226,12 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # ## Oscillators
 #
-# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM oscillator: `FmVCO`. There is also a white noise generator: `Noise`.
+# There are several types of oscillators and sound generators available. Oscillators
+# that can be controlled by an external signal are called voltage-coltrolled oscillators
+# (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an
+# input control signal and produce audio output. We have a simple sine oscilator:
+# `SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM oscillator: `FmVCO`.
+# There is also a white noise generator: `Noise`.
 
 # +
 # %matplotlib inline
@@ -331,7 +336,12 @@ time_plot(test_output[0].detach().cpu())
 #
 # What about FM? You bet. Use the `FmVCO` class. It accepts any audio input.
 #
-# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
+# Just a note that, as in classic FM synthesis, you're dealing with a complex
+# architecture of modulators. Each 'operator ' has its own pitch envelope, and
+# amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation
+# depth* of the oscillator it operates on. So in the example below, we're using an
+# ADSR to shape the depth of the *operator*, and this affects the modulation depth of
+# the resultant signal.
 
 # +
 
@@ -523,7 +533,11 @@ for i in range(synthglobals16.batch_size):
 for n, p in voice1.named_parameters():
     print(f"{n:40}")
 
-# Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
+# Parameters are passed into SynthModules during creation with an initial value and a
+# parameter range. The parameter range is a human readable range of values, for example
+# MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range
+# between 0 and 1. Parameters can be accessed and set using either ranges with specific
+# methods.
 #
 # Parameters of individual modules can be accessed in several ways:
 
@@ -536,7 +550,8 @@ print(voice1.vco_1.p("tuning"))
 # Access the value as a float in the range from 0 to 1
 print(voice1.vco_1.get_parameter_0to1("tuning"))
 
-# Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
+# Parameters of individual modules can also be set using the human range or a normalized
+# range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
 voice1.vco_1.set_parameter("tuning", T([12]))
@@ -548,7 +563,11 @@ print(voice1.vco_1.p("tuning"))
 
 # #### Parameter Ranges
 #
-# Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`. The conversion from [0,1] can be shaped by specifying a curve. Curve values less than 1 put more emphasis on lower values in the human range and curve values greater than 1 put more emphasis on larger values in the human range. A curve of 1 is a linear relationship between the two ranges.
+# Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`.
+# The conversion from [0,1] can be shaped by specifying a curve. Curve values less than
+# 1 put more emphasis on lower values in the human range and curve values greater
+# than 1 put more emphasis on larger values in the human range. A curve of 1 is a
+# linear relationship between the two ranges.
 
 # +
 # ModuleParameterRange with scaling of a range from 0-127
