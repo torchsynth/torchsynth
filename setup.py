@@ -57,6 +57,7 @@ setup(
             "sphinx",
             "lightning_sphinx_theme @ git+https://github.com/PyTorchLightning/lightning_sphinx_theme.git",
             "sphinxcontrib-napoleon",
+            "mock",
         ],
     },
 )
