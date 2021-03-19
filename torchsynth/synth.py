@@ -86,14 +86,6 @@ class AbstractSynth(LightningModule):
           params: Dict[Tuple:T]:
 
         """
-        Set parameters for synth by passing in a dictionary of modules and parameters
-        """
-        for (module_name, param_name), value in params.items():
-            module = getattr(self, module_name)
-            module.set_parameter(param_name, value.to(self.device))
-
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
-        """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
             module.set_parameter(param_name, value.to(self.device))

@@ -66,7 +66,6 @@ extensions = [
     "sphinxcontrib.napoleon",
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
-    "sphinxcontrib.napoleon",
     "sphinx_rtd_theme",
 ]
 
