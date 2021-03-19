@@ -12,7 +12,7 @@
 #
 import os
 import sys
-
+import torch
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
@@ -41,16 +41,16 @@ release = "0.0.1"
 
 import mock
 
-MOCK_MODULES = ['torch','torch.nn']
+# MOCK_MODULES = ['torch','torch.nn','']
 autodoc_mock_imports = ["torch"]
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+# for mod_name in MOCK_MODULES:
+#     sys.modules[mod_name] = mock.Mock()
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # extensions = []
 
-extensions = []
+# extensions = []
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
