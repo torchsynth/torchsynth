@@ -30,10 +30,9 @@ class AbstractSynth(LightningModule):
     Base class for synthesizers that combine one or more SynthModules
     to create a full synth architecture.
 
-    Parameters
-    ----------
-    sample_rate (int): sample rate to run this synth at
-    buffer_size (int): number of samples expected at output of child modules
+    Args:
+        sample_rate (int): sample rate to run this synth at
+        buffer_size (int): number of samples expected at output of child modules
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
@@ -60,9 +59,8 @@ class AbstractSynth(LightningModule):
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
-        Parameters
-        ----------
-        modules List[Tuple[str, SynthModule]]: A list of SynthModules and
+        Args:
+            modules List[Tuple[str, SynthModule]]: A list of SynthModules and
                                             their names.
         """
 
@@ -101,8 +99,8 @@ class AbstractSynth(LightningModule):
         """
         Each AbstractSynth should override this.
 
-        Parameter:
-        batch_idx (Optional[int])   - If provided, we set the parameters of this
+        Args:
+            batch_idx (Optional[int])   - If provided, we set the parameters of this
                                     synth for reproducibility, in a deterministic
                                     random way. If None (default), we just use
                                     the current module parameter settings.
