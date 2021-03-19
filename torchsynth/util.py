@@ -21,7 +21,6 @@ def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
 
     Args:
         amplitude (:obj:`amplitude`):
-
         amin (:obj:`T`): Default value = T(1e-10)
     """
     return 20 * torch.log10(torch.max(amplitude, amin))
@@ -30,10 +29,8 @@ def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
 def db_to_amplitude(db: T) -> T:
     """Convert decibel value to an amplitude between 0 and 1
 
-    Parameters
-    ----------
-    db : :obj:`T`
-
+    Args:
+        db  (:obj:`T`):
     """
     return torch.pow(10, db / 20)
 
@@ -76,7 +73,6 @@ def fix_length(signal: T, length: Union[int, T]) -> T:
 
     Args:
         signal (:obj:`T`):
-
         length (Union[int :T]):
 
     """
@@ -101,7 +97,6 @@ def fix_length2D(signal: Signal, length: Union[int, T]) -> Signal:
 
     Args:
         signal (:obj:`Signal`):
-
         length (Union[int : T]):
 
     """
@@ -123,9 +118,7 @@ def crossfade(in_1: T, in_2: T, ratio: T) -> T:
 
     Args:
         in_1 (T):
-
         in_2 (T):
-
         ratio (T):
 
     """
@@ -140,9 +133,7 @@ def crossfade2D(in_1: Signal, in_2: Signal, ratio: T) -> Signal:
 
     Args:
         in_1 (:obj:`Signal`):
-
         in_2 (:obj:`Signal`):
-
         ratio (T):
 
     """

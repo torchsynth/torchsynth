@@ -80,7 +80,8 @@ class AbstractSynth(LightningModule):
             self.add_module(name, module)
 
     def set_parameters(self, params: Dict[Tuple, T]):
-        """Set parameters for synth by passing in a dictionary of modules and parameters
+        """Set parameters for synth by passing in a dictionary
+         of modules and parameters
 
         Args:
           params: Dict[Tuple:T]:
@@ -108,7 +109,9 @@ class AbstractSynth(LightningModule):
         Each AbstractSynth should override this.
 
         Args:
-            batch_idx (Optional[int]): If provided, we set the parameters of this synth for reproducibility, in a deterministic random way. If None (default), we just use the current module parameter settings.
+            batch_idx (Optional[int]): If provided, we set the parameters
+            of this synth for reproducibility, in a deterministic random way.
+            If None (default), we just use the current module parameter settings.
             *args: Any:
             **kwargs: Any:
 
@@ -152,7 +155,8 @@ class AbstractSynth(LightningModule):
 
 
 class Voice(AbstractSynth):
-    """In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice."""
+    """In a synthesizer, one combination of VCO, VCA, VCF's is typically
+     called a voice."""
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)

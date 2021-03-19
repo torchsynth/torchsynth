@@ -28,7 +28,8 @@ class SynthModule(nn.Module):
     where modules don't contain submodules.
 
     Args:
-        synthglobals (:obj:`SynthGlobals`) : These are global settings shared across all modules in the same synth.
+        synthglobals (:obj:`SynthGlobals`) :
+        These are global settings shared across all modules in the same synth.
 
     NOTE:
         __init__ should only set parameters.
@@ -106,8 +107,6 @@ class SynthModule(nn.Module):
           *args (Any):
           **kwargs (Any):
 
-        Returns:
-
         Raises:
         NotImplementedError: Derived classes must override this method.
         """
@@ -121,8 +120,6 @@ class SynthModule(nn.Module):
           *args (Any):
           **kwargs (Any):
 
-        Returns:
-
         """
         return self.to_buffer_size(self._forward(*args, **kwargs))
 
@@ -130,7 +127,8 @@ class SynthModule(nn.Module):
         """Add parameters to this SynthModule's torch parameter dictionary.
 
         Args:
-          parameters: List[:obj:`list` of :obj:`ModuleParameter`]: parameters SynthModule's torch parameter dictionary
+          parameters: List[:obj:`list` of :obj:`ModuleParameter`]:
+           parameters SynthModule's torch parameter dictionary
         Returns:
 
         """
@@ -175,7 +173,6 @@ class SynthModule(nn.Module):
           parameter_id (str):
           value: T:
 
-        Returns:
 
 
         """
@@ -191,8 +188,6 @@ class SynthModule(nn.Module):
           parameter_id (str):
           value: T:
 
-        Returns:
-
 
         """
         assert torch.all(0 <= value) and torch.all(value <= 1)
@@ -204,8 +199,6 @@ class SynthModule(nn.Module):
 
         Args:
           parameter_id (str):
-
-        Returns:
 
         """
         value = self.torchparameters[parameter_id].from_0to1()
@@ -264,8 +257,6 @@ class ADSR(SynthModule):
         Args:
           note_on_duration (T):
 
-        Returns:
-
         """
         assert note_on_duration.ndim == 1
         assert torch.all(note_on_duration > 0)
@@ -300,8 +291,6 @@ class ADSR(SynthModule):
           start:
           duration (T):
           inverse: bool:  (Default value = False)
-
-        Returns:
 
         """
 
@@ -368,10 +357,6 @@ class VCO(SynthModule):
     (specified here as a midi value), and a pitch modulation depth. Its call
     accepts a modulation signal between [-1, 1]. An array of 0's returns a
     stationary audio signal at its base pitch.
-
-    Args:
-
-    Returns:
 
 
     """
@@ -471,7 +456,6 @@ class VCO(SynthModule):
         Args:
           freq (Signal):
 
-        Returns:
 
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
@@ -483,8 +467,6 @@ class VCO(SynthModule):
           argument (Signal):
           midi_f0 (T):
 
-        Returns:
-
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -493,10 +475,6 @@ class SineVCO(VCO):
     """Simple VCO that generates a pitched sinusoid.
 
     Derives from VCO, it simply implements a cosine function as oscillator.
-
-    Args:
-
-    Returns:
 
     """
 
@@ -537,8 +515,8 @@ class SquareSawVCO(VCO):
 
     With apologies to:
 
-    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
-        virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis
+    for virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
 
 
     """

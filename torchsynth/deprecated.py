@@ -45,8 +45,6 @@ class SynthModule0Ddeprecated(nn.Module):
           *args: Any:
           **kwargs: Any:
 
-
-
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -107,9 +105,6 @@ class SynthModule0Ddeprecated(nn.Module):
         Args:
           parameter_id (str) : Id of the parameter to update
           value (float) : Value to update parameter with
-
-
-
 
         """
         assert 0 <= value <= 1

@@ -19,7 +19,6 @@ class FIRLowPass(SynthModule0Ddeprecated):
         result in a steeper filter cutoff. Should be greater than 4.
         Defaults to 512 samples.
         sample_rate (int) : Sampling rate to run processing at.
-    Returns:
 
     """
 
@@ -47,9 +46,6 @@ class FIRLowPass(SynthModule0Ddeprecated):
         Args:
           audio_in (T) : audio samples to filter
 
-        Returns:
-
-
         """
 
         impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
@@ -69,9 +65,6 @@ class FIRLowPass(SynthModule0Ddeprecated):
           half the sampling rate.
           length (T) : Length of the filter impulse response to create.
 
-        Returns:
-
-
         """
 
         # Normalized frequency
@@ -89,11 +82,10 @@ class FIRLowPass(SynthModule0Ddeprecated):
 class MovingAverage(SynthModule0Ddeprecated):
     """A finite impulse response moving average filter.
     Args:
-        filter_length (int) : Length of filter and number of samples to take average over.
-        Must be greater than 0. Defaults to 32.
+        filter_length (int) : Length of filter and number of samples
+         to take average over. Must be greater than 0. Defaults to 32.
         sample_rate (int) : Sampling rate to run processing at.
 
-    Return
     """
 
     def __init__(self, filter_length: int = 32, sample_rate: int = DEFAULT_SAMPLE_RATE):
@@ -113,8 +105,6 @@ class MovingAverage(SynthModule0Ddeprecated):
 
         Args:
           audio_in (T): audio samples to filter
-
-        Returns:
 
 
         """
@@ -151,7 +141,6 @@ class SVF(SynthModule0Ddeprecated):
         the control input during processing.
         Can be negative or positive in Hertz. Defaults to zero.
 
-    Returns:
 
     """
 
@@ -201,9 +190,6 @@ class SVF(SynthModule0Ddeprecated):
           audio_in (:obj:`torch.tensor`) : Audio samples to filter
           control_in (:obj:`torch.tensor`) : Control signal used to modulate the filter
           cutoff. Values must be in range [0,1]. Default value = None
-
-        Returns:
-
 
         """
 
@@ -256,9 +242,6 @@ class SVF(SynthModule0Ddeprecated):
           cutoff (T) : Filter cutoff frequency in Hz.
           res_coefficient (T) : Filter resonance
           sample_rate (T) : Sample rate to process at
-
-        Returns:
-
 
         """
 
