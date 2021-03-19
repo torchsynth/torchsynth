@@ -16,12 +16,11 @@ class SynthGlobals:
         buffer_size: T = T(DEFAULT_BUFFER_SIZE),
     ):
         """
-        Parameters
-        ----------
-        batch_size (T)  : Scalar that indicates how many parameter settings
-                          there are, i.e. how many different sounds to generate.
-        sample_rate (T) : Scalar sample rate for audio generation.
-        buffer_size (T) : Duration of the output, 4 seconds by default.
+        Args:
+            batch_size (T)  : Scalar that indicates how many parameter settings
+            there are, i.e. how many different sounds to generate.
+            sample_rate (T) : Scalar sample rate for audio generation.
+            buffer_size (T) : Duration of the output, 4 seconds by default.
         """
         assert batch_size.ndim == 0
         assert sample_rate.ndim == 0

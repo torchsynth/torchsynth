@@ -64,9 +64,8 @@ class SynthModule0Ddeprecated(nn.Module):
         """
         Get a single ModuleParameter for this module
 
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return
+        Args:
+            parameter_id (str) : Id of the parameter to return
         """
         return self.torchparameters[parameter_id]
 
@@ -75,10 +74,9 @@ class SynthModule0Ddeprecated(nn.Module):
         Update a specific parameter value, ensuring that it is within a specified
         range
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (float)       : Value to update parameter with
+        Args:
+            parameter_id (str) : Id of the parameter to update
+            value (float) : Value to update parameter with
         """
         self.torchparameters[parameter_id].to_0to1(T(value))
 
@@ -86,10 +84,9 @@ class SynthModule0Ddeprecated(nn.Module):
         """
         Update a specific parameter with a value in the range [0,1]
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (float)       : Value to update parameter with
+        Args:
+            parameter_id (str) : Id of the parameter to update
+            value (float) : Value to update parameter with
         """
         assert 0 <= value <= 1
         self.torchparameters[parameter_id].data = T(value)
