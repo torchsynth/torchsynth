@@ -589,11 +589,20 @@ if isnotebook():
 # -
 
 # ## FM Voice
+#
+# FmVoice is a four operator frequency modulation synth voice. Each operator consists of
+# a sine wave oscillator that can be frequency modulated at audio rate and a VCA with an
+# independent ADSR envelope. The operators can feed into each in the following way:
+# operator 1 can modulate operator 2,3, and 4; operator 2 can modulate operator 3 and 4,
+# and operator 3 can modulate operator 4. All the operators are mixed into the output at
+# various levels.
+#
+# Let's listen to a set of random FM sounds.
 
 # +
-from torchsynth.synth import FmSynth
+from torchsynth.synth import FmVoice
 
-fm = FmSynth(synthglobals16).to(device)
+fm = FmVoice(synthglobals16).to(device)
 
 with torch.no_grad():
     output = fm()
@@ -601,26 +610,34 @@ with torch.no_grad():
 for i in range(fm.batch_size.item()):
     stft_plot(output[i].detach().cpu().numpy())
     ipd.display(ipd.Audio(output[i].detach().cpu().numpy(), rate=fm.sample_rate.item()))
+# -
+
+# **FmVoice Parameters**
+
+for n, p in fm.named_parameters():
+    print(f"{n:40}")
+
+# **Setting parameters**
+#
+# Each parameter can be set by passing a dictionary with a tuple identifying the
+# parameter as the key and the new parameter values to the `set_parameters` method.
 
 # +
-from torchsynth.synth import FmSynth
+from torchsynth.synth import FmVoice
 
-fm = FmSynth(synthglobals1).to(device)
-
+fm = FmVoice(synthglobals1).to(device)
 fm.set_parameters(
     {
         ("keyboard", "midi_f0"): T([60.0]),
-        ("op1", ("osc", "ratio")): T([1.0]),
-        ("op2", ("osc", "ratio")): T([1.0]),
-        ("op2", ("osc", "mod_depth")): T([1.0]),
+        ("op1", "osc", "ratio"): T([1.0]),
+        ("op2", "osc", "ratio"): T([1.0]),
+        ("op2", "osc", "mod_depth"): T([1.0]),
     }
 )
 
 with torch.no_grad():
     output = fm()
 
-spectrum = torch.abs(torch.fft.rfft(output[0, :1000]))
-plt.plot(spectrum.detach().cpu().numpy())
 ipd.display(ipd.Audio(output.detach().cpu().numpy(), rate=fm.sample_rate.item()))
 # -
 

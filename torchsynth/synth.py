@@ -90,15 +90,15 @@ class AbstractSynth(LightningModule):
         """
         Set parameters for synth by passing in a dictionary of modules and parameters
         """
-        for (module_name, param_name), value in params.items():
-            module = getattr(self, module_name)
+        for module_params, value in params.items():
+            module = getattr(self, module_params[0])
 
             # Supports nesting of AbstractSynths -- pass through the parameter to
             # the set_parameters method in the child AbstractSynth
             if isinstance(module, AbstractSynth):
-                module.set_parameters({param_name: value})
+                module.set_parameters({module_params[1:]: value})
             else:
-                module.set_parameter(param_name, value.to(self.device))
+                module.set_parameter(module_params[1], value.to(self.device))
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -206,7 +206,7 @@ class FmOperator(AbstractSynth):
         return self.amp(env, output)
 
 
-class FmSynth(AbstractSynth):
+class FmVoice(AbstractSynth):
     """
     A four operator FM synth.
 

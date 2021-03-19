@@ -37,7 +37,7 @@ import torch.autograd.profiler as profiler
 import pytorch_lightning as pl
 
 from torchsynth.globals import SynthGlobals
-from torchsynth.synth import Voice, FmSynth
+from torchsynth.synth import Voice, FmVoice
 import torchsynth.module
 
 gpus = torch.cuda.device_count()
