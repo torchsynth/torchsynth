@@ -63,8 +63,9 @@ class ModuleParameterRange:
         normalized (T)     : value within [0,1] range to convert to range defined by
             minimum and maximum
         """
-        # assert torch.all(0.0 <= normalized)
-        # assert torch.all(normalized <= 1.0)
+        # TODO profile asserts here https://github.com/turian/torchsynth/issues/182
+        assert torch.all(0.0 <= normalized)
+        assert torch.all(normalized <= 1.0)
 
         if not self.symmetric:
             if self.curve != 1:

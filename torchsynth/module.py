@@ -452,6 +452,9 @@ class FmVCO(VCO):
     """
 
     parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges.copy()
+
+    # Overwriting the VCO tuning parameter with ratio. In FM synthesis it is
+    # more common to have the tuning defined as a multiple of the fundamental in Hz.
     parameter_ranges[0] = ModuleParameterRange(
         0.0,
         24.0,
@@ -459,6 +462,9 @@ class FmVCO(VCO):
         name="ratio",
         description="Oscillator tuning relative to fundamental frequency",
     )
+
+    # Overwriting the mod_depth parameter. In FM synthesis this controls the amount
+    # that an oscillator is modulated by another
     parameter_ranges[1] = ModuleParameterRange(
         0.0,
         12.0,
@@ -647,7 +653,7 @@ class SoftModeSelector(SynthModule):
         params = torch.stack([p.data for p in self.torchparameters.values()])
         params = torch.pow(params, exponent=self.exponent)
 
-        # This returns a tensor with shape (n_modes, batch_size), should it
+        # This returns a tensor with shape (n_modes, batch_size), should it be
         # (batch_size, n_modes) to be more aligned with the rest of the code base?
         return params / torch.sum(params, dim=0)
 
