@@ -1,9 +1,10 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
-import torchcsprng as csprng
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
+
+import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
@@ -19,19 +20,20 @@ from torchsynth.module import (
 )
 from torchsynth.signal import Signal
 
-
 # https://github.com/turian/torchsynth/issues/131
 # Lightning already handles this for us
 # torch.use_deterministic_algorithms(True)
 
 
 class AbstractSynth(LightningModule):
-    """Base class for synthesizers that combine one or more SynthModules
+    """
+    Base class for synthesizers that combine one or more SynthModules
     to create a full synth architecture.
 
-    Args:
-        sample_rate (int): sample rate to run this synth at
-        buffer_size (int): number of samples expected at output of child modules
+    Parameters
+    ----------
+    sample_rate (int): sample rate to run this synth at
+    buffer_size (int): number of samples expected at output of child modules
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
@@ -54,13 +56,14 @@ class AbstractSynth(LightningModule):
         return self.synthglobals.buffer_size
 
     def add_synth_modules(self, modules: List[Tuple[str, SynthModule]]):
-        """Add a set of named children TorchSynthModules to this synth. Registers them
+        """
+        Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
-        Args:
-          modules: List[Tuple[str:SynthModule]]:
-
-
+        Parameters
+        ----------
+        modules List[Tuple[str, SynthModule]]: A list of SynthModules and
+                                            their names.
         """
 
         for name, module in modules:
@@ -79,67 +82,45 @@ class AbstractSynth(LightningModule):
             self.add_module(name, module)
 
     def set_parameters(self, params: Dict[Tuple, T]):
-        """Set parameters for synth by passing in a dictionary
-         of modules and parameters
-
-        Args:
-          params: Dict[Tuple:T]:
-
+        """
+        Set parameters for synth by passing in a dictionary of modules and parameters
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
             module.set_parameter(param_name, value.to(self.device))
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
-        """Each AbstractSynth should override this.
-
-        Args:
-          *args: Any:
-          **kwargs: Any:
-
-
+        """
+        Each AbstractSynth should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
     def forward(
-            self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
+        self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
     ) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
 
-        Args:
-            batch_idx (Optional[int]): If provided, we set the parameters
-            of this synth for reproducibility, in a deterministic random way.
-            If None (default), we just use the current module parameter settings.
-            *args: Any:
-            **kwargs: Any:
-
+        Parameter:
+        batch_idx (Optional[int])   - If provided, we set the parameters of this
+                                    synth for reproducibility, in a deterministic
+                                    random way. If None (default), we just use
+                                    the current module parameter settings.
         """
         if batch_idx:
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
-        """This is boilerplate for lightning -- this is required by lightning Trainer
+        """
+        This is boilerplate for lightning -- this is required by lightning Trainer
         when calling test, which we use to forward Synths on multi-gpu platforms
-
-        Args:
-          batch:
-          batch_idx:
-
-
-
         """
         return T(0.0, device=self.device)
 
     def randomize(self, seed: Optional[int] = None):
-        """Randomize all parameters
-
-        Args:
-          seed: Optional[int]:  (Default value = None)
-
-
-
+        """
+        Randomize all parameters
         """
         if seed is not None:
             # Profile to make sure this isn't too slow?
@@ -154,8 +135,9 @@ class AbstractSynth(LightningModule):
 
 
 class Voice(AbstractSynth):
-    """In a synthesizer, one combination of VCO, VCA, VCF's is
-    typically  called a voice."""
+    """
+    In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
+    """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
