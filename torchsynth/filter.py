@@ -14,9 +14,10 @@ class FIRLowPass(SynthModule0Ddeprecated):
     sinc function.
 
     Args:
-        cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
+        cutoff (float) : cutoff frequency of low-pass in Hz, must be between 5 and
         half the sampling rate. Defaults to 1000Hz.
-        filter_length (int) :   The length of the filter in samples. A longer filter will
+        filter_length (int) :   The length of the filter in samples.
+         A longer filter will
         result in a steeper filter cutoff. Should be greater than 4.
         Defaults to 512 samples.
         sample_rate (int)   :   Sampling rate to run processing at.
@@ -89,7 +90,8 @@ class MovingAverage(SynthModule0Ddeprecated):
     A finite impulse response moving average filter.
 
     Args:
-        filter_length (int) : Length of filter and number of samples to take average over.
+        filter_length (int) : Length of filter and number of samples
+         to take average over.
         Must be greater than 0. Defaults to 32.
         sample_rate (int) : Sampling rate to run processing at.
     """
