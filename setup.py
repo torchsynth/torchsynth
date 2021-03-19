@@ -21,7 +21,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     url=__url__,
-    licence=__license__,
+    license=__license__,
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
     # package_data={
@@ -52,7 +52,8 @@ setup(
             "librosa",
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
-            "git+https://github.com/PyTorchLightning/lightning_sphinx_theme",
+            "sphinx",
+            "lightning_sphinx_theme @ git+https://github.com/PyTorchLightning/lightning_sphinx_theme.git",
         ],
     },
 )

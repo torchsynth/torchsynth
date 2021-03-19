@@ -18,6 +18,9 @@ PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
 sys.path.insert(0, os.path.abspath(PATH_ROOT))
 sys.path.insert(0, os.path.abspath('../..'))
+
+# sys.path.insert(0, os.path.abspath("torchsynth"))
+
 # sys.path.insert(0, os.path.abspath("torchsynth"))
 
 import torchsynth  # noqa: E402
@@ -47,6 +50,7 @@ for mod_name in MOCK_MODULES:
 # ones.
 # extensions = []
 
+extensions = []
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -59,6 +63,8 @@ import sphinx_rtd_theme
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinxcontrib.napoleon",
+    "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinxcontrib.napoleon",
     "sphinx_rtd_theme",

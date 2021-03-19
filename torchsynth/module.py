@@ -416,6 +416,8 @@ class VCO(SynthModule):
 
     def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """Generates audio signal from modulation signal.
+        """
+        Generates audio signal from modulation signal.
 
         There are three representations of the 'pitch' at play here: (1) midi,
         (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
@@ -481,8 +483,8 @@ class VCO(SynthModule):
           argument (Signal):
           midi_f0 (T):
 
-
-
+        """
+        Dummy method. Overridden by child class VCO's.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -498,7 +500,9 @@ class SineVCO(VCO):
 
     """
 
-    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+    
+    
+    (self, argument: Signal, midi_f0: T) -> Signal:
         return torch.cos(argument)
 
 
@@ -561,6 +565,8 @@ class SquareSawVCO(VCO):
 
     def partials_constant(self, midi_f0):
         """Constant value that determines the number of partials in the resulting
+        """
+        Constant value that determines the number of partials in the resulting
         square / saw wave in order to keep aliasing at an acceptable level.
         Higher frequencies require fewer partials whereas lower frequency sounds
         can safely have more partials without causing audible aliasing.
@@ -633,6 +639,10 @@ class CrossfadeKnob(SynthModule):
 
 class MonophonicKeyboard(SynthModule):
     """A keyboard controller module. Mimics a mono-synth keyboard and contains"""
+    """
+    A keyboard controller module. Mimics a mono-synth keyboard and contains
+    parameters that output a midi_f0 and note duration.
+    """
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
@@ -653,3 +663,48 @@ class MonophonicKeyboard(SynthModule):
 
     def forward(self) -> Tuple[T, T]:
         return self.p("midi_f0"), self.p("duration")
+
+
+class SoftModeSelector(SynthModule):
+    """
+    A soft mode selector.
+    If there are n different modes, return a probability distribution over them.
+
+    TODO: Would be nice to sample in a way that maximizes
+    KL-divergence from uniform: https://github.com/turian/torchsynth/issues/165
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_modes: int,
+        exponent: T = T(2.718281828),  # e
+        **kwargs: Dict[str, T],
+    ):
+        """
+        exponent determines how strongly to scale each [0,1] value prior
+        to normalization. We should probably tune this:
+        https://github.com/turian/torchsynth/issues/165
+        """
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"mode{i}weight",
+                description=f"mode{i} weight, before normalization",
+            )
+            for i in range(n_modes)
+        ]
+        super().__init__(synthglobals, **kwargs)
+        self.exponent = exponent
+
+    def forward(self) -> Tuple[T, T]:
+        """
+        Normalize all mode weights so they sum to 1.0
+        """
+        # Is this tensor creation slow?
+        # But usually parameter stuff is not the bottleneck
+        params = torch.stack([p.data for p in self.torchparameters.values()])
+        params = torch.pow(params, exponent=self.exponent)
+        return params / torch.sum(params, dim=0)
