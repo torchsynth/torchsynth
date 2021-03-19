@@ -99,6 +99,13 @@ class SynthModule(nn.Module):
         # assert seconds.ndim == 1
         return torch.round(seconds * self.sample_rate).int()
 
+    def assert_no_aliasing_freqs(self, signal: Signal):
+        """
+        Check a modulation signal containing frequencies in Hz to make sure
+        that there aren't any values that will cause aliasing.
+        """
+        assert (signal >= 0.0).all() and (signal <= self.nyquist).all()
+
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each SynthModule should override this.
@@ -399,12 +406,18 @@ class VCO(SynthModule):
         assert midi_f0.shape == (self.batch_size,)
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
+        # Create the oscillator control signal in Hz and make sure there is no aliasing
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
+        self.check_control_signal(control_as_frequency)
+
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
         output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
+
+    def check_control_signal(self, signal: Signal):
+        self.assert_no_aliasing_freqs(signal)
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
@@ -472,6 +485,13 @@ class FmVCO(VCO):
         name="mod_depth",
         description="depth of the fm modulation",
     )
+
+    def check_control_signal(self, signal: Signal):
+        """
+        We want to allow frequencies below zero and above nyquist to get
+        that nice FM aliasing sound
+        """
+        pass
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
@@ -691,7 +711,7 @@ class NormalizedFaderBank(SynthModule):
         """
         params = torch.stack([self.p(p) for p in self.torchparameters])
 
-        # If the sum of faders is greater then 1.0 then normalize
+        # If the sum of faders is greater than 1.0 then normalize
         summed = torch.sum(params, dim=0)
         return torch.where(summed > 1.0, params / summed, params).T
 
