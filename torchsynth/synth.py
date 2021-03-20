@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 from pytorch_lightning.core.lightning import LightningModule
@@ -12,7 +12,7 @@ from torchsynth.module import (
     ADSR,
     VCA,
     CrossfadeKnob,
-    NoteOnButton,
+    MonophonicKeyboard,
     Noise,
     SineVCO,
     SquareSawVCO,
@@ -30,10 +30,9 @@ class AbstractSynth(LightningModule):
     Base class for synthesizers that combine one or more SynthModules
     to create a full synth architecture.
 
-    Parameters
-    ----------
-    sample_rate (int): sample rate to run this synth at
-    buffer_size (int): number of samples expected at output of child modules
+    Args:
+        sample_rate (int): sample rate to run this synth at
+        buffer_size (int): number of samples expected at output of child modules
     """
 
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
@@ -60,9 +59,8 @@ class AbstractSynth(LightningModule):
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
-        Parameters
-        ----------
-        modules List[Tuple[str, SynthModule]]: A list of SynthModules and
+        Args:
+            modules List[Tuple[str, SynthModule]]: A list of SynthModules and
                                             their names.
         """
 
@@ -81,6 +79,14 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
+    def set_parameters(self, params: Dict[Tuple, T]):
+        """
+        Set parameters for synth by passing in a dictionary of modules and parameters
+        """
+        for (module_name, param_name), value in params.items():
+            module = getattr(self, module_name)
+            module.set_parameter(param_name, value.to(self.device))
+
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
@@ -93,8 +99,8 @@ class AbstractSynth(LightningModule):
         """
         Each AbstractSynth should override this.
 
-        Parameter:
-        batch_idx (Optional[int])   - If provided, we set the parameters of this
+        Args:
+            batch_idx (Optional[int])   - If provided, we set the parameters of this
                                     synth for reproducibility, in a deterministic
                                     random way. If None (default), we just use
                                     the current module parameter settings.
@@ -103,24 +109,24 @@ class AbstractSynth(LightningModule):
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
-    # For lightning
     def test_step(self, batch, batch_idx):
-        assert batch.ndim == 1
-        # TODO: Test with multiple lightning (not synth) batches
-        _ = torch.stack([self(i) for i in batch])
-        # You probably want to do something with the results above
-        # We just return 0, which lightning accumulates as the test error
+        """
+        This is boilerplate for lightning -- this is required by lightning Trainer
+        when calling test, which we use to forward Synths on multi-gpu platforms
+        """
         return T(0.0, device=self.device)
 
-    def randomize(self, seed: Optional[int]):
+    def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
         """
-        if seed:
+        if seed is not None:
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
                 parameter.data.uniform_(0, 1, generator=mt19937_gen)
+            for module in self._modules:
+                self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
                 parameter.data = torch.rand_like(parameter, device=self.device)
@@ -137,28 +143,27 @@ class Voice(AbstractSynth):
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("note_on", NoteOnButton(synthglobals)),
+                ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("pitch_adsr", ADSR(synthglobals)),
                 ("amp_adsr", ADSR(synthglobals)),
                 ("vco_1", SineVCO(synthglobals)),
                 ("vco_2", SquareSawVCO(synthglobals)),
                 ("noise", Noise(synthglobals)),
                 ("vca", VCA(synthglobals)),
-                ("vca_ratio", CrossfadeKnob(synthglobals)),
+                ("vco_ratio", CrossfadeKnob(synthglobals)),
             ]
         )
 
     def _forward(self) -> T:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
-        note_on_duration = self.note_on.p("duration")
+        midi_f0, note_on_duration = self.keyboard()
         pitch_envelope = self.pitch_adsr.forward(note_on_duration)
         amp_envelope = self.amp_adsr.forward(note_on_duration)
 
-        vco_1_out = self.vco_1.forward(pitch_envelope)
-        vco_2_out = self.vco_2.forward(pitch_envelope)
+        audio_out = self.vco_1.forward(midi_f0, pitch_envelope)
+        vco_2_out = self.vco_2.forward(midi_f0, pitch_envelope)
+        audio_out = util.crossfade2D(audio_out, vco_2_out, self.vco_ratio.p("ratio"))
 
-        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vca_ratio.p("ratio"))
         audio_out = self.noise.forward(audio_out)
-
         return self.vca.forward(amp_envelope, audio_out)

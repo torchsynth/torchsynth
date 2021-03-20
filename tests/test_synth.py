@@ -33,7 +33,7 @@ class TestAbstractSynth:
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.AbstractSynth(synthglobals)
         vco = synthmodule.SineVCO(
-            midi_f0=T([12.0, 30.0]),
+            tuning=T([-12.0, 30.0]),
             mod_depth=T([50.0, -50.0]),
             synthglobals=synthglobals,
         )
@@ -68,7 +68,7 @@ class TestAbstractSynth:
                 batch_size=T(2), sample_rate=T(16000)
             )
             vco_2 = synthmodule.SineVCO(
-                midi_f0=T([12.0, 30.0]),
+                tuning=T([12.0, -30.0]),
                 mod_depth=T([50.0, 50.0]),
                 synthglobals=synthglobals_weird_sr,
             )
@@ -109,3 +109,16 @@ class TestAbstractSynth:
                 synthglobals=synthglobals_new_buffersize,
             )
             synth.add_synth_modules([("adsr", adsr)])
+
+    def test_deterministic_noise(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+
+        synth.randomize(1)
+        x11 = synth()
+        synth.randomize()
+        x2 = synth()
+        synth.randomize(1)
+        x12 = synth()
+        assert torch.mean(torch.abs(x11 - x2)) > 1e-6
+        assert torch.mean(torch.abs(x11 - x12)) < 1e-6

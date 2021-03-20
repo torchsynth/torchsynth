@@ -21,7 +21,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     url=__url__,
-    licence=__license__,
+    license=__license__,
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
     # package_data={
@@ -40,6 +40,7 @@ setup(
         "test": [
             "pytest",
             "pytest-cov",
+            "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
         ],
         "dev": [
             "pre-commit",
@@ -52,7 +53,12 @@ setup(
             "librosa",
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             "optuna",
+            "sphinx",
+            "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
+            "sphinxcontrib-napoleon",
+            "mock",
         ],
     },
 )

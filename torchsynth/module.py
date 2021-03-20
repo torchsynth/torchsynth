@@ -2,11 +2,12 @@
 Synth modules in Torch.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 import torch.tensor as T
+import torchcsprng as csprng
 
 import torchsynth.util as util
 from torchsynth.default import EPS
@@ -35,9 +36,9 @@ class SynthModule(nn.Module):
     # TODO: have these already moved to cuda
     def __init__(self, synthglobals: SynthGlobals, **kwargs: Dict[str, T]):
         """
-        synthglobals (SynthGlobals)    : These are global
-        settings shared across all modules in the same synth.
-
+        Args:
+            synthglobals (:obj:`SynthGlobals`) :These are global settings
+            shared across all modules in the same synth.
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -48,6 +49,8 @@ class SynthModule(nn.Module):
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+        # If this module needs a random seed, here it is
+        self.seed: Optional[int] = None
 
         if self.parameter_ranges:
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
@@ -122,9 +125,8 @@ class SynthModule(nn.Module):
         """
         Get a single ModuleParameter for this module
 
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return
+        Args:
+            parameter_id: str: Id of the parameter to return
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -134,9 +136,8 @@ class SynthModule(nn.Module):
         """
         Get the value of a parameter in the range of [0,1]
 
-        Parameters
-        ----------
-        parameter_id (str)  :   Id of the parameter to return the value for
+        Args:
+            parameter_id (str)  :   Id of the parameter to return the value for
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -147,10 +148,9 @@ class SynthModule(nn.Module):
         Update a specific parameter value, ensuring that it is within a specified
         range
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (T)           : Value to update parameter with
+        Args:
+            parameter_id (str)  : Id of the parameter to update
+            value (T)           : Value to update parameter with
         """
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
@@ -161,10 +161,9 @@ class SynthModule(nn.Module):
         """
         Update a specific parameter with a value in the range [0,1]
 
-        Parameters
-        ----------
-        parameter_id (str)  : Id of the parameter to update
-        value (T)           : Value to update parameter with
+        Args:
+            parameter_id (str)  : Id of the parameter to update
+            value (T)           : Value to update parameter with
         """
         assert torch.all(0 <= value) and torch.all(value <= 1)
         assert value.shape == (self.batch_size,)
@@ -221,10 +220,11 @@ class ADSR(SynthModule):
         sections of the envelope. This leads to musically-intuitive, but
         programatically-counterintuitive behaviour:
 
-        E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
-        held for .75 seconds, the envelope won't pass through the entire
-        attack-and-decay (specifically, it will execute the entire attack, and
-        only .25 seconds of the decay).
+        Example:
+            E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+            held for .75 seconds, the envelope won't pass through the entire
+            attack-and-decay (specifically, it will execute the entire attack, and
+            only .25 seconds of the decay).
 
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
@@ -324,15 +324,17 @@ class VCO(SynthModule):
     accepts a modulation signal between [-1, 1]. An array of 0's returns a
     stationary audio signal at its base pitch.
 
-    Parameters
-    ----------
-    synthglobals: SynthGlobals        : global args, see SynthModule
-    phase (optional, T)       :   initial phase values
+    Args:
+        synthglobals (SynthGlobals) : global args, see SynthModule
+        phase (:obj:'T',optional) :   initial phase values
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.0, 127.0, name="midi_f0", description="pitch value in 'midi' (69 = 440Hz)"
+            -127.0,
+            127.0,
+            name="tuning",
+            description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
             -127.0,
@@ -367,7 +369,7 @@ class VCO(SynthModule):
         )
         # self.phase = self.get_parameter("initial_phase").detach().clone()
 
-    def _forward(self, mod_signal: Signal) -> Signal:
+    def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -390,10 +392,10 @@ class VCO(SynthModule):
         frequency), then output sound.
 
         """
-
+        assert midi_f0.shape == (self.batch_size,)
         assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
-        control_as_frequency = self.make_control_as_frequency(mod_signal)
 
+        control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
         assert (control_as_frequency >= 0).all() and (
             control_as_frequency <= self.nyquist
         ).all()
@@ -401,13 +403,13 @@ class VCO(SynthModule):
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.phase.unsqueeze(1)
         self.phase.data = cosine_argument[:, -1]
-        output = self.oscillator(cosine_argument)
+        output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
 
-    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
+    def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = torch.clamp(
-            self.p("midi_f0").unsqueeze(1) + modulation, 0.0, 127.0
+            (midi_f0 + self.p("tuning")).unsqueeze(1) + modulation, 0.0, 127.0
         )
         return util.midi_to_hz(control_as_midi)
 
@@ -417,7 +419,7 @@ class VCO(SynthModule):
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
-    def oscillator(self, argument: Signal) -> Signal:
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
         Dummy method. Overridden by child class VCO's.
         """
@@ -431,7 +433,7 @@ class SineVCO(VCO):
     Derives from VCO, it simply implements a cosine function as oscillator.
     """
 
-    def oscillator(self, argument: Signal) -> Signal:
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         return torch.cos(argument)
 
 
@@ -449,14 +451,14 @@ class TorchFmVCO(VCO):
         modulation_index = frequency_deviation / modulation_frequency
     """
 
-    def make_control_as_frequency(self, mod_signal: Signal) -> Signal:
+    def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         # Compute modulation in Hz space (rather than midi-space).
-        f0_hz = util.midi_to_hz(self.p("midi_f0").unsqueeze(1))
+        f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
         return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
-    def oscillator(self, argument: Signal) -> Signal:
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
@@ -478,21 +480,22 @@ class SquareSawVCO(VCO):
         )
     ]
 
-    def oscillator(self, argument: Signal) -> Signal:
-        partials = self.partials_constant.unsqueeze(1)
+    def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+        partials = self.partials_constant(midi_f0).unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
         shape = self.p("shape").unsqueeze(1)
         return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
 
-    @property
-    def partials_constant(self):
+    def partials_constant(self, midi_f0):
         """
         Constant value that determines the number of partials in the resulting
         square / saw wave in order to keep aliasing at an acceptable level.
         Higher frequencies require fewer partials whereas lower frequency sounds
         can safely have more partials without causing audible aliasing.
         """
-        max_pitch = self.p("midi_f0") + self.p("mod_depth")
+        max_pitch = (
+            midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), T(0))
+        )
         max_f0 = util.midi_to_hz(max_pitch)
         return 12000 / (max_f0 * torch.log10(max_f0))
 
@@ -533,18 +536,54 @@ class Noise(SynthModule):
         noise = self.noise_of_length(audio_in)
         return util.crossfade2D(audio_in, noise, self.p("ratio"))
 
-    @staticmethod
-    def noise_of_length(audio_in: Signal) -> Signal:
-        return torch.rand_like(audio_in) * 2 - 1
+    def noise_of_length(self, audio_in: Signal) -> Signal:
+        if self.seed is not None:
+            mt19937_gen = csprng.create_mt19937_generator(self.seed)
+            return audio_in.data.uniform_(-1, 1, generator=mt19937_gen)
+        else:
+            return torch.rand_like(audio_in) * 2 - 1
 
 
-class Identity(SynthModule):
+class SineLFO(SynthModule):
     """
-    Pass through module
+    A sine wave low-frequency oscillator
     """
 
-    def _forward(self, signal: Signal) -> Signal:
-        return signal
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.1,
+            20.0,
+            curve=0.5,
+            name="frequency",
+            description="Frequency in Hz of oscillation",
+        ),
+        ModuleParameterRange(
+            -torch.pi,
+            torch.pi,
+            name="initial_phase",
+            description="Initial phase of LFO",
+        ),
+    ]
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer(
+            "phase", self.get_parameter("initial_phase").detach().clone()
+        )
+        # Create and save a buffer of sample points
+        self.register_buffer("range", torch.arange(self.buffer_size))
+
+    def _forward(self) -> Signal:
+        """
+        Creates a batch size number of LFO modulation signals with values [0,1]
+        """
+        rads = 2 * torch.pi * self.p("frequency").unsqueeze(1) / self.sample_rate
+        freqs = self.range.expand(self.batch_size, -1) * rads + self.phase.unsqueeze(1)
+        return ((1.0 + torch.cos(freqs)) / 2.0).as_subclass(Signal)
 
 
 class CrossfadeKnob(SynthModule):
@@ -562,14 +601,20 @@ class CrossfadeKnob(SynthModule):
     ]
 
 
-class NoteOnButton(SynthModule):
+class MonophonicKeyboard(SynthModule):
     """
-    Note-on-duration button parameter with no signal generation.
-    (Could later be a mono keyboard that outputs the midi f0 also
-    https://github.com/turian/torchsynth/issues/117)
+    A keyboard controller module. Mimics a mono-synth keyboard and contains
+    parameters that output a midi_f0 and note duration.
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.0,
+            127.0,
+            curve=1.0,
+            name="midi_f0",
+            description="pitch value in 'midi' (69 = 440Hz)",
+        ),
         ModuleParameterRange(
             0.0,
             4.0,
@@ -578,3 +623,51 @@ class NoteOnButton(SynthModule):
             description="note-on button, in seconds",
         ),
     ]
+
+    def forward(self) -> Tuple[T, T]:
+        return self.p("midi_f0"), self.p("duration")
+
+
+class SoftModeSelector(SynthModule):
+    """
+    A soft mode selector.
+    If there are n different modes, return a probability distribution over them.
+
+    TODO: Would be nice to sample in a way that maximizes
+    KL-divergence from uniform: https://github.com/turian/torchsynth/issues/165
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_modes: int,
+        exponent: T = T(2.718281828),  # e
+        **kwargs: Dict[str, T],
+    ):
+        """
+        exponent determines how strongly to scale each [0,1] value prior
+        to normalization. We should probably tune this:
+        https://github.com/turian/torchsynth/issues/165
+        """
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"mode{i}weight",
+                description=f"mode{i} weight, before normalization",
+            )
+            for i in range(n_modes)
+        ]
+        super().__init__(synthglobals, **kwargs)
+        self.exponent = exponent
+
+    def forward(self) -> Tuple[T, T]:
+        """
+        Normalize all mode weights so they sum to 1.0
+        """
+        # Is this tensor creation slow?
+        # But usually parameter stuff is not the bottleneck
+        params = torch.stack([p.data for p in self.torchparameters.values()])
+        params = torch.pow(params, exponent=self.exponent)
+        return params / torch.sum(params, dim=0)

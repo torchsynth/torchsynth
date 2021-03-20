@@ -1,7 +1,20 @@
+<div  align="center">
+
 # torchsynth
+
+The fastest synth in the universe.
+
+<img width="450px" src="https://raw.githubusercontent.com/turian/torchsynth/main/assets/logo-with-caption.jpg">
+
+</div>
+
+## Introduction
 
 torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
+
+Most synthesizers are fast in terms of latency. torchsynth is fast
+in terms of throughput.
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/turian/torchsynth/blob/main/examples/examples.ipynb)
 
