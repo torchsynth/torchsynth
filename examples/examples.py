@@ -433,7 +433,7 @@ print(list(noise.parameters()))
 # +
 from torchsynth.module import SineLFO
 
-lfo = SineLFO(synthglobals)
+lfo = SineLFO(synthglobals).to(device)
 out = lfo()
 
 if isnotebook():

@@ -575,15 +575,15 @@ class SineLFO(SynthModule):
             "phase", self.get_parameter("initial_phase").detach().clone()
         )
         # Create and save a buffer of sample points
-        self.register_buffer("sample_points", torch.arange(self.buffer_size))
+        self.register_buffer("range", torch.arange(self.buffer_size))
 
     def _forward(self) -> Signal:
         """
-        Creates a batch size number of LFO modulation signals
+        Creates a batch size number of LFO modulation signals with values [0,1]
         """
-        rads = 2 * torch.pi * self.p("frequency") / self.sample_rate
-        freqs = self.sample_points.expand(self.batch_size, -1) * rads.unsqueeze(1)
-        return torch.cos(freqs + self.phase.unsqueeze(1)).as_subclass(Signal)
+        rads = 2 * torch.pi * self.p("frequency").unsqueeze(1) / self.sample_rate
+        freqs = self.range.expand(self.batch_size, -1) * rads + self.phase.unsqueeze(1)
+        return ((1.0 + torch.cos(freqs)) / 2.0).as_subclass(Signal)
 
 
 class CrossfadeKnob(SynthModule):
