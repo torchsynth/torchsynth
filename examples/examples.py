@@ -570,11 +570,11 @@ print(voice1.vco_1.get_parameter_0to1("tuning"))
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
-voice1.vco_1.set_parameter("tuning", T([64]))
+voice1.vco_1.set_parameter("tuning", T([12.0]))
 print(voice1.vco_1.p("tuning"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-voice1.vco_1.set_parameter_0to1("tuning", T([0.5433]))
+voice1.vco_1.set_parameter_0to1("tuning", T([0.5]))
 print(voice1.vco_1.p("tuning"))
 
 # #### Parameter Ranges
