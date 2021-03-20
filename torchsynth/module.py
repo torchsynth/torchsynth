@@ -671,3 +671,62 @@ class SoftModeSelector(SynthModule):
         params = torch.stack([p.data for p in self.torchparameters.values()])
         params = torch.pow(params, exponent=self.exponent)
         return params / torch.sum(params, dim=0)
+
+
+class ModulationMixer(SynthModule):
+    """
+    Mixes together a set of modulation signals at the ratio determined by the
+    mix level parameters. This also ensures that the output signal is in the
+    range [0, 1] by normalizing the mix levels if they result in a summation
+    that is greater than 1.0.
+
+    Parameters
+    ----------
+    synthglobals (SynthGlobals) :   Synth config settings
+    n_signals  (int)            :   Number of signals this module will mix
+    curves  (optional, list)    :   A list of curve values to use for underlying
+                                    mix level parameters for each mod source.
+                                    Defaults to 0.5
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_signals: int,
+        curves: Optional[List[float]] = None,
+        **kwargs: Dict[str, T],
+    ):
+        # Need to create the parameter ranges before calling super().__init
+        if curves is not None:
+            assert len(curves) == n_signals
+        else:
+            curves = [0.5] * n_signals
+
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                curve=curves[i],
+                name=f"level{i}",
+                description=f"Source {i} level",
+            )
+            for i in range(len(curves))
+        ]
+        super().__init__(synthglobals, **kwargs)
+
+    def forward(self, *signals: Signal) -> Signal:
+        """
+        Mix together a set of modulation signals ensuring the range of modulation
+        amplitudes is between 0 and 1
+        """
+
+        params = torch.stack([self.p(p) for p in self.torchparameters])
+
+        # Make sure there is the same number of input signals as mix params
+        assert len(signals) == params.shape[0]
+
+        # If the sum of faders is greater than 1.0 then normalize
+        summed = torch.sum(params, dim=0)
+        mix_params = torch.where(summed > 1.0, params / summed, params)
+
+        return torch.sum(torch.stack(signals) * mix_params.unsqueeze(2), dim=0)

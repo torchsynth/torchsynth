@@ -431,13 +431,30 @@ print(list(noise.parameters()))
 # Besides envelopes, LFOs can be used to modulate parameters
 
 # +
-from torchsynth.module import SineLFO
+from torchsynth.module import SineLFO, ModulationMixer
 
-lfo = SineLFO(synthglobals).to(device)
-out = lfo()
+lfo1 = SineLFO(synthglobals).to(device)
+out1 = lfo1()
 
-time_plot(out[0].detach().cpu().numpy())
-time_plot(out[1].detach().cpu().numpy())
+lfo2 = SineLFO(synthglobals).to(device)
+out2 = lfo2()
+
+lfo3 = SineLFO(synthglobals).to(device)
+out3 = lfo3()
+
+time_plot(out1[0].detach().cpu().numpy())
+time_plot(out2[0].detach().cpu().numpy())
+time_plot(out3[0].detach().cpu().numpy())
+
+# A modulation mixer can be used to mix a modulation sources together
+# and maintain a 0 to 1 amplitude range
+mixer = ModulationMixer(synthglobals, 3, curves=[0.5, 0.5, 0.5]).to(device)
+mods_mixed = mixer(out1, out2, out3)
+
+print(
+    f"Mixed: LFO 1:{mixer.p('fader0')[0]:.2}, LFO 2: {mixer.p('fader1')[0]:.2}, LFO 3: {mixer.p('fader2')[0]:.2}"
+)
+time_plot(mods_mixed[0].detach().cpu().numpy())
 # -
 
 # ## Voice Module
