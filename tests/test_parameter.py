@@ -192,3 +192,14 @@ class TestModuleParameter:
         )
         with pytest.raises(RuntimeError, match="Parameter is frozen"):
             param.to_0to1(T([5.0]))
+
+    def test_is_parameter_frozen(self):
+        param = ModuleParameter()
+        assert not ModuleParameter.is_parameter_frozen(param)
+
+        param = ModuleParameter(frozen=True)
+        assert ModuleParameter.is_parameter_frozen(param)
+
+        param = torch.nn.Parameter()
+        with pytest.raises(ValueError, match=r"is not a ModuleParameter"):
+            ModuleParameter.is_parameter_frozen(param)

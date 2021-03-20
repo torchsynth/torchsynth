@@ -92,6 +92,17 @@ class AbstractSynth(LightningModule):
             if freeze:
                 module.get_parameter(param_name).frozen = True
 
+    def set_frozen_parameters(self, params: Dict[Tuple, float]):
+        """
+        Sets specific parameters within this Synth. All params within the batch
+        will be set to the same value and frozen to prevent further updates.
+        """
+        params = {
+            key: T([value] * self.batch_size, device=self.device)
+            for key, value in params.items()
+        }
+        self.set_parameters(params, freeze=True)
+
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
@@ -129,16 +140,14 @@ class AbstractSynth(LightningModule):
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
-                if isinstance(parameter, ModuleParameter) and parameter.frozen:
-                    continue
-                parameter.data.uniform_(0, 1, generator=mt19937_gen)
+                if not ModuleParameter.is_parameter_frozen(parameter):
+                    parameter.data.uniform_(0, 1, generator=mt19937_gen)
             for module in self._modules:
                 self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
-                if isinstance(parameter, ModuleParameter) and parameter.frozen:
-                    continue
-                parameter.data = torch.rand_like(parameter, device=self.device)
+                if not ModuleParameter.is_parameter_frozen(parameter):
+                    parameter.data = torch.rand_like(parameter, device=self.device)
 
     def freeze_parameters(self, params: List[Tuple]):
         """

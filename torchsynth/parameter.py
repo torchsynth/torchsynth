@@ -197,3 +197,10 @@ class ModuleParameter(nn.Parameter):
             self.data = self.parameter_range.to_0to1(new_value)
         else:
             raise RuntimeError("A range was never set for this parameter")
+
+    @staticmethod
+    def is_parameter_frozen(parameter):
+        if isinstance(parameter, ModuleParameter):
+            return parameter.frozen
+        else:
+            raise ValueError(f"Param {parameter} is not a ModuleParameter")

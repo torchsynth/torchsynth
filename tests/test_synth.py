@@ -172,6 +172,14 @@ class TestAbstractSynth:
         assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
         assert torch.all(synth.keyboard.p("duration").eq(dur_val))
 
+        # Test randomization with synth with non-ModuleParameters raises error
+        synth.register_parameter("param", torch.nn.Parameter(T(0.0)))
+        with pytest.raises(ValueError, match="Param 0.0 is not a ModuleParameter"):
+            synth.randomize()
+
+        with pytest.raises(ValueError, match="Param 0.0 is not a ModuleParameter"):
+            synth.randomize(1)
+
     def test_freeze_parameters(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.Voice(synthglobals)
