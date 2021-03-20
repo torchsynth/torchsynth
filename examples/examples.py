@@ -436,8 +436,8 @@ from torchsynth.module import SineLFO
 lfo = SineLFO(synthglobals).to(device)
 out = lfo()
 
-if isnotebook():
-    plt.plot(out[0].cpu().detach().numpy())
+time_plot(out[0].detach().cpu().numpy())
+time_plot(out[1].detach().cpu().numpy())
 # -
 
 # ## Voice Module
