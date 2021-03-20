@@ -629,8 +629,7 @@ class ModulationMixer(SynthModule):
 
     def forward(self, *signals: Signal) -> Signal:
         """
-        Mix together a set of modulation signals ensuring the range of modulation
-        amplitudes is between 0 and 1
+        Mix together a set of modulation signals.
         """
 
         params = torch.stack([self.p(p) for p in self.torchparameters])
