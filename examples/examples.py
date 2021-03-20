@@ -515,6 +515,32 @@ for i in range(synthglobals16.batch_size):
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
 
+# Parameters can be set and frozen before randomization as well
+
+# +
+midi_f0 = torch.full((voice.batch_size.item(),), 42.0)
+duration = torch.full((voice.batch_size.item(),), 3.0)
+tuning = torch.full((voice.batch_size.item(),), 0.0)
+
+voice.unfreeze_all_parameters()
+voice.set_parameters(
+    {
+        ("keyboard", "midi_f0"): midi_f0,
+        ("keyboard", "duration"): duration,
+        ("vco_1", "tuning"): tuning,
+        ("vco_2", "tuning"): tuning,
+    },
+    freeze=True,
+)
+
+voice_out = voice()
+for i in range(synthglobals16.batch_size):
+    stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
+    ipd.display(
+        ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
+    )
+# -
+
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
