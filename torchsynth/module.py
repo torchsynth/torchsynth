@@ -574,10 +574,13 @@ class SineLFO(SynthModule):
         self.register_buffer(
             "phase", self.get_parameter("initial_phase").detach().clone()
         )
+        # Create and save a buffer of sample points
         self.register_buffer("sample_points", torch.arange(self.buffer_size))
 
     def _forward(self) -> Signal:
-        """"""
+        """
+        Creates a batch size number of LFO modulation signals
+        """
         rads = 2 * torch.pi * self.p("frequency") / self.sample_rate
         freqs = self.sample_points.expand(self.batch_size, -1) * rads.unsqueeze(1)
         return torch.cos(freqs + self.phase.unsqueeze(1)).as_subclass(Signal)
