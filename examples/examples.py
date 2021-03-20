@@ -518,19 +518,14 @@ for i in range(synthglobals16.batch_size):
 # Parameters can be set and frozen before randomization as well
 
 # +
-midi_f0 = torch.full((voice.batch_size.item(),), 42.0)
-duration = torch.full((voice.batch_size.item(),), 3.0)
-tuning = torch.full((voice.batch_size.item(),), 0.0)
-
 voice.unfreeze_all_parameters()
-voice.set_parameters(
+voice.set_frozen_parameters(
     {
-        ("keyboard", "midi_f0"): midi_f0,
-        ("keyboard", "duration"): duration,
-        ("vco_1", "tuning"): tuning,
-        ("vco_2", "tuning"): tuning,
+        ("keyboard", "midi_f0"): 42.0,
+        ("keyboard", "duration"): 3.0,
+        ("vco_1", "tuning"): 0.0,
+        ("vco_2", "tuning"): 0.0,
     },
-    freeze=True,
 )
 
 voice_out = voice()

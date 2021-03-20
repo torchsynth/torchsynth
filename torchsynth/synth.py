@@ -103,6 +103,22 @@ class AbstractSynth(LightningModule):
         }
         self.set_parameters(params, freeze=True)
 
+    def freeze_parameters(self, params: List[Tuple]):
+        """
+        Freeze a set of parameters by passing in a tuple of the module and param name
+        """
+        for module_name, param_name in params:
+            module = getattr(self, module_name)
+            module.get_parameter(param_name).frozen = True
+
+    def unfreeze_all_parameters(self):
+        """
+        Unfreeze all parameters in this synth
+        """
+        for param in self.parameters():
+            if isinstance(param, ModuleParameter):
+                param.frozen = False
+
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
@@ -148,22 +164,6 @@ class AbstractSynth(LightningModule):
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = torch.rand_like(parameter, device=self.device)
-
-    def freeze_parameters(self, params: List[Tuple]):
-        """
-        Freeze a set of parameters by passing in a tuple of the module and param name
-        """
-        for module_name, param_name in params:
-            module = getattr(self, module_name)
-            module.get_parameter(param_name).frozen = True
-
-    def unfreeze_all_parameters(self):
-        """
-        Unfreeze all parameters in this synth
-        """
-        for param in self.parameters():
-            if isinstance(param, ModuleParameter):
-                param.frozen = False
 
 
 class Voice(AbstractSynth):

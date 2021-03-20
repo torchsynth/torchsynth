@@ -129,6 +129,8 @@ class TestAbstractSynth:
 
         midi_val = T([69.0, 40.0])
         dur_val = T([0.25, 3.0])
+
+        # Tests the freezing parameters with current value
         synth.set_parameters(
             {
                 ("keyboard", "midi_f0"): midi_val,
@@ -149,11 +151,22 @@ class TestAbstractSynth:
         assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
         assert torch.all(synth.keyboard.p("duration").eq(dur_val))
 
+        # Test that trying to set a frozen parameter raises an error
+        with pytest.raises(RuntimeError, match="Parameter is frozen"):
+            synth.set_parameters(
+                {
+                    ("keyboard", "midi_f0"): midi_val,
+                    ("keyboard", "duration"): dur_val,
+                }
+            )
+
+        # Unfreezing parameters and randomizing now leads to different results
         synth.unfreeze_all_parameters()
         synth.randomize(1)
         assert torch.all(~synth.keyboard.p("midi_f0").eq(midi_val))
         assert torch.all(~synth.keyboard.p("duration").eq(dur_val))
 
+        # Can set parameters directly with freeze arg that they should be frozen
         synth.set_parameters(
             {
                 ("keyboard", "midi_f0"): midi_val,
@@ -208,3 +221,30 @@ class TestAbstractSynth:
         for param in synth.parameters():
             if isinstance(param, ModuleParameter):
                 assert not param.frozen
+
+    def test_set_frozen_parameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+
+        synth.set_frozen_parameters(
+            {
+                ("vco_1", "tuning"): 0.0,
+                ("pitch_adsr", "attack"): 1.5,
+            }
+        )
+
+        # Parameters should have been set with correct batch size
+        assert synth.vco_1.p("tuning").shape == (synth.batch_size,)
+        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
+
+        assert synth.pitch_adsr.p("attack").shape == (synth.batch_size,)
+        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+
+        # Randomizing now shouldn't effect these parameters
+        synth.randomize()
+        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
+        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+
+        synth.randomize(1)
+        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
+        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
