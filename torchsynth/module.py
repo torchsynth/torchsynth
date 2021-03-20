@@ -331,15 +331,15 @@ class VCO(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            -127.0,
-            127.0,
+            -24.0,
+            24.0,
             name="tuning",
             description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
-            -127.0,
-            127.0,
-            curve=0.1,
+            -96.0,
+            96.0,
+            curve=0.2,
             symmetric=True,
             name="mod_depth",
             description="depth of the pitch modulation in semitones",

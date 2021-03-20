@@ -452,7 +452,7 @@ mixer = ModulationMixer(synthglobals, 3, curves=[0.5, 0.5, 0.5]).to(device)
 mods_mixed = mixer(out1, out2, out3)
 
 print(
-    f"Mixed: LFO 1:{mixer.p('fader0')[0]:.2}, LFO 2: {mixer.p('fader1')[0]:.2}, LFO 3: {mixer.p('fader2')[0]:.2}"
+    f"Mixed: LFO 1:{mixer.p('level0')[0]:.2}, LFO 2: {mixer.p('level1')[0]:.2}, LFO 3: {mixer.p('level2')[0]:.2}"
 )
 time_plot(mods_mixed[0].detach().cpu().numpy())
 # -
