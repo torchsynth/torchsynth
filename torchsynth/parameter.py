@@ -121,6 +121,7 @@ class ModuleParameter(nn.Parameter):
 
         data (Tensor) : directly add data to this parameter without a user-range
         requires_grad (bool) : whether or not a gradient is required for this parameter
+        frozen (optional bool) : freeze parameter value and prevent updating
     """
 
     def __new__(
@@ -131,6 +132,7 @@ class ModuleParameter(nn.Parameter):
         parameter_range: Optional[ModuleParameterRange] = None,
         data: Optional[T] = None,
         requires_grad: bool = True,
+        frozen: Optional[bool] = False,
     ):
         # TODO: Assert value is 1D after we have 1D'ified everything
         if value is not None:
@@ -151,6 +153,7 @@ class ModuleParameter(nn.Parameter):
         assert "parameter_name" not in self.__dict__
         self.parameter_name = parameter_name
 
+        self.frozen = frozen
         return self
 
     def __repr__(self):
@@ -187,6 +190,9 @@ class ModuleParameter(nn.Parameter):
         Args:
             new_value (Tensor) : new value to update this parameter with
         """
+        if self.frozen:
+            raise RuntimeError("Parameter is frozen")
+
         if self.parameter_range is not None:
             self.data = self.parameter_range.to_0to1(new_value)
         else:
