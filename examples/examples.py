@@ -426,6 +426,20 @@ print(list(noise.parameters()))
 """
 # -
 
+# ## Modulation
+#
+# Besides envelopes, LFOs can be used to modulate parameters
+
+# +
+from torchsynth.module import SineLFO
+
+lfo = SineLFO(synthglobals)
+out = lfo()
+
+if isnotebook:
+    plt.plot(out[0].cpu().detach().numpy())
+# -
+
 # ## Voice Module
 #
 # Alternately, you can just use the Voice class that composes all these modules
