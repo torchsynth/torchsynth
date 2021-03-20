@@ -544,6 +544,48 @@ class Noise(SynthModule):
             return torch.rand_like(audio_in) * 2 - 1
 
 
+class SineLFO(SynthModule):
+    """
+    A sine wave low-frequency oscillator
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            0.1,
+            20.0,
+            curve=0.5,
+            name="frequency",
+            description="Frequency in Hz of oscillation",
+        ),
+        ModuleParameterRange(
+            -torch.pi,
+            torch.pi,
+            name="initial_phase",
+            description="Initial phase of LFO",
+        ),
+    ]
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer(
+            "phase", self.get_parameter("initial_phase").detach().clone()
+        )
+        # Create and save a buffer of sample points
+        self.register_buffer("range", torch.arange(self.buffer_size))
+
+    def _forward(self) -> Signal:
+        """
+        Creates a batch size number of LFO modulation signals with values [0,1]
+        """
+        rads = 2 * torch.pi * self.p("frequency").unsqueeze(1) / self.sample_rate
+        freqs = self.range.expand(self.batch_size, -1) * rads + self.phase.unsqueeze(1)
+        return ((1.0 + torch.cos(freqs)) / 2.0).as_subclass(Signal)
+
+
 class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation
