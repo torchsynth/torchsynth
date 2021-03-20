@@ -436,7 +436,7 @@ from torchsynth.module import SineLFO
 lfo = SineLFO(synthglobals)
 out = lfo()
 
-if isnotebook:
+if isnotebook():
     plt.plot(out[0].cpu().detach().numpy())
 # -
 
