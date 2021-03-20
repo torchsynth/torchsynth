@@ -122,3 +122,81 @@ class TestAbstractSynth:
         x12 = synth()
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
+
+    def test_randomize_parameter_freezing(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+
+        midi_val = T([69.0, 40.0])
+        dur_val = T([0.25, 3.0])
+        synth.set_parameters(
+            {
+                ("keyboard", "midi_f0"): midi_val,
+                ("keyboard", "duration"): dur_val,
+            }
+        )
+        synth.freeze_parameters(
+            [
+                ("keyboard", "midi_f0"),
+                ("keyboard", "duration"),
+            ]
+        )
+        synth.randomize()
+        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+
+        synth.randomize(1)
+        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+
+        synth.unfreeze_all_parameters()
+        synth.randomize(1)
+        assert torch.all(~synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(~synth.keyboard.p("duration").eq(dur_val))
+
+        synth.set_parameters(
+            {
+                ("keyboard", "midi_f0"): midi_val,
+                ("keyboard", "duration"): dur_val,
+            },
+            freeze=True,
+        )
+        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+
+        synth.randomize()
+        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+
+        synth.randomize(1)
+        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
+        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+
+    def test_freeze_parameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+
+        for param in synth.parameters():
+            if isinstance(param, ModuleParameter):
+                assert not param.frozen
+
+        synth.freeze_parameters(
+            [
+                ("keyboard", "midi_f0"),
+                ("keyboard", "duration"),
+            ]
+        )
+
+        # Make sure the correct params are frozen now
+        for name, param in synth.named_parameters():
+            if isinstance(param, ModuleParameter):
+                if param.parameter_name in ["midi_f0", "duration"]:
+                    assert param.frozen
+                else:
+                    assert not param.frozen
+
+        # Now unfreeze all of them
+        synth.unfreeze_all_parameters()
+        for param in synth.parameters():
+            if isinstance(param, ModuleParameter):
+                assert not param.frozen

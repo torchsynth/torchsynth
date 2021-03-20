@@ -80,13 +80,17 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
-    def set_parameters(self, params: Dict[Tuple, T]):
+    def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
-        Set parameters for synth by passing in a dictionary of modules and parameters
+        Set parameters for synth by passing in a dictionary of modules and parameters.
+        Can optionally freeze a parameter at this value to prevent further updates.
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
             module.set_parameter(param_name, value.to(self.device))
+            # Freeze this parameter at this value now if freeze is True
+            if freeze:
+                module.get_parameter(param_name).frozen = True
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -135,6 +139,22 @@ class AbstractSynth(LightningModule):
                 if isinstance(parameter, ModuleParameter) and parameter.frozen:
                     continue
                 parameter.data = torch.rand_like(parameter, device=self.device)
+
+    def freeze_parameters(self, params: List[Tuple]):
+        """
+        Freeze a set of parameters by passing in a tuple of the module and param name
+        """
+        for module_name, param_name in params:
+            module = getattr(self, module_name)
+            module.get_parameter(param_name).frozen = True
+
+    def unfreeze_all_parameters(self):
+        """
+        Unfreeze all parameters in this synth
+        """
+        for param in self.parameters():
+            if isinstance(param, ModuleParameter):
+                param.frozen = False
 
 
 class Voice(AbstractSynth):
