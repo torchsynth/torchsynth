@@ -393,8 +393,8 @@ sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
 noise_out = noise(device)
 
-mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25])
-out = mixer(sine_out, sqr_out, noise_out)
+mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25]).to(device)
+output = mixer(sine_out, sqr_out, noise_out)
 
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normalize=False)
 
