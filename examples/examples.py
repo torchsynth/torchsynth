@@ -381,7 +381,7 @@ ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # +
 from torchsynth.module import AudioMixer
 
-env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size))
+env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=device)
 
 keyboard = MonophonicKeyboard(synthglobals).to(device)
 sine = SineVCO(synthglobals).to(device)

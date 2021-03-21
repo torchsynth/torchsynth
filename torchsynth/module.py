@@ -352,23 +352,6 @@ class VCO(SynthModule):
         ),
     ]
 
-    def __init__(
-        self,
-        synthglobals: SynthGlobals,
-        **kwargs: Dict[str, T],
-    ):
-        super().__init__(synthglobals, **kwargs)
-
-        # TODO: Make sure this is on GPU
-        # https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html#init-tensors-using-type-as-and-register-buffer
-        # Do we want to detach clone?
-        # Do we want this persistent?
-        # https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_buffer
-        self.register_buffer(
-            "phase", self.get_parameter("initial_phase").detach().clone()
-        )
-        # self.phase = self.get_parameter("initial_phase").detach().clone()
-
     def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
@@ -400,8 +383,7 @@ class VCO(SynthModule):
         ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
-        cosine_argument += self.phase.unsqueeze(1)
-        self.phase.data = cosine_argument[:, -1]
+        cosine_argument += self.p("initial_phase").unsqueeze(1)
         output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
 
