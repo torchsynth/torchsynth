@@ -42,3 +42,26 @@ class TestTorchUtil:
             util.fix_length2D(signal2, length=T(4)) == T([[1, 2, 3, 0], [4, 5, 6, 0]])
         )
         assert torch.all(util.fix_length2D(signal2, length=T(2)) == T([[1, 2], [4, 5]]))
+
+    def test_normalize_if_clipping(self):
+        # Create a non-clipping signal, normalization shouldn't apply
+        signal1 = torch.rand([2, 44100]).as_subclass(Signal)
+        signal1_norm = util.normalize_if_clipping(signal1)
+        assert signal1.eq(signal1_norm).all()
+
+        # Now make a signal that have values greater than 1.0
+        signal1[0, :] = torch.rand(44100).as_subclass(Signal) * 200.0 - 100.0
+        max_val = torch.max(torch.abs(signal1))
+        assert max_val > 1.0
+
+        # Now normalize and make sure that the correct batch was normalized
+        signal1_norm = util.normalize_if_clipping(signal1)
+        assert torch.max(torch.abs(signal1_norm)) == 1.0
+        assert signal1[1, :].eq(signal1_norm[1, :]).all()
+
+    def test_normalize_2D(self):
+        signal = torch.rand([2, 44100]).as_subclass(Signal) * T([[100], [0.01]])
+        signal_norm = util.normalize2D(signal)
+        max_vals = torch.max(torch.abs(signal_norm), dim=1)
+        assert max_vals[0][0].eq(1.0)
+        assert max_vals[0][1].eq(1.0)
