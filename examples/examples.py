@@ -453,7 +453,6 @@ voice1.set_parameters(
         ("keyboard", "duration"): T([1.0]),
         ("vco_1", "tuning"): T([0.0]),
         ("vco_1", "mod_depth"): T([12.0]),
-        ("vco_ratio", "ratio"): T([0.0]),
     }
 )
 
@@ -476,7 +475,6 @@ voice2.set_parameters(
         ("vco_2", "tuning"): T([0.0]),
         ("vco_2", "mod_depth"): T([12.0]),
         ("vco_2", "shape"): T([1.0]),
-        ("vco_ratio", "ratio"): T([0.5]),
     }
 )
 

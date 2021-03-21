@@ -9,6 +9,7 @@ import torchcsprng as csprng
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
+    AudioMixer,
     ADSR,
     VCA,
     CrossfadeKnob,
@@ -127,11 +128,13 @@ class AbstractSynth(LightningModule):
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
                 parameter.data.uniform_(0, 1, generator=mt19937_gen)
-            for module in self._modules:
-                self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
                 parameter.data = torch.rand_like(parameter, device=self.device)
+
+        # Add see to all modules
+        for module in self._modules:
+            self._modules[module].seed = seed
 
 
 class Voice(AbstractSynth):
@@ -152,12 +155,12 @@ class Voice(AbstractSynth):
                 ("lfo_2", SineLFO(synthglobals)),
                 ("lfo_1_adsr", ADSR(synthglobals)),
                 ("lfo_2_adsr", ADSR(synthglobals)),
-                ("modulation_mixer", ModulationMixer(synthglobals, 4, 6)),
+                ("mod_matrix", ModulationMixer(synthglobals, n_input=4, n_output=5)),
                 ("vco_1", SineVCO(synthglobals)),
                 ("vco_2", SquareSawVCO(synthglobals)),
                 ("noise", Noise(synthglobals)),
                 ("vca", VCA(synthglobals)),
-                ("vco_ratio", CrossfadeKnob(synthglobals)),
+                ("mixer", AudioMixer(synthglobals, n_input=3, curves=[1.0, 1.0, 0.1])),
             ]
         )
 
@@ -171,17 +174,20 @@ class Voice(AbstractSynth):
         lfo_2 = self.vca(self.lfo_2(), self.lfo_2_adsr(note_on_duration))
 
         # Mix all modulation signals
-        modulation = self.modulation_mixer(
+        modulation = self.mod_matrix(
             self.adsr_1(note_on_duration),
             self.adsr_2(note_on_duration),
             lfo_1,
             lfo_2,
         )
 
-        # Create signal and with modulations and mix together
-        vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[2])
-        vco_2_out = self.vca(self.vco_2(midi_f0, modulation[1]), modulation[3])
-        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
+        one_mod = torch.ones_like(modulation[0])
+        zero_mod = torch.zeros_like((modulation[0]))
 
-        noise = self.noise(device=self.device)
-        return self.vca(modulation[5], audio_out)
+        # Create signal and with modulations and mix together
+        vco_1_out = self.vca(self.vco_1(midi_f0, zero_mod), one_mod)
+        vco_2_out = self.vca(self.vco_2(midi_f0, zero_mod), one_mod)
+        noise_out = self.vca(self.noise(device=self.device), one_mod)
+
+        # return self.mixer(vco_1_out, vco_2_out, noise_out)
+        return vco_1_out
