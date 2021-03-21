@@ -393,9 +393,18 @@ sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
 noise_out = noise(device)
 
-mixer = AudioMixer(synthglobals, 3)
+mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25])
 out = mixer(sine_out, sqr_out, noise_out)
 
+ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normalize=False)
+
+# +
+# Mixer params are set in dB
+mixer.set_parameter("level0", T([-12.0, -12.0]))
+mixer.set_parameter("level1", T([-12.0, -12.0]))
+mixer.set_parameter("level2", T([-24.0, -24.0]))
+
+out = mixer(sine_out, sqr_out, noise_out)
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # -
 

@@ -145,6 +145,14 @@ def normalize_if_clipping(signal: Signal) -> Signal:
     return torch.where(max_sample > 1.0, signal / max_sample, signal)
 
 
+def normalize2D(signal: Signal) -> Signal:
+    """
+    Normalize each clip in batch
+    """
+    max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
+    return signal / max_sample
+
+
 def sinc(x: T) -> T:
     return torch.where(x == 0, T(1.0, device=x.device), torch.sin(x) / x)
 
