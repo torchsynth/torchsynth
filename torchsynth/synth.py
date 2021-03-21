@@ -67,7 +67,7 @@ class AbstractSynth(LightningModule):
 
         for name, module in modules:
             if not isinstance(module, SynthModule):
-                raise TypeError(f"{module} is not a SynthModule0Ddeprecated")
+                raise TypeError(f"{module} is not a SynthModule")
 
             if module.batch_size != self.batch_size:
                 raise ValueError(f"{module} batch_size does not match")
