@@ -655,7 +655,7 @@ class AudioMixer(SynthModule):
 
         # Turn params into matrix and convert from dB
         params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
-        params = torch.pow(10.0, params / 20.0)
+        params = util.db_to_amplitude(params)
 
         # Make sure we received the correct number of input signals
         signals = torch.stack(signals, dim=1)
