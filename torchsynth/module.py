@@ -504,9 +504,8 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
-        audio_in = util.fix_length2D(audio_in, control_in.num_samples)
-        return control_in * audio_in
+    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
+        return audio_in * control_in
 
 
 class Noise(SynthModule):

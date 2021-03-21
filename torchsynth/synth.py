@@ -167,8 +167,8 @@ class Voice(AbstractSynth):
         midi_f0, note_on_duration = self.keyboard()
 
         # Compute LFOs with envelopes
-        lfo_1 = self.lfo_1() * self.lfo_1_adsr(note_on_duration)
-        lfo_2 = self.lfo_2() * self.lfo_2_adsr(note_on_duration)
+        lfo_1 = self.vca(self.lfo_1(), self.lfo_1_adsr(note_on_duration))
+        lfo_2 = self.vca(self.lfo_2(), self.lfo_2_adsr(note_on_duration))
 
         # Mix all modulation signals
         modulation = self.modulation_mixer(
@@ -179,9 +179,9 @@ class Voice(AbstractSynth):
         )
 
         # Create signal and with modulations and mix together
-        vco_1_out = self.vco_1(midi_f0, modulation[0]) * modulation[2]
-        vco_2_out = self.vco_2(midi_f0, modulation[1]) * modulation[3]
+        vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[2])
+        vco_2_out = self.vca(self.vco_2(midi_f0, modulation[1]), modulation[3])
         audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
 
-        audio_out = self.noise(audio_out, modulation[4])
+        noise = self.noise(device=self.device)
         return self.vca(modulation[5], audio_out)
