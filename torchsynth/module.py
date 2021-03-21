@@ -634,6 +634,56 @@ class ModulationMixer(SynthModule):
         return tuple(m.squeeze(1).as_subclass(Signal) for m in modulation)
 
 
+class AudioMixer(SynthModule):
+    """
+    Sums together a set of N signals together and applies normalization if required
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_input: int,
+        curves: Optional[List[float]] = None,
+        **kwargs: Dict[str, T],
+    ):
+        # Parameter curves can be used to modify the parameter mapping
+        # for each input modulation source to the outputs
+        if curves is not None:
+            assert len(curves) == n_input
+        else:
+            curves = [1.0] * n_input
+
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = []
+        for i in range(n_input):
+            self.parameter_ranges.append(
+                ModuleParameterRange(
+                    -80.0,
+                    0.0,
+                    curve=curves[i],
+                    name=f"level{i}",
+                    description=f"Mix level for input {i} id dB",
+                )
+            )
+
+        super().__init__(synthglobals, **kwargs)
+        self.n_input = n_input
+
+    def _forward(self, *signals: Signal) -> Signal:
+
+        # Turn params into matrix and convert from dB
+        params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
+        params = torch.pow(10.0, params / 20.0)
+
+        # Make sure we received the correct number of input signals
+        signals = torch.stack(signals, dim=1)
+        assert signals.shape[1] == params.shape[1]
+
+        # Mix signals and normalize output if required
+        output = torch.matmul(params.unsqueeze(1), signals).squeeze(1)
+        return util.normalize_if_clipping(output)
+
+
 class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation

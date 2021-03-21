@@ -376,6 +376,29 @@ stft_plot(out[0].detach().cpu().numpy())
 ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # -
 
+# ## Audio Mixer
+
+# +
+from torchsynth.module import AudioMixer
+
+env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size))
+
+keyboard = MonophonicKeyboard(synthglobals).to(device)
+sine = SineVCO(synthglobals).to(device)
+square_saw = SquareSawVCO(synthglobals).to(device)
+noise = Noise(synthglobals)
+
+midi_f0, note_on_duration = keyboard()
+sine_out = sine(midi_f0, env)
+sqr_out = square_saw(midi_f0, env)
+noise_out = noise(device)
+
+mixer = AudioMixer(synthglobals, 3)
+out = mixer(sine_out, sqr_out, noise_out)
+
+ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
+# -
+
 # ## Modulation
 #
 # Besides envelopes, LFOs can be used to modulate parameters
@@ -445,7 +468,6 @@ voice2.set_parameters(
         ("vco_2", "mod_depth"): T([12.0]),
         ("vco_2", "shape"): T([1.0]),
         ("vco_ratio", "ratio"): T([0.5]),
-        ("noise", "ratio"): T([0.0]),
     }
 )
 
