@@ -448,13 +448,13 @@ time_plot(out3[0].detach().cpu().numpy())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals, 3, curves=[0.5, 0.5, 0.5]).to(device)
+mixer = ModulationMixer(synthglobals, 3, 2).to(device)
 mods_mixed = mixer(out1, out2, out3)
 
 print(
-    f"Mixed: LFO 1:{mixer.p('level0')[0]:.2}, LFO 2: {mixer.p('level1')[0]:.2}, LFO 3: {mixer.p('level2')[0]:.2}"
+    f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}, LFO 3: {mixer.p('level2_0')[0]:.2}"
 )
-time_plot(mods_mixed[0].detach().cpu().numpy())
+time_plot(mods_mixed[0][0].detach().cpu().numpy())
 # -
 
 # ## Voice Module

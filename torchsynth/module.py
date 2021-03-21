@@ -605,43 +605,51 @@ class ModulationMixer(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        n_signals: int,
+        n_inputs: int,
+        n_outputs: int,
         curves: Optional[List[float]] = None,
         **kwargs: Dict[str, T],
     ):
-        # Need to create the parameter ranges before calling super().__init
+        # Parameter curves can be used to modify the parameter mapping
+        # for each input modulation source to the outputs
         if curves is not None:
-            assert len(curves) == n_signals
+            assert len(curves) == n_inputs
         else:
-            curves = [0.5] * n_signals
+            curves = [0.5] * n_inputs
 
-        self.parameter_ranges = [
-            ModuleParameterRange(
-                0.0,
-                1.0,
-                curve=curves[i],
-                name=f"level{i}",
-                description=f"Source {i} level",
-            )
-            for i in range(len(curves))
-        ]
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = []
+        for i in range(n_inputs):
+            for j in range(n_outputs):
+                self.parameter_ranges.append(
+                    ModuleParameterRange(
+                        0.0,
+                        1.0,
+                        curve=curves[i],
+                        name=f"level{i}_{j}",
+                        description=f"Mix level for input {i} to output {j}",
+                    )
+                )
+
         super().__init__(synthglobals, **kwargs)
+        self.n_inputs = n_inputs
+        self.n_outputs = n_outputs
 
     def forward(self, *signals: Signal) -> Signal:
         """
         Mix together a set of modulation signals.
         """
 
-        params = torch.stack([self.p(p) for p in self.torchparameters])
+        # Get params into batch_size x n_output x n_input matrix
+        params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
+        params = params.view(self.batch_size, self.n_inputs, self.n_outputs)
+        params = torch.swapaxes(params, 1, 2)
 
         # Make sure there is the same number of input signals as mix params
-        assert len(signals) == params.shape[0]
+        assert len(signals) == params.shape[2]
+        signals = torch.stack(signals, dim=1)
 
-        # If the sum of levels is greater than 1.0 then normalize
-        summed = torch.sum(params, dim=0)
-        mix_params = torch.where(summed > 1.0, params / summed, params)
-
-        return torch.sum(torch.stack(signals) * mix_params.unsqueeze(2), dim=0)
+        return torch.matmul(params, signals).as_subclass(Signal)
 
 
 class CrossfadeKnob(SynthModule):
