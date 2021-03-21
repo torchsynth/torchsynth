@@ -400,9 +400,9 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normaliz
 
 # +
 # Mixer params are set in dB
-mixer.set_parameter("level0", T([-12.0, -12.0]))
-mixer.set_parameter("level1", T([-12.0, -12.0]))
-mixer.set_parameter("level2", T([-24.0, -24.0]))
+mixer.set_parameter("level0", T([-12.0, -12.0], device=device))
+mixer.set_parameter("level1", T([-12.0, -12.0], device=device))
+mixer.set_parameter("level2", T([-24.0, -24.0], device=device))
 
 out = mixer(sine_out, sqr_out, noise_out)
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
