@@ -130,7 +130,7 @@ class AbstractSynth(LightningModule):
             for parameter in self.parameters():
                 parameter.data = torch.rand_like(parameter, device=self.device)
 
-        # Add see to all modules
+        # Add seed to all modules
         for module in self._modules:
             self._modules[module].seed = seed
 
