@@ -393,7 +393,6 @@ class VCO(SynthModule):
 
         """
         assert midi_f0.shape == (self.batch_size,)
-        assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
         assert (control_as_frequency >= 0).all() and (
@@ -506,42 +505,24 @@ class VCA(SynthModule):
     """
 
     def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
-        assert (control_in >= 0).all() and (control_in <= 1).all()
-
-        # Should VCA be responsible for this?
-        if (audio_in <= -1).any() or (audio_in >= 1).any():
-            util.normalize(audio_in)
-
         audio_in = util.fix_length2D(audio_in, control_in.num_samples)
         return control_in * audio_in
 
 
 class Noise(SynthModule):
     """
-    Adds noise to a signal
+    Generates white noise that is the same length as the buffer
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
-        ModuleParameterRange(
-            0.0,
-            1.0,
-            curve=0.05,
-            name="ratio",
-            description="mix ratio between the incoming signal and the produced noise, "
-            + "1 is all noise",
-        )
-    ]
-
-    def _forward(self, audio_in: Signal) -> Signal:
-        noise = self.noise_of_length(audio_in)
-        return util.crossfade2D(audio_in, noise, self.p("ratio"))
-
-    def noise_of_length(self, audio_in: Signal) -> Signal:
+    def _forward(self, device: Optional[torch.device] = None) -> Signal:
         if self.seed is not None:
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            return audio_in.data.uniform_(-1, 1, generator=mt19937_gen)
+            noise = torch.empty((self.batch_size, self.buffer_size), device=device)
+            noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            return torch.rand_like(audio_in) * 2 - 1
+            noise = torch.rand((self.batch_size, self.buffer_size), device=device)
+            noise = noise * 2 - 1
+        return noise.as_subclass(Signal)
 
 
 class SineLFO(SynthModule):
@@ -588,39 +569,40 @@ class SineLFO(SynthModule):
 
 class ModulationMixer(SynthModule):
     """
-    Mixes together a set of modulation signals at the ratio determined by the
-    mix level parameters. This module also ensures that the output signal is in the
-    range [0, 1] by normalizing the mix levels if they result in a summation
-    that is greater than 1.0.
+    A modulation matrix that takes in N input modulation signals
+    and combines them together to create M output modulation signals.
+    Each output is a linear combination of all in the input signals
+    using the mixing levels defined by NxM mixing parameters.
 
     Parameters
     ----------
     synthglobals (SynthGlobals) :   Synth config settings
-    n_signals  (int)            :   Number of signals this module will mix
+    n_input     (int)           :   Number of signals this module will mix
+    n_output    (int)           :   Number of output signals
     curves  (optional, list)    :   A list of curve values to use for underlying
                                     mix level parameters for each mod source.
-                                    Defaults to 0.5
+                                    Defaults to 0.5. Must be same number of input.
     """
 
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        n_inputs: int,
-        n_outputs: int,
+        n_input: int,
+        n_output: int,
         curves: Optional[List[float]] = None,
         **kwargs: Dict[str, T],
     ):
         # Parameter curves can be used to modify the parameter mapping
         # for each input modulation source to the outputs
         if curves is not None:
-            assert len(curves) == n_inputs
+            assert len(curves) == n_input
         else:
-            curves = [0.5] * n_inputs
+            curves = [0.5] * n_input
 
         # Need to create the parameter ranges before calling super().__init
         self.parameter_ranges = []
-        for i in range(n_inputs):
-            for j in range(n_outputs):
+        for i in range(n_input):
+            for j in range(n_output):
                 self.parameter_ranges.append(
                     ModuleParameterRange(
                         0.0,
@@ -632,24 +614,25 @@ class ModulationMixer(SynthModule):
                 )
 
         super().__init__(synthglobals, **kwargs)
-        self.n_inputs = n_inputs
-        self.n_outputs = n_outputs
+        self.n_input = n_input
+        self.n_output = n_output
 
-    def forward(self, *signals: Signal) -> Signal:
+    def forward(self, *signals: Signal) -> Tuple[Signal]:
         """
         Mix together a set of modulation signals.
         """
 
         # Get params into batch_size x n_output x n_input matrix
         params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
-        params = params.view(self.batch_size, self.n_inputs, self.n_outputs)
+        params = params.view(self.batch_size, self.n_input, self.n_output)
         params = torch.swapaxes(params, 1, 2)
 
         # Make sure there is the same number of input signals as mix params
         assert len(signals) == params.shape[2]
         signals = torch.stack(signals, dim=1)
 
-        return torch.matmul(params, signals).as_subclass(Signal)
+        modulation = torch.chunk(torch.matmul(params, signals), self.n_output, dim=1)
+        return tuple(m.squeeze(1).as_subclass(Signal) for m in modulation)
 
 
 class CrossfadeKnob(SynthModule):

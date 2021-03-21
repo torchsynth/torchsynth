@@ -146,14 +146,13 @@ class Voice(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("pitch_adsr", ADSR(synthglobals)),
-                ("amp_adsr", ADSR(synthglobals)),
+                ("adsr_1", ADSR(synthglobals)),
+                ("adsr_2", ADSR(synthglobals)),
                 ("lfo_1", SineLFO(synthglobals)),
                 ("lfo_2", SineLFO(synthglobals)),
                 ("lfo_1_adsr", ADSR(synthglobals)),
                 ("lfo_2_adsr", ADSR(synthglobals)),
-                ("pitch_mod_mixer", ModulationMixer(synthglobals, 3)),
-                ("amp_mod_mixer", ModulationMixer(synthglobals, 3)),
+                ("modulation_mixer", ModulationMixer(synthglobals, 4, 6)),
                 ("vco_1", SineVCO(synthglobals)),
                 ("vco_2", SquareSawVCO(synthglobals)),
                 ("noise", Noise(synthglobals)),
@@ -171,23 +170,18 @@ class Voice(AbstractSynth):
         lfo_1 = self.lfo_1() * self.lfo_1_adsr(note_on_duration)
         lfo_2 = self.lfo_2() * self.lfo_2_adsr(note_on_duration)
 
-        # Modulation mixtures for pitch and amplitude
-        pitch_mod = self.pitch_mod_mixer(
-            self.pitch_adsr(note_on_duration),
-            lfo_1,
-            lfo_2,
-        )
-
-        amp_mod = self.amp_mod_mixer(
-            self.amp_adsr(note_on_duration),
+        # Mix all modulation signals
+        modulation = self.modulation_mixer(
+            self.adsr_1(note_on_duration),
+            self.adsr_2(note_on_duration),
             lfo_1,
             lfo_2,
         )
 
         # Create signal and with modulations and mix together
-        audio_out = self.vco_1(midi_f0, pitch_mod)
-        vco_2_out = self.vco_2(midi_f0, pitch_mod)
-        audio_out = util.crossfade2D(audio_out, vco_2_out, self.vco_ratio.p("ratio"))
+        vco_1_out = self.vco_1(midi_f0, modulation[0]) * modulation[2]
+        vco_2_out = self.vco_2(midi_f0, modulation[1]) * modulation[3]
+        audio_out = util.crossfade2D(vco_1_out, vco_2_out, self.vco_ratio.p("ratio"))
 
-        audio_out = self.noise(audio_out)
-        return self.vca(amp_mod, audio_out)
+        audio_out = self.noise(audio_out, modulation[4])
+        return self.vca(modulation[5], audio_out)

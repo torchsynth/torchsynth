@@ -363,67 +363,17 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 
 # ### Noise
 #
-# The noise generator mixes white noise into a signal
+# The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-env = torch.zeros([2, DEFAULT_BUFFER_SIZE], device=device)
-vco = SineVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
-).to(device)
-noise = Noise(ratio=T([0.75, 0.25]), synthglobals=synthglobals).to(device)
+noise = Noise(synthglobals)
 
-noisy_sine = noise(vco(keyboard.p("midi_f0"), env))
+# Optionally can pass in the device to make sure the noise gets created
+# on the current device.
+out = noise(device)
 
-stft_plot(noisy_sine[0].detach().cpu().numpy())
-ipd.display(
-    ipd.Audio(noisy_sine[0].detach().cpu().numpy(), rate=vco.sample_rate.item())
-)
-
-stft_plot(noisy_sine[1].detach().cpu().numpy())
-ipd.display(
-    ipd.Audio(noisy_sine[1].detach().cpu().numpy(), rate=vco.sample_rate.item())
-)
-
-# +
-# Compute the error on the difference between the RMS level of the signals
-rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
-rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
-err = torch.abs(rms1 - rms0)
-print(err)
-
-# err.backward(retain_graph=True)
-# for p in noise.torchparameters:
-#    print(f"{p} grad1={noise.torchparameters[p][0].grad.item()} grad2={noise.torchparameters[p][1].grad.item()}")
-
-"""
-# +
-optimizer = torch.optim.Adam(list(noise2.parameters()), lr=0.01)
-
-print("Parameters before optimization:")
-print(list(noise.parameters()))
-
-error_hist = []
-
-for i in range(100):
-    optimizer.zero_grad()
-
-    noisy_sine = noise(vco(env))
-    rms0 = torch.sqrt(torch.mean(noisy_sine[0] * noisy_sine[0]))
-    rms1 = torch.sqrt(torch.mean(noisy_sine[1] * noisy_sine[1]))
-    err = torch.abs(rms1 - rms0)
-
-    error_hist.append(err.item())
-    err.backward()
-    optimizer.step()
-
-if isnotebook():  # pragma: no cover
-    plt.plot(error_hist)
-    plt.ylabel("Error")
-    plt.xlabel("Optimization steps")
-
-print("Parameters after optimization:")
-print(list(noise.parameters()))
-"""
+stft_plot(out[0].detach().cpu().numpy())
+ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # -
 
 # ## Modulation
@@ -469,20 +419,9 @@ voice1.set_parameters(
     {
         ("keyboard", "midi_f0"): T([69.0]),
         ("keyboard", "duration"): T([1.0]),
-        ("pitch_adsr", "attack"): T([0.25]),
-        ("pitch_adsr", "decay"): T([0.25]),
-        ("pitch_adsr", "sustain"): T([0.25]),
-        ("pitch_adsr", "release"): T([0.25]),
-        ("pitch_adsr", "alpha"): T([3.0]),
-        ("amp_adsr", "attack"): T([0.25]),
-        ("amp_adsr", "decay"): T([0.25]),
-        ("amp_adsr", "sustain"): T([0.25]),
-        ("amp_adsr", "release"): T([0.25]),
-        ("amp_adsr", "alpha"): T([3.0]),
         ("vco_1", "tuning"): T([0.0]),
         ("vco_1", "mod_depth"): T([12.0]),
         ("vco_ratio", "ratio"): T([0.0]),
-        ("noise", "ratio"): T([0.05]),
     }
 )
 
@@ -500,16 +439,6 @@ voice2.set_parameters(
     {
         ("keyboard", "midi_f0"): T([40.0]),
         ("keyboard", "duration"): T([3.0]),
-        ("pitch_adsr", "attack"): T([0.0]),
-        ("pitch_adsr", "decay"): T([2.0]),
-        ("pitch_adsr", "sustain"): T([0.0]),
-        ("pitch_adsr", "release"): T([0.0]),
-        ("pitch_adsr", "alpha"): T([2.0]),
-        ("amp_adsr", "attack"): T([0.1]),
-        ("amp_adsr", "decay"): T([0.25]),
-        ("amp_adsr", "sustain"): T([1.0]),
-        ("amp_adsr", "release"): T([0.5]),
-        ("amp_adsr", "alpha"): T([3.0]),
         ("vco_1", "tuning"): T([19.0]),
         ("vco_1", "mod_depth"): T([24.0]),
         ("vco_2", "tuning"): T([0.0]),
