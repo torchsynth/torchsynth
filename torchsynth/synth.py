@@ -8,6 +8,7 @@ import torchcsprng as csprng
 
 from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
+from torchsynth.parameter import ModuleParameter
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -79,13 +80,44 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
-    def set_parameters(self, params: Dict[Tuple, T]):
+    def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
-        Set parameters for synth by passing in a dictionary of modules and parameters
+        Set parameters for synth by passing in a dictionary of modules and parameters.
+        Can optionally freeze a parameter at this value to prevent further updates.
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
             module.set_parameter(param_name, value.to(self.device))
+            # Freeze this parameter at this value now if freeze is True
+            if freeze:
+                module.get_parameter(param_name).frozen = True
+
+    def set_frozen_parameters(self, params: Dict[Tuple, float]):
+        """
+        Sets specific parameters within this Synth. All params within the batch
+        will be set to the same value and frozen to prevent further updates.
+        """
+        params = {
+            key: T([value] * self.batch_size, device=self.device)
+            for key, value in params.items()
+        }
+        self.set_parameters(params, freeze=True)
+
+    def freeze_parameters(self, params: List[Tuple]):
+        """
+        Freeze a set of parameters by passing in a tuple of the module and param name
+        """
+        for module_name, param_name in params:
+            module = getattr(self, module_name)
+            module.get_parameter(param_name).frozen = True
+
+    def unfreeze_all_parameters(self):
+        """
+        Unfreeze all parameters in this synth
+        """
+        for param in self.parameters():
+            if isinstance(param, ModuleParameter):
+                param.frozen = False
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -124,12 +156,14 @@ class AbstractSynth(LightningModule):
             # Profile to make sure this isn't too slow?
             mt19937_gen = csprng.create_mt19937_generator(seed)
             for parameter in self.parameters():
-                parameter.data.uniform_(0, 1, generator=mt19937_gen)
+                if not ModuleParameter.is_parameter_frozen(parameter):
+                    parameter.data.uniform_(0, 1, generator=mt19937_gen)
             for module in self._modules:
                 self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
-                parameter.data = torch.rand_like(parameter, device=self.device)
+                if not ModuleParameter.is_parameter_frozen(parameter):
+                    parameter.data = torch.rand_like(parameter, device=self.device)
 
 
 class Voice(AbstractSynth):

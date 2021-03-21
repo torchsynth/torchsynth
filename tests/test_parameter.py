@@ -136,6 +136,13 @@ class TestModuleParameter:
         with pytest.raises(ValueError):
             ModuleParameter(value=T([0.0, 2555.0]))
 
+        # Check parameter freezing
+        param = ModuleParameter()
+        assert not param.frozen
+
+        param = ModuleParameter(frozen=True)
+        assert param.frozen
+
     def test_repr(self):
         param_range = ModuleParameterRange(0.0, 10.0)
         param = ModuleParameter(
@@ -174,5 +181,25 @@ class TestModuleParameter:
 
         # Now test setting a ModuleParameter without a range set
         param = ModuleParameter(data=T(0.0))
-        with pytest.raises(RuntimeError):
+        with pytest.raises(
+            RuntimeError, match="A range was never set for this parameter"
+        ):
             param.to_0to1(T(0.2))
+
+        # Test freezing parameter
+        param = ModuleParameter(
+            value=T([0.0]), parameter_range=param_range, frozen=True
+        )
+        with pytest.raises(RuntimeError, match="Parameter is frozen"):
+            param.to_0to1(T([5.0]))
+
+    def test_is_parameter_frozen(self):
+        param = ModuleParameter()
+        assert not ModuleParameter.is_parameter_frozen(param)
+
+        param = ModuleParameter(frozen=True)
+        assert ModuleParameter.is_parameter_frozen(param)
+
+        param = torch.nn.Parameter()
+        with pytest.raises(ValueError, match=r"is not a ModuleParameter"):
+            ModuleParameter.is_parameter_frozen(param)
