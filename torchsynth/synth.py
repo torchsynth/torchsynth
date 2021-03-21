@@ -181,13 +181,9 @@ class Voice(AbstractSynth):
             lfo_2,
         )
 
-        one_mod = torch.ones_like(modulation[0])
-        zero_mod = torch.zeros_like((modulation[0]))
-
         # Create signal and with modulations and mix together
-        vco_1_out = self.vca(self.vco_1(midi_f0, zero_mod), one_mod)
-        vco_2_out = self.vca(self.vco_2(midi_f0, zero_mod), one_mod)
-        noise_out = self.vca(self.noise(device=self.device), one_mod)
+        vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[1])
+        vco_2_out = self.vca(self.vco_2(midi_f0, modulation[2]), modulation[3])
+        noise_out = self.vca(self.noise(device=self.device), modulation[4])
 
-        # return self.mixer(vco_1_out, vco_2_out, noise_out)
-        return vco_1_out
+        return self.mixer(vco_1_out, vco_2_out, noise_out)

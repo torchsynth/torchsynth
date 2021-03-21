@@ -120,5 +120,6 @@ class TestAbstractSynth:
         x2 = synth()
         synth.randomize(1)
         x12 = synth()
+
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
