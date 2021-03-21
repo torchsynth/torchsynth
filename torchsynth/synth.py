@@ -6,13 +6,11 @@ from torch import tensor as T
 
 import torchcsprng as csprng
 
-from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     AudioMixer,
     ADSR,
     VCA,
-    CrossfadeKnob,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
