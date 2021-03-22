@@ -33,7 +33,7 @@ class TestAbstractSynth:
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.AbstractSynth(synthglobals)
         vco = synthmodule.SineVCO(
-            tuning=T([-12.0, 30.0]),
+            tuning=T([-12.0, 3.0]),
             mod_depth=T([50.0, -50.0]),
             synthglobals=synthglobals,
         )
@@ -68,7 +68,7 @@ class TestAbstractSynth:
                 batch_size=T(2), sample_rate=T(16000)
             )
             vco_2 = synthmodule.SineVCO(
-                tuning=T([12.0, -30.0]),
+                tuning=T([12.0, -5.0]),
                 mod_depth=T([50.0, 50.0]),
                 synthglobals=synthglobals_weird_sr,
             )
@@ -120,6 +120,7 @@ class TestAbstractSynth:
         x2 = synth()
         synth.randomize(1)
         x12 = synth()
+
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
 
@@ -229,7 +230,7 @@ class TestAbstractSynth:
         synth.set_frozen_parameters(
             {
                 ("vco_1", "tuning"): 0.0,
-                ("pitch_adsr", "attack"): 1.5,
+                ("adsr_1", "attack"): 1.5,
             }
         )
 
@@ -237,14 +238,14 @@ class TestAbstractSynth:
         assert synth.vco_1.p("tuning").shape == (synth.batch_size,)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
 
-        assert synth.pitch_adsr.p("attack").shape == (synth.batch_size,)
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert synth.adsr_1.p("attack").shape == (synth.batch_size,)
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
 
         # Randomizing now shouldn't effect these parameters
         synth.randomize()
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
 
         synth.randomize(1)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
