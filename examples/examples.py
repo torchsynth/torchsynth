@@ -415,32 +415,28 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-note_on_duration = T([4.0, 4.0], device=device)
+note_on_duration = T([3.0, 3.0], device=device)
 adsr = ADSR(synthglobals).to(device)
 env = adsr(note_on_duration)
-env = torch.zeros_like(env)
+# env = torch.zeros_like(env)
 
-lfo1 = LFO(synthglobals).to(device)
-out1 = lfo1(env)
+lfo = LFO(synthglobals).to(device)
+out = lfo(env)
 
 lfo2 = LFO(synthglobals).to(device)
 out2 = lfo2(env)
 
-lfo3 = LFO(synthglobals).to(device)
-out3 = lfo3(env)
+print(out.shape)
 
-time_plot(out1[0].detach().cpu().numpy())
+time_plot(out[0].detach().cpu().numpy())
 time_plot(out2[0].detach().cpu().numpy())
-time_plot(out3[0].detach().cpu().numpy())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals, 3, 2).to(device)
-mods_mixed = mixer(out1, out2, out3)
+mixer = ModulationMixer(synthglobals, 2, 1).to(device)
+mods_mixed = mixer(out, out2)
 
-print(
-    f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}, LFO 3: {mixer.p('level2_0')[0]:.2}"
-)
+print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
 time_plot(mods_mixed[0][0].detach().cpu().numpy())
 # -
 

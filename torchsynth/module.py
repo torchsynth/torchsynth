@@ -511,7 +511,7 @@ class LFO(VCO):
     An abstract base class for low frequency oscillators
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.1,
             20.0,
@@ -538,14 +538,24 @@ class LFO(VCO):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
+        self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
+        self.parameter_ranges = self.default_ranges.copy()
+        for lfo in self.lfo_types:
+            self.parameter_ranges.append(
+                ModuleParameterRange(
+                    0.0,
+                    1.0,
+                    name=f"{lfo}",
+                    description=f"Selection parameter for {lfo} LFO",
+                )
+            )
         super().__init__(synthglobals, **kwargs)
+        self.exponent = exponent
 
-        # Create and save a buffer of sample points
-        self.register_buffer("range", torch.arange(self.buffer_size))
-
-    def _forward(self, mod_signal: Signal) -> Signal:
+    def forward(self, mod_signal: Signal) -> T:
         """
         Must be implemented in deriving classes
         """
@@ -556,8 +566,14 @@ class LFO(VCO):
         argument = self.make_argument(frequency) + self.p("initial_phase").unsqueeze(1)
 
         # Get LFO shapes
-        sine, square, saw, rev_saw, triangle = self.make_lfo_shapes(argument)
-        return triangle
+        shapes = torch.stack(self.make_lfo_shapes(argument), dim=1).as_subclass(Signal)
+
+        # Apply mode selection to the LFO shapes
+        mode = torch.stack([self.p(lfo) for lfo in self.lfo_types], dim=1)
+        mode = mode / torch.sum(mode, dim=1, keepdim=True)
+        mode = torch.pow(mode, self.exponent)
+
+        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1)
 
     def make_control(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
