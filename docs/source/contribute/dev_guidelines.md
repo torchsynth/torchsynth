@@ -1,6 +1,5 @@
-####################
-Developer guidelines
-####################
+## Developer guidelines
+
 
 **Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
 
@@ -21,5 +20,3 @@ Aliquam ut porttitor leo a diam sollicitudin tempor id:
 * Vel eros donec
 * Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
 * Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
-
-----------
