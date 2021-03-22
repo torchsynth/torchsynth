@@ -515,14 +515,14 @@ class LFO(VCO):
         ModuleParameterRange(
             0.1,
             20.0,
-            curve=0.5,
+            curve=0.25,
             name="frequency",
             description="Frequency in Hz of oscillation",
         ),
         ModuleParameterRange(
             -10.0,
-            10.0,
-            curve=1.0,
+            20.0,
+            curve=0.5,
             symmetric=True,
             name="mod_depth",
             description="LFO rate modulation in Hz",
@@ -570,8 +570,8 @@ class LFO(VCO):
 
         # Apply mode selection to the LFO shapes
         mode = torch.stack([self.p(lfo) for lfo in self.lfo_types], dim=1)
-        mode = mode / torch.sum(mode, dim=1, keepdim=True)
         mode = torch.pow(mode, self.exponent)
+        mode = mode / torch.sum(mode, dim=1, keepdim=True)
 
         return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1)
 

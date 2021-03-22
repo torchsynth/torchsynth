@@ -12,12 +12,11 @@ from torchsynth.module import (
     AudioMixer,
     ADSR,
     VCA,
+    LFO,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
-    SineLFO,
     SineVCO,
-    SquareSawLFO,
     SquareSawVCO,
     SynthModule,
 )
@@ -184,10 +183,12 @@ class Voice(AbstractSynth):
                 ("keyboard", MonophonicKeyboard(synthglobals)),
                 ("adsr_1", ADSR(synthglobals)),
                 ("adsr_2", ADSR(synthglobals)),
-                ("lfo_1", SineLFO(synthglobals)),
-                ("lfo_2", SquareSawLFO(synthglobals)),
-                ("lfo_1_adsr", ADSR(synthglobals)),
-                ("lfo_2_adsr", ADSR(synthglobals)),
+                ("lfo_1", LFO(synthglobals)),
+                ("lfo_2", LFO(synthglobals)),
+                ("lfo_1_amp_adsr", ADSR(synthglobals)),
+                ("lfo_2_amp_adsr", ADSR(synthglobals)),
+                ("lfo_1_rate_adsr", ADSR(synthglobals)),
+                ("lfo_2_rate_adsr", ADSR(synthglobals)),
                 ("mod_matrix", ModulationMixer(synthglobals, n_input=4, n_output=5)),
                 ("vco_1", SineVCO(synthglobals)),
                 ("vco_2", SquareSawVCO(synthglobals)),
@@ -202,17 +203,22 @@ class Voice(AbstractSynth):
         # the same note_on_duration for both ADSRs.
         midi_f0, note_on_duration = self.keyboard()
 
+        # ADSRs for modulating LFOs
+        lfo_1_rate = self.lfo_1_rate_adsr(note_on_duration)
+        lfo_2_rate = self.lfo_2_rate_adsr(note_on_duration)
+        lfo_1_amp = self.lfo_1_amp_adsr(note_on_duration)
+        lfo_2_amp = self.lfo_2_amp_adsr(note_on_duration)
+
         # Compute LFOs with envelopes
-        lfo_1 = self.vca(self.lfo_1(), self.lfo_1_adsr(note_on_duration))
-        lfo_2 = self.vca(self.lfo_2(), self.lfo_2_adsr(note_on_duration))
+        lfo_1 = self.vca(self.lfo_1(lfo_1_rate), lfo_1_amp)
+        lfo_2 = self.vca(self.lfo_2(lfo_2_rate), lfo_2_amp)
+
+        # ADSRs for Oscillators and noise
+        adsr_1 = self.adsr_1(note_on_duration)
+        adsr_2 = self.adsr_2(note_on_duration)
 
         # Mix all modulation signals
-        modulation = self.mod_matrix(
-            self.adsr_1(note_on_duration),
-            self.adsr_2(note_on_duration),
-            lfo_1,
-            lfo_2,
-        )
+        modulation = self.mod_matrix(adsr_1, adsr_2, lfo_1, lfo_2)
 
         # Create signal and with modulations and mix together
         vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[1])
