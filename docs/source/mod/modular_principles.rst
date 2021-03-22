@@ -21,5 +21,3 @@ Aliquam ut porttitor leo a diam sollicitudin tempor id:
 * Vel eros donec
 * Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
 * Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
-
-----------
