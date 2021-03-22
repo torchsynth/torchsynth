@@ -24,8 +24,9 @@ sys.path.insert(0, os.path.abspath("torchsynth"))
 # sys.path.insert(0, os.path.abspath("torchsynth"))
 
 import torchsynth  # noqa: E402
-
 import pt_lightning_sphinx_theme
+import sphinx_rtd_theme
+import mock
 
 # -- Project information -----------------------------------------------------
 
@@ -39,7 +40,6 @@ release = "0.0.1"
 
 # -- General configuration ---------------------------------------------------
 
-import mock
 
 # MOCK_MODULES = ['torch','torch.nn','']
 autodoc_mock_imports = ["torch"]
@@ -59,7 +59,6 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-import sphinx_rtd_theme
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -67,7 +66,15 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
+    "recommonmark",
 ]
+
+# This configures Sphinx to parse all files with the extensions .md and .txt as Markdown
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -88,6 +95,7 @@ intersphinx_mapping = {
 html_theme = "pt_lightning_sphinx_theme"
 html_theme_path = [pt_lightning_sphinx_theme.get_html_theme_path()]
 
+
 html_logo = '_static/images/torchsynth-logotype.svg'
 
 # html_favicon = '_static/images/favicon.svg'
@@ -97,6 +105,7 @@ html_logo = '_static/images/torchsynth-logotype.svg'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+# Include all CSS style in the default theme settings
 html_css_files = [
-    'custom.css',
+    'css/custom.css',
 ]

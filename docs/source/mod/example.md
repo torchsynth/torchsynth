@@ -1,6 +1,4 @@
-############################
-Torchsynth in two easy steps
-############################
+## Example of how to build new synths
 
 **Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
 
