@@ -506,7 +506,7 @@ class Noise(SynthModule):
         return noise.as_subclass(Signal)
 
 
-class AbstractLFO(SynthModule):
+class LFO(VCO):
     """
     An abstract base class for low frequency oscillators
     """
@@ -518,6 +518,14 @@ class AbstractLFO(SynthModule):
             curve=0.5,
             name="frequency",
             description="Frequency in Hz of oscillation",
+        ),
+        ModuleParameterRange(
+            -10.0,
+            10.0,
+            curve=1.0,
+            symmetric=True,
+            name="mod_depth",
+            description="LFO rate modulation in Hz",
         ),
         ModuleParameterRange(
             -torch.pi,
@@ -537,58 +545,42 @@ class AbstractLFO(SynthModule):
         # Create and save a buffer of sample points
         self.register_buffer("range", torch.arange(self.buffer_size))
 
-    def create_arg(self) -> Tuple[T, T]:
-        """
-        Creates the arg signal (phase over time)
-        """
-        frequency = self.p("frequency").unsqueeze(1)
-        rads = 2 * torch.pi * frequency / self.sample_rate
-        arg = self.range.expand(self.batch_size, -1) * rads
-        arg += self.p("initial_phase").unsqueeze(1)
-        return arg, frequency
-
-    def _forward(self) -> Signal:
+    def _forward(self, mod_signal: Signal) -> Signal:
         """
         Must be implemented in deriving classes
         """
-        raise NotImplementedError
+        assert mod_signal.shape == (self.batch_size, self.buffer_size)
 
+        # Create frequency signal
+        frequency = self.make_control(mod_signal)
+        argument = self.make_argument(frequency) + self.p("initial_phase").unsqueeze(1)
 
-class SineLFO(AbstractLFO):
-    """
-    A sine wave low-frequency oscillator
-    """
+        # Get LFO shapes
+        sine, square, saw, rev_saw, triangle = self.make_lfo_shapes(argument)
+        return triangle
 
-    def _forward(self) -> Signal:
+    def make_control(self, mod_signal: Signal) -> Signal:
+        modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
+        return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, T(0.0))
+
+    def make_lfo_shapes(self, argument: Signal) -> Tuple[Signal]:
         """
-        Creates a batch size number of LFO modulation signals with values [0,1]
+        Creates a set of LFO shapes at the correct frequency:
+        Sinusoid, Square, Saw, Reverse Saw, and Triangle
         """
-        arg, _ = self.create_arg()
-        return ((1.0 + torch.cos(arg)) / 2.0).as_subclass(Signal)
+        cos = torch.cos(argument)
+        square = torch.sign(cos)
 
+        cos = (cos + 1.0) / 2.0
+        square = (square + 1.0) / 2.0
 
-class SquareSawLFO(AbstractLFO):
-    """
-    A variable shape square-saw low frequency oscillator
-    """
+        saw = torch.remainder(argument, 2 * torch.pi) / (2 * torch.pi)
+        rev_saw = 1.0 - saw
 
-    parameter_ranges: List[ModuleParameterRange] = AbstractLFO.parameter_ranges + [
-        ModuleParameterRange(
-            0.0, 1.0, name="shape", description="Waveshape - square to saw [0,1]"
-        )
-    ]
+        triangle = 2 * saw
+        triangle = torch.where(triangle > 1.0, 2.0 - triangle, triangle)
 
-    def _forward(self) -> Signal:
-        """
-        Creates a batch size number of LFO modulation signals with values [0,1]
-        """
-        arg, frequency = self.create_arg()
-        partials = 12000 / (frequency * torch.log10(frequency))
-        square = torch.tanh(torch.pi * partials * torch.sin(arg) / 2)
-        shape = self.p("shape").unsqueeze(1)
-        return (
-            (1 - shape / 2) * square * (1 + shape * torch.cos(arg)).as_subclass(Signal)
-        )
+        return cos, square, saw, rev_saw, triangle
 
 
 class ModulationMixer(SynthModule):

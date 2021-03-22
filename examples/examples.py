@@ -413,16 +413,21 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # Besides envelopes, LFOs can be used to modulate parameters
 
 # +
-from torchsynth.module import SineLFO, SquareSawLFO, ModulationMixer
+from torchsynth.module import LFO, ModulationMixer
 
-lfo1 = SineLFO(synthglobals).to(device)
-out1 = lfo1()
+note_on_duration = T([4.0, 4.0], device=device)
+adsr = ADSR(synthglobals).to(device)
+env = adsr(note_on_duration)
+env = torch.zeros_like(env)
 
-lfo2 = SquareSawLFO(synthglobals).to(device)
-out2 = lfo2()
+lfo1 = LFO(synthglobals).to(device)
+out1 = lfo1(env)
 
-lfo3 = SineLFO(synthglobals).to(device)
-out3 = lfo3()
+lfo2 = LFO(synthglobals).to(device)
+out2 = lfo2(env)
+
+lfo3 = LFO(synthglobals).to(device)
+out3 = lfo3(env)
 
 time_plot(out1[0].detach().cpu().numpy())
 time_plot(out2[0].detach().cpu().numpy())
