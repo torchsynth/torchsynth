@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.tensor as T
+import torch.nn.functional as F
 import torchcsprng as csprng
 
 import torchsynth.util as util
@@ -671,3 +672,35 @@ class SoftModeSelector(SynthModule):
         params = torch.stack([p.data for p in self.torchparameters.values()])
         params = torch.pow(params, exponent=self.exponent)
         return params / torch.sum(params, dim=0)
+
+
+class HardModeSelector(SynthModule):
+    """
+    A hard mode selector.
+    NOTE: This is non-differentiable.
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_modes: int,
+        **kwargs: Dict[str, T],
+    ):
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = [
+            ModuleParameterRange(
+                0.0,
+                1.0,
+                name=f"mode{i}weight",
+                description=f"mode{i} weight, before argmax",
+            )
+            for i in range(n_modes)
+        ]
+        super().__init__(synthglobals, **kwargs)
+
+    def forward(self) -> Tuple[T, T]:
+        # Is this tensor creation slow?
+        # But usually parameter stuff is not the bottleneck
+        origparams = torch.stack([p.data for p in self.torchparameters.values()])
+        idx = torch.argmax(origparams, dim=0)
+        return F.one_hot(idx, num_classes=origparams.shape[0]).T
