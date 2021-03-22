@@ -230,7 +230,7 @@ class TestAbstractSynth:
         synth.set_frozen_parameters(
             {
                 ("vco_1", "tuning"): 0.0,
-                ("pitch_adsr", "attack"): 1.5,
+                ("adsr_1", "attack"): 1.5,
             }
         )
 
@@ -238,14 +238,14 @@ class TestAbstractSynth:
         assert synth.vco_1.p("tuning").shape == (synth.batch_size,)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
 
-        assert synth.pitch_adsr.p("attack").shape == (synth.batch_size,)
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert synth.adsr_1.p("attack").shape == (synth.batch_size,)
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
 
         # Randomizing now shouldn't effect these parameters
         synth.randomize()
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
 
         synth.randomize(1)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.pitch_adsr.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
