@@ -684,18 +684,18 @@ class AudioMixer(SynthModule):
         if curves is not None:
             assert len(curves) == n_input
         else:
-            curves = [1.0] * n_input
+            curves = [0.5] * n_input
 
         # Need to create the parameter ranges before calling super().__init
         self.parameter_ranges = []
         for i in range(n_input):
             self.parameter_ranges.append(
                 ModuleParameterRange(
-                    -80.0,
                     0.0,
+                    1.0,
                     curve=curves[i],
                     name=f"level{i}",
-                    description=f"Mix level for input {i} id dB",
+                    description=f"Mix level for input {i}",
                 )
             )
 
@@ -704,9 +704,8 @@ class AudioMixer(SynthModule):
 
     def _forward(self, *signals: Signal) -> Signal:
 
-        # Turn params into matrix and convert from dB
+        # Turn params into matrix
         params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
-        params = util.db_to_amplitude(params)
 
         # Make sure we received the correct number of input signals
         signals = torch.stack(signals, dim=1)
