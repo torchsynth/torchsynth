@@ -555,7 +555,7 @@ class LFO(VCO):
         super().__init__(synthglobals, **kwargs)
         self.exponent = exponent
 
-    def forward(self, mod_signal: Signal) -> T:
+    def _forward(self, mod_signal: Signal) -> Signal:
         """
         Must be implemented in deriving classes
         """
@@ -573,18 +573,18 @@ class LFO(VCO):
         mode = torch.pow(mode, self.exponent)
         mode = mode / torch.sum(mode, dim=1, keepdim=True)
 
-        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1)
+        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
 
     def make_control(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, T(0.0))
 
-    def make_lfo_shapes(self, argument: Signal) -> Tuple[Signal]:
+    def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
         """
         Creates a set of LFO shapes at the correct frequency:
-        Sinusoid, Square, Saw, Reverse Saw, and Triangle
+        Sinusoid, Triangle, Saw, Reverse Saw, and Square
         """
-        cos = torch.cos(argument)
+        cos = torch.cos(argument + torch.pi)
         square = torch.sign(cos)
 
         cos = (cos + 1.0) / 2.0
@@ -596,7 +596,7 @@ class LFO(VCO):
         triangle = 2 * saw
         triangle = torch.where(triangle > 1.0, 2.0 - triangle, triangle)
 
-        return cos, square, saw, rev_saw, triangle
+        return cos, triangle, saw, rev_saw, square
 
 
 class ModulationMixer(SynthModule):
