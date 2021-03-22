@@ -506,9 +506,9 @@ class Noise(SynthModule):
         return noise.as_subclass(Signal)
 
 
-class SineLFO(SynthModule):
+class AbstractLFO(SynthModule):
     """
-    A sine wave low-frequency oscillator
+    An abstract base class for low frequency oscillators
     """
 
     parameter_ranges: List[ModuleParameterRange] = [
@@ -533,19 +533,62 @@ class SineLFO(SynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer(
-            "phase", self.get_parameter("initial_phase").detach().clone()
-        )
+
         # Create and save a buffer of sample points
         self.register_buffer("range", torch.arange(self.buffer_size))
+
+    def create_arg(self) -> Tuple[T, T]:
+        """
+        Creates the arg signal (phase over time)
+        """
+        frequency = self.p("frequency").unsqueeze(1)
+        rads = 2 * torch.pi * frequency / self.sample_rate
+        arg = self.range.expand(self.batch_size, -1) * rads
+        arg += self.p("initial_phase").unsqueeze(1)
+        return arg, frequency
+
+    def _forward(self) -> Signal:
+        """
+        Must be implemented in deriving classes
+        """
+        raise NotImplementedError
+
+
+class SineLFO(AbstractLFO):
+    """
+    A sine wave low-frequency oscillator
+    """
 
     def _forward(self) -> Signal:
         """
         Creates a batch size number of LFO modulation signals with values [0,1]
         """
-        rads = 2 * torch.pi * self.p("frequency").unsqueeze(1) / self.sample_rate
-        freqs = self.range.expand(self.batch_size, -1) * rads + self.phase.unsqueeze(1)
-        return ((1.0 + torch.cos(freqs)) / 2.0).as_subclass(Signal)
+        arg, _ = self.create_arg()
+        return ((1.0 + torch.cos(arg)) / 2.0).as_subclass(Signal)
+
+
+class SquareSawLFO(AbstractLFO):
+    """
+    A variable shape square-saw low frequency oscillator
+    """
+
+    parameter_ranges: List[ModuleParameterRange] = AbstractLFO.parameter_ranges + [
+        ModuleParameterRange(
+            0.0, 1.0, name="shape", description="Waveshape - square to saw [0,1]"
+        )
+    ]
+
+    def _forward(self) -> Signal:
+        """
+        Creates a batch size number of LFO modulation signals with values [0,1]
+        """
+        arg, frequency = self.create_arg()
+        partials = 12000 / (frequency * torch.log10(frequency))
+        square = torch.tanh(torch.pi * partials * torch.sin(arg) / 2)
+        shape = self.p("shape").unsqueeze(1)
+        return (
+            (1 - shape / 2) * square * (1 + shape * torch.cos(arg)).as_subclass(Signal)
+        )
 
 
 class ModulationMixer(SynthModule):

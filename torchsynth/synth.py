@@ -17,6 +17,7 @@ from torchsynth.module import (
     Noise,
     SineLFO,
     SineVCO,
+    SquareSawLFO,
     SquareSawVCO,
     SynthModule,
 )
@@ -184,7 +185,7 @@ class Voice(AbstractSynth):
                 ("adsr_1", ADSR(synthglobals)),
                 ("adsr_2", ADSR(synthglobals)),
                 ("lfo_1", SineLFO(synthglobals)),
-                ("lfo_2", SineLFO(synthglobals)),
+                ("lfo_2", SquareSawLFO(synthglobals)),
                 ("lfo_1_adsr", ADSR(synthglobals)),
                 ("lfo_2_adsr", ADSR(synthglobals)),
                 ("mod_matrix", ModulationMixer(synthglobals, n_input=4, n_output=5)),
