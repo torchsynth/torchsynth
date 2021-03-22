@@ -513,7 +513,7 @@ class LFO(VCO):
 
     default_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.1,
+            0.0,
             20.0,
             curve=0.25,
             name="frequency",

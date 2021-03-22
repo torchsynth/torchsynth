@@ -415,16 +415,16 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-note_on_duration = T([3.0, 3.0], device=device)
-adsr = ADSR(synthglobals).to(device)
-env = adsr(note_on_duration)
-# env = torch.zeros_like(env)
+# Envelope to be applied to LFO rate
+time_plot(envelope[0].cpu().detach().numpy())
 
 lfo = LFO(synthglobals).to(device)
-out = lfo(env)
+lfo.set_parameter("mod_depth", T([10.0, 0.0], device=device))
+lfo.set_parameter("frequency", T([1.0, 1.0], device=device))
+out = lfo(envelope)
 
 lfo2 = LFO(synthglobals).to(device)
-out2 = lfo2(env)
+out2 = lfo2(envelope)
 
 print(out.shape)
 
