@@ -684,7 +684,7 @@ class AudioMixer(SynthModule):
         if curves is not None:
             assert len(curves) == n_input
         else:
-            curves = [0.5] * n_input
+            curves = [1.0] * n_input
 
         # Need to create the parameter ranges before calling super().__init
         self.parameter_ranges = []
