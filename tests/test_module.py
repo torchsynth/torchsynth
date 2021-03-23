@@ -68,7 +68,7 @@ class TestSynthModule:
         assert module.torchparameters["param_1"] == 0.25
         assert module.p("param_1") == 5000.0
 
-    def test_modeselector(self):
+    def test_softmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         mode_selector = synthmodule.SoftModeSelector(synthglobals, n_modes=3)
         mode_selector.set_parameter("mode0weight", T([0.8, 1.0]))
@@ -79,6 +79,16 @@ class TestSynthModule:
                 mode_selector() - T([[1 / 3, 1.0000], [1 / 3, 0.0000], [1 / 3, 0.0000]])
             )
             < 1e-6
+        )
+
+    def test_hardmodeselector(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        mode_selector = synthmodule.HardModeSelector(synthglobals, n_modes=3)
+        mode_selector.set_parameter("mode0weight", T([0.8, 0.0]))
+        mode_selector.set_parameter("mode1weight", T([0.7, 0.5]))
+        mode_selector.set_parameter("mode2weight", T([0.7, 0.0]))
+        assert (
+            torch.mean(mode_selector() - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]])) < 1e-6
         )
 
     def test_audiomixer(self):
