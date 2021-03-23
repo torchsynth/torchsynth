@@ -603,16 +603,12 @@ if isnotebook():
 #
 # ParameterRanges are considered hyperparameters in torchsynth and can be viewed and modified through a Synth
 
+# View all hyperparameters
 voice1.hyperparameters
 
-voice1.set_hyperparameter(("keyboard", "midi_f0", "curve"), 0.0)
-
-from torchsynth.module import SynthModule
-
-for n, m in voice1.named_modules():
-    if isinstance(m, SynthModule):
-        print(n)
-        print(m.parameters())
+# Set a specific hyperparameter
+voice1.set_hyperparameter(("keyboard", "midi_f0", "curve"), 0.1)
+print(voice1.hyperparameters[("keyboard", "midi_f0", "curve")])
 
 # ### Filters
 
