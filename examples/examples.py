@@ -599,6 +599,19 @@ if isnotebook():
     axes[1].set_title("Logarithmic Scaling")
 # -
 
+# ### Hyperparameters
+#
+# ParameterRanges are considered hyperparameters in torchsynth and can be viewed and modified through a Synth
+
+voice1.hyperparameters
+
+from torchsynth.module import SynthModule
+
+for n, m in voice1.named_modules():
+    if isinstance(m, SynthModule):
+        print(n)
+        print(m.parameters())
+
 # ### Filters
 
 # +

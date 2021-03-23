@@ -81,6 +81,21 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
+    @property
+    def synth_parameters(self, include_frozen: Optional[bool] = False):
+        parameters = []
+        for module_name, module in self.named_modules():
+            if isinstance(module, SynthModule):
+                for parameter in module.parameters():
+                    if include_frozen or not ModuleParameter.is_parameter_frozen(
+                        parameter
+                    ):
+                        parameters.append(
+                            ((module_name, parameter.parameter_name), parameter)
+                        )
+
+        return dict(parameters)
+
     def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
         Set parameters for synth by passing in a dictionary of modules and parameters.
@@ -150,28 +165,21 @@ class AbstractSynth(LightningModule):
         return T(0.0, device=self.device)
 
     @property
-    def hyperparameters(self) -> Dict[Tuple[str, str], Any]:
-        assert len(list(self.parameters())) == len(list(self.named_parameters()))
+    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
         hparams = []
-        # I don't understand why this returns stuff in non-deterministic order :\
-        for name, parameter in self.named_parameters():
-            if not ModuleParameter.is_parameter_frozen(parameter):
-                hparams.append(((name, "curve"), parameter.parameter_range.curve))
-                hparams.append(
-                    ((name, "symmetric"), parameter.parameter_range.symmetric)
-                )
+        for param_key, parameter in self.synth_parameters.items():
+            hparams.append(((*param_key, "curve"), parameter.parameter_range.curve))
+            hparams.append(
+                ((*param_key, "symmetric"), parameter.parameter_range.symmetric)
+            )
+
         return dict(hparams)
 
-    def set_hyperparameter(self, name: str, subname: str, value: Any):
-        # This is dumb I don't know the cleaner way to do it
-        was_set = False
-        for name2, parameter in self.named_parameters():
-            if name2 != name:
-                continue
-            assert not ModuleParameter.is_parameter_frozen(parameter)
-            setattr(parameter.parameter_range, subname, value)
-            was_set = True
-        assert was_set
+    def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
+        module = getattr(self, hyperparameter[0])
+        parameter = getattr(module, hyperparameter[1])
+        assert not ModuleParameter.is_parameter_frozen(parameter)
+        setattr(parameter, hyperparameter[2], value)
 
     def randomize(self, seed: Optional[int] = None):
         """
