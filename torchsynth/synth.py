@@ -85,7 +85,7 @@ class AbstractSynth(LightningModule):
         self, include_frozen: Optional[bool] = False
     ) -> Dict[Tuple[str, str], ModuleParameter]:
         """
-        Property that returns a dictionary of ModuleParameters for this synth keyed
+        Returns a dictionary of ModuleParameters for this synth keyed
         on a tuple of the SynthModule name and the parameter name
         """
         parameters = []
