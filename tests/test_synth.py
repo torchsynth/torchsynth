@@ -249,3 +249,20 @@ class TestAbstractSynth:
         synth.randomize(1)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
         assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
+
+    def test_set_hyperparameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+        hparams = synth.hyperparameters
+        for (name, subname), value in hparams.items():
+            if subname == "curve":
+                value = 1.0 - value
+            if subname == "symmetric":
+                value = not value
+            synth.set_hyperparameter(name, subname, value)
+        hparams2 = synth.hyperparameters
+        for (name, subname), value in hparams2.items():
+            if subname == "curve":
+                assert value == 1.0 - hparams[(name, subname)]
+            if subname == "symmetric":
+                assert value == (not hparams[(name, subname)])

@@ -149,6 +149,30 @@ class AbstractSynth(LightningModule):
         """
         return T(0.0, device=self.device)
 
+    @property
+    def hyperparameters(self) -> Dict[Tuple[str, str], Any]:
+        assert len(list(self.parameters())) == len(list(self.named_parameters()))
+        hparams = []
+        # I don't understand why this returns stuff in non-deterministic order :\
+        for name, parameter in self.named_parameters():
+            if not ModuleParameter.is_parameter_frozen(parameter):
+                hparams.append(((name, "curve"), parameter.parameter_range.curve))
+                hparams.append(
+                    ((name, "symmetric"), parameter.parameter_range.symmetric)
+                )
+        return dict(hparams)
+
+    def set_hyperparameter(self, name: str, subname: str, value: Any):
+        # This is dumb I don't know the cleaner way to do it
+        was_set = False
+        for name2, parameter in self.named_parameters():
+            if name2 != name:
+                continue
+            assert not ModuleParameter.is_parameter_frozen(parameter)
+            setattr(parameter.parameter_range, subname, value)
+            was_set = True
+        assert was_set
+
     def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
