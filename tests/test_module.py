@@ -90,3 +90,46 @@ class TestSynthModule:
         assert (
             torch.mean(mode_selector() - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]])) < 1e-6
         )
+
+    def test_audiomixer(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+
+        # Make sure parameters get setup correctly
+        mixer = synthmodule.AudioMixer(synthglobals, n_input=3)
+        params = [p for p in mixer.parameters()]
+        assert len(params) == 3
+        for param in params:
+            assert param.parameter_range.curve == 1.0
+
+        mixer = synthmodule.AudioMixer(synthglobals, n_input=2, curves=[0.75, 1.5])
+        params = [p for p in mixer.parameters()]
+        assert len(params) == 2
+        assert params[0].parameter_range.curve == 0.75
+        assert params[1].parameter_range.curve == 1.5
+
+        # if curves are passed in then the number of curves must equal n_input
+        with pytest.raises(AssertionError):
+            mixer = synthmodule.AudioMixer(synthglobals, n_input=3, curves=[0.75, 1.5])
+
+    def test_modulationmixer(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+
+        mixer = synthmodule.ModulationMixer(synthglobals, n_input=2, n_output=2)
+        params = [p for p in mixer.parameters()]
+        assert len(params) == 4
+        for param in params:
+            assert param.parameter_range.curve == 0.5
+
+        mixer = synthmodule.ModulationMixer(
+            synthglobals, n_input=1, n_output=2, curves=[1.0]
+        )
+        params = [p for p in mixer.parameters()]
+        assert len(params) == 2
+        for param in params:
+            assert param.parameter_range.curve == 1.0
+
+        # if curves are passed in then the number of curves must equal n_input
+        with pytest.raises(AssertionError):
+            mixer = synthmodule.AudioMixer(
+                synthglobals, n_input=5, n_output=5, curves=[0.75, 1.5]
+            )

@@ -332,15 +332,15 @@ class VCO(SynthModule):
 
     parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            -127.0,
-            127.0,
+            -24.0,
+            24.0,
             name="tuning",
             description="tuning adjustment for VCO in midi",
         ),
         ModuleParameterRange(
-            -127.0,
-            127.0,
-            curve=0.1,
+            -96.0,
+            96.0,
+            curve=0.2,
             symmetric=True,
             name="mod_depth",
             description="depth of the pitch modulation in semitones",
@@ -352,23 +352,6 @@ class VCO(SynthModule):
             description="Initial phase for this oscillator",
         ),
     ]
-
-    def __init__(
-        self,
-        synthglobals: SynthGlobals,
-        **kwargs: Dict[str, T],
-    ):
-        super().__init__(synthglobals, **kwargs)
-
-        # TODO: Make sure this is on GPU
-        # https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html#init-tensors-using-type-as-and-register-buffer
-        # Do we want to detach clone?
-        # Do we want this persistent?
-        # https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.register_buffer
-        self.register_buffer(
-            "phase", self.get_parameter("initial_phase").detach().clone()
-        )
-        # self.phase = self.get_parameter("initial_phase").detach().clone()
 
     def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
@@ -394,7 +377,6 @@ class VCO(SynthModule):
 
         """
         assert midi_f0.shape == (self.batch_size,)
-        assert (mod_signal >= -1).all() and (mod_signal <= 1).all()
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
         assert (control_as_frequency >= 0).all() and (
@@ -402,8 +384,7 @@ class VCO(SynthModule):
         ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
-        cosine_argument += self.phase.unsqueeze(1)
-        self.phase.data = cosine_argument[:, -1]
+        cosine_argument += self.p("initial_phase").unsqueeze(1)
         output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
 
@@ -506,57 +487,46 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def _forward(self, control_in: Signal, audio_in: Signal) -> Signal:
-        assert (control_in >= 0).all() and (control_in <= 1).all()
-
-        # Should VCA be responsible for this?
-        if (audio_in <= -1).any() or (audio_in >= 1).any():
-            util.normalize(audio_in)
-
-        audio_in = util.fix_length2D(audio_in, control_in.num_samples)
-        return control_in * audio_in
+    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
+        return audio_in * control_in
 
 
 class Noise(SynthModule):
     """
-    Adds noise to a signal
+    Generates white noise that is the same length as the buffer
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
-        ModuleParameterRange(
-            0.0,
-            1.0,
-            curve=0.05,
-            name="ratio",
-            description="mix ratio between the incoming signal and the produced noise, "
-            + "1 is all noise",
-        )
-    ]
-
-    def _forward(self, audio_in: Signal) -> Signal:
-        noise = self.noise_of_length(audio_in)
-        return util.crossfade2D(audio_in, noise, self.p("ratio"))
-
-    def noise_of_length(self, audio_in: Signal) -> Signal:
+    def _forward(self, device: Optional[torch.device] = None) -> Signal:
         if self.seed is not None:
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            return audio_in.data.uniform_(-1, 1, generator=mt19937_gen)
+            noise = torch.empty((self.batch_size, self.buffer_size), device=device)
+            noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            return torch.rand_like(audio_in) * 2 - 1
+            noise = torch.rand((self.batch_size, self.buffer_size), device=device)
+            noise = noise * 2 - 1
+        return noise.as_subclass(Signal)
 
 
-class SineLFO(SynthModule):
+class LFO(VCO):
     """
-    A sine wave low-frequency oscillator
+    An abstract base class for low frequency oscillators
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
-            0.1,
+            0.0,
             20.0,
-            curve=0.5,
+            curve=0.25,
             name="frequency",
             description="Frequency in Hz of oscillation",
+        ),
+        ModuleParameterRange(
+            -10.0,
+            20.0,
+            curve=0.5,
+            symmetric=True,
+            name="mod_depth",
+            description="LFO rate modulation in Hz",
         ),
         ModuleParameterRange(
             -torch.pi,
@@ -569,22 +539,182 @@ class SineLFO(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
+        self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
+        self.parameter_ranges = self.default_ranges.copy()
+        for lfo in self.lfo_types:
+            self.parameter_ranges.append(
+                ModuleParameterRange(
+                    0.0,
+                    1.0,
+                    name=f"{lfo}",
+                    description=f"Selection parameter for {lfo} LFO",
+                )
+            )
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer(
-            "phase", self.get_parameter("initial_phase").detach().clone()
-        )
-        # Create and save a buffer of sample points
-        self.register_buffer("range", torch.arange(self.buffer_size))
+        self.exponent = exponent
 
-    def _forward(self) -> Signal:
+    def _forward(self, mod_signal: Signal) -> Signal:
         """
-        Creates a batch size number of LFO modulation signals with values [0,1]
+        Must be implemented in deriving classes
         """
-        rads = 2 * torch.pi * self.p("frequency").unsqueeze(1) / self.sample_rate
-        freqs = self.range.expand(self.batch_size, -1) * rads + self.phase.unsqueeze(1)
-        return ((1.0 + torch.cos(freqs)) / 2.0).as_subclass(Signal)
+        assert mod_signal.shape == (self.batch_size, self.buffer_size)
+
+        # Create frequency signal
+        frequency = self.make_control(mod_signal)
+        argument = self.make_argument(frequency) + self.p("initial_phase").unsqueeze(1)
+
+        # Get LFO shapes
+        shapes = torch.stack(self.make_lfo_shapes(argument), dim=1).as_subclass(Signal)
+
+        # Apply mode selection to the LFO shapes
+        mode = torch.stack([self.p(lfo) for lfo in self.lfo_types], dim=1)
+        mode = torch.pow(mode, self.exponent)
+        mode = mode / torch.sum(mode, dim=1, keepdim=True)
+
+        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
+
+    def make_control(self, mod_signal: Signal) -> Signal:
+        modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
+        return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, T(0.0))
+
+    def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
+        """
+        Creates a set of LFO shapes at the correct frequency:
+        Sinusoid, Triangle, Saw, Reverse Saw, and Square
+        """
+        cos = torch.cos(argument + torch.pi)
+        square = torch.sign(cos)
+
+        cos = (cos + 1.0) / 2.0
+        square = (square + 1.0) / 2.0
+
+        saw = torch.remainder(argument, 2 * torch.pi) / (2 * torch.pi)
+        rev_saw = 1.0 - saw
+
+        triangle = 2 * saw
+        triangle = torch.where(triangle > 1.0, 2.0 - triangle, triangle)
+
+        return cos, triangle, saw, rev_saw, square
+
+
+class ModulationMixer(SynthModule):
+    """
+    A modulation matrix that takes in N input modulation signals
+    and combines them together to create M output modulation signals.
+    Each output is a linear combination of all in the input signals
+    using the mixing levels defined by NxM mixing parameters.
+
+    Parameters
+    ----------
+    synthglobals (SynthGlobals) :   Synth config settings
+    n_input     (int)           :   Number of signals this module will mix
+    n_output    (int)           :   Number of output signals
+    curves  (optional, list)    :   A list of curve values to use for underlying
+                                    mix level parameters for each mod source.
+                                    Defaults to 0.5. Must be same number of input.
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_input: int,
+        n_output: int,
+        curves: Optional[List[float]] = None,
+        **kwargs: Dict[str, T],
+    ):
+        # Parameter curves can be used to modify the parameter mapping
+        # for each input modulation source to the outputs
+        if curves is not None:
+            assert len(curves) == n_input
+        else:
+            curves = [0.5] * n_input
+
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = []
+        for i in range(n_input):
+            for j in range(n_output):
+                self.parameter_ranges.append(
+                    ModuleParameterRange(
+                        0.0,
+                        1.0,
+                        curve=curves[i],
+                        name=f"level{i}_{j}",
+                        description=f"Mix level for input {i} to output {j}",
+                    )
+                )
+
+        super().__init__(synthglobals, **kwargs)
+        self.n_input = n_input
+        self.n_output = n_output
+
+    def forward(self, *signals: Signal) -> Tuple[Signal]:
+        """
+        Mix together a set of modulation signals.
+        """
+
+        # Get params into batch_size x n_output x n_input matrix
+        params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
+        params = params.view(self.batch_size, self.n_input, self.n_output)
+        params = torch.swapaxes(params, 1, 2)
+
+        # Make sure there is the same number of input signals as mix params
+        assert len(signals) == params.shape[2]
+        signals = torch.stack(signals, dim=1)
+
+        modulation = torch.chunk(torch.matmul(params, signals), self.n_output, dim=1)
+        return tuple(m.squeeze(1).as_subclass(Signal) for m in modulation)
+
+
+class AudioMixer(SynthModule):
+    """
+    Sums together a set of N signals together and applies normalization if required
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        n_input: int,
+        curves: Optional[List[float]] = None,
+        **kwargs: Dict[str, T],
+    ):
+        # Parameter curves can be used to modify the parameter mapping
+        # for each input modulation source to the outputs
+        if curves is not None:
+            assert len(curves) == n_input
+        else:
+            curves = [1.0] * n_input
+
+        # Need to create the parameter ranges before calling super().__init
+        self.parameter_ranges = []
+        for i in range(n_input):
+            self.parameter_ranges.append(
+                ModuleParameterRange(
+                    0.0,
+                    1.0,
+                    curve=curves[i],
+                    name=f"level{i}",
+                    description=f"Mix level for input {i}",
+                )
+            )
+
+        super().__init__(synthglobals, **kwargs)
+        self.n_input = n_input
+
+    def _forward(self, *signals: Signal) -> Signal:
+
+        # Turn params into matrix
+        params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
+
+        # Make sure we received the correct number of input signals
+        signals = torch.stack(signals, dim=1)
+        assert signals.shape[1] == params.shape[1]
+
+        # Mix signals and normalize output if required
+        output = torch.matmul(params.unsqueeze(1), signals).squeeze(1)
+        return util.normalize_if_clipping(output)
 
 
 class CrossfadeKnob(SynthModule):
