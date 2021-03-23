@@ -605,6 +605,8 @@ if isnotebook():
 
 voice1.hyperparameters
 
+voice1.set_hyperparameter(("keyboard", "midi_f0", "curve"), 0.0)
+
 from torchsynth.module import SynthModule
 
 for n, m in voice1.named_modules():

@@ -81,8 +81,7 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
-    @property
-    def synth_parameters(
+    def get_parameters(
         self, include_frozen: Optional[bool] = False
     ) -> Dict[Tuple[str, str], ModuleParameter]:
         """
@@ -183,7 +182,7 @@ class AbstractSynth(LightningModule):
         on a tuple of the module name, parameter name, and hyperparameter name
         """
         hparams = []
-        for param_key, parameter in self.synth_parameters.items():
+        for param_key, parameter in self.get_parameters().items():
             hparams.append(((*param_key, "curve"), parameter.parameter_range.curve))
             hparams.append(
                 ((*param_key, "symmetric"), parameter.parameter_range.symmetric)
@@ -197,9 +196,9 @@ class AbstractSynth(LightningModule):
         hyperparameter to set, and the value to set it to.
         """
         module = getattr(self, hyperparameter[0])
-        parameter = getattr(module, hyperparameter[1])
+        parameter = module.get_parameter(hyperparameter[1])
         assert not ModuleParameter.is_parameter_frozen(parameter)
-        setattr(parameter, hyperparameter[2], value)
+        setattr(parameter.parameter_range, hyperparameter[2], value)
 
     def randomize(self, seed: Optional[int] = None):
         """
