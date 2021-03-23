@@ -82,9 +82,21 @@ class AbstractSynth(LightningModule):
             self.add_module(name, module)
 
     @property
-    def synth_parameters(self, include_frozen: Optional[bool] = False):
+    def synth_parameters(
+        self, include_frozen: Optional[bool] = False
+    ) -> Dict[Tuple[str, str], ModuleParameter]:
+        """
+        Property that returns a dictionary of ModuleParameters for this synth keyed
+        on a tuple of the SynthModule name and the parameter name
+        """
         parameters = []
+
+        # Each parameter in this synth will have a unique combination of module name
+        # and parameter name -- create a dictionary keyed on that.
         for module_name, module in self.named_modules():
+            # Make sure this is a SynthModule, b/c we are using ParameterDict
+            # and ParameterDict is a module, we get those returned as well
+            # TODO: see https://github.com/turian/torchsynth/issues/213
             if isinstance(module, SynthModule):
                 for parameter in module.parameters():
                     if include_frozen or not ModuleParameter.is_parameter_frozen(
@@ -166,6 +178,10 @@ class AbstractSynth(LightningModule):
 
     @property
     def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+        """
+        Returns a dictionary of curve and symmetry hyperparameter values keyed
+        on a tuple of the module name, parameter name, and hyperparameter name
+        """
         hparams = []
         for param_key, parameter in self.synth_parameters.items():
             hparams.append(((*param_key, "curve"), parameter.parameter_range.curve))
@@ -176,6 +192,10 @@ class AbstractSynth(LightningModule):
         return dict(hparams)
 
     def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
+        """
+        Set a hyperparameter. Pass in the module name, parameter name, and
+        hyperparameter to set, and the value to set it to.
+        """
         module = getattr(self, hyperparameter[0])
         parameter = getattr(module, hyperparameter[1])
         assert not ModuleParameter.is_parameter_frozen(parameter)
