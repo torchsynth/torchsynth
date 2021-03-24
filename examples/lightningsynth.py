@@ -89,6 +89,12 @@ test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size
 
 synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
 voice = Voice(synthglobals)
+for h in voice.hyperparameters():
+    print(h)
+voice.set_hyperparameter("keyboard.torchparameters.midi_f0", "curve", 0.5)
+voice.set_hyperparameter("keyboard.torchparameters.midi_f0", "symmetric", True)
+for h in voice.hyperparameters():
+    print(h)
 
 accelerator = None
 if gpus == 0:

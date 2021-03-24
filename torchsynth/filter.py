@@ -30,23 +30,21 @@ class FIRLowPass(SynthModule0Ddeprecated):
         filter_length: int = 512,
         sample_rate: int = DEFAULT_SAMPLE_RATE,
     ):
-       super().__init__(sample_rate=sample_rate)
-       self.add_parameters([
-             ModuleParameter(
+        super().__init__(sample_rate=sample_rate)
+        self.add_parameters(
+            [
+                ModuleParameter(
                     value=cutoff,
                     parameter_name="cutoff",
                     parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, 0.5),
-                
-),
-              ModuleParameter(
+                ),
+                ModuleParameter(
                     value=filter_length,
                     parameter_name="length",
                     parameter_range=ModuleParameterRange(4.0, 4096.0),
-                
-),
+                ),
             ]
-        
-)
+        )
 
     def _forward(self, audio_in: T) -> T:
         """
@@ -61,7 +59,8 @@ class FIRLowPass(SynthModule0Ddeprecated):
         impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
         impulse = impulse.view(1, 1, impulse.size()[0])
         audio_resized = audio_in.view(1, 1, audio_in.size()[0])
-        y = nn.functional.conv1d(audio_resized, impulse, padding=int(self.p("length") / 2)
+        y = nn.functional.conv1d(
+            audio_resized, impulse, padding=int(self.p("length") / 2)
         )
         return y[0][0]
 
@@ -104,12 +103,11 @@ class MovingAverage(SynthModule0Ddeprecated):
     def __init__(self, filter_length: int = 32, sample_rate: int = DEFAULT_SAMPLE_RATE):
         super().__init__(sample_rate=sample_rate)
         self.add_parameters(
-        [
+            [
                 ModuleParameter(
                     value=filter_length,
                     parameter_name="length",
                     parameter_range=ModuleParameterRange(1.0, 4096.0),
-                    
                 )
             ]
         )
@@ -221,7 +219,9 @@ class SVF(SynthModule0Ddeprecated):
         for i in range(len(audio_in)):
             # If there is a cutoff modulation envelope, update coefficients
             cutoff_val = cutoff + control_in[i] * mod_depth
-            coeff0, coeff1, rho = SVF.svf_coefficients(cutoff_val, res_coefficient, self.sample_rate)
+            coeff0, coeff1, rho = SVF.svf_coefficients(
+                cutoff_val, res_coefficient, self.sample_rate
+            )
 
             # Calculate each of the filter components
             hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
@@ -275,6 +275,7 @@ class TorchLowPassSVF(SVF):
     def __init__(self, kwargs):
         super().__init__("lpf", kwargs)
 
+
 class TorchHighPassSVF(SVF):
     """
     IIR High-pass using SVF architecture
@@ -300,7 +301,7 @@ class TorchBandPassSVF(SVF):
 
 
 class TorchBandStopSVF(SVF):
-  
+
     """
     IIR Band-stop using SVF architecture
 
@@ -308,6 +309,6 @@ class TorchBandStopSVF(SVF):
         kwargs: see SVF
 
     """
+
     def __init__(self, kwargs):
         super().__init__("bsf", kwargs)
-
