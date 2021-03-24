@@ -81,6 +81,32 @@ class AbstractSynth(LightningModule):
 
             self.add_module(name, module)
 
+    def get_parameters(
+        self, include_frozen: bool = False
+    ) -> Dict[Tuple[str, str], ModuleParameter]:
+        """
+        Returns a dictionary of ModuleParameters for this synth keyed
+        on a tuple of the SynthModule name and the parameter name
+        """
+        parameters = []
+
+        # Each parameter in this synth will have a unique combination of module name
+        # and parameter name -- create a dictionary keyed on that.
+        for module_name, module in self.named_modules():
+            # Make sure this is a SynthModule, b/c we are using ParameterDict
+            # and ParameterDict is a module, we get those returned as well
+            # TODO: see https://github.com/turian/torchsynth/issues/213
+            if isinstance(module, SynthModule):
+                for parameter in module.parameters():
+                    if include_frozen or not ModuleParameter.is_parameter_frozen(
+                        parameter
+                    ):
+                        parameters.append(
+                            ((module_name, parameter.parameter_name), parameter)
+                        )
+
+        return dict(parameters)
+
     def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
         Set parameters for synth by passing in a dictionary of modules and parameters.
@@ -150,28 +176,37 @@ class AbstractSynth(LightningModule):
         return T(0.0, device=self.device)
 
     @property
-    def hyperparameters(self) -> Dict[Tuple[str, str], Any]:
-        assert len(list(self.parameters())) == len(list(self.named_parameters()))
+    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+        """
+        Returns a dictionary of curve and symmetry hyperparameter values keyed
+        on a tuple of the module name, parameter name, and hyperparameter name
+        """
         hparams = []
-        # I don't understand why this returns stuff in non-deterministic order :\
-        for name, parameter in self.named_parameters():
-            if not ModuleParameter.is_parameter_frozen(parameter):
-                hparams.append(((name, "curve"), parameter.parameter_range.curve))
-                hparams.append(
-                    ((name, "symmetric"), parameter.parameter_range.symmetric)
+        for (module_name, parameter_name), parameter in self.get_parameters().items():
+            hparams.append(
+                (
+                    (module_name, parameter_name, "curve"),
+                    parameter.parameter_range.curve,
                 )
+            )
+            hparams.append(
+                (
+                    (module_name, parameter_name, "symmetric"),
+                    parameter.parameter_range.symmetric,
+                )
+            )
+
         return dict(hparams)
 
-    def set_hyperparameter(self, name: str, subname: str, value: Any):
-        # This is dumb I don't know the cleaner way to do it
-        was_set = False
-        for name2, parameter in self.named_parameters():
-            if name2 != name:
-                continue
-            assert not ModuleParameter.is_parameter_frozen(parameter)
-            setattr(parameter.parameter_range, subname, value)
-            was_set = True
-        assert was_set
+    def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
+        """
+        Set a hyperparameter. Pass in the module name, parameter name, and
+        hyperparameter to set, and the value to set it to.
+        """
+        module = getattr(self, hyperparameter[0])
+        parameter = module.get_parameter(hyperparameter[1])
+        assert not ModuleParameter.is_parameter_frozen(parameter)
+        setattr(parameter.parameter_range, hyperparameter[2], value)
 
     def randomize(self, seed: Optional[int] = None):
         """

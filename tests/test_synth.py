@@ -250,19 +250,39 @@ class TestAbstractSynth:
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
         assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
 
+    def test_get_parameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+        params = synth.get_parameters()
+        assert len(params) > 0
+        for param in params:
+            assert hasattr(synth, param[0])
+            module = getattr(synth, param[0])
+            parameter = module.get_parameter(param[1])
+            assert isinstance(parameter, ModuleParameter)
+
+        # Now make sure that frozen parameters don't get returned unless specified
+        synth.freeze_parameters([("keyboard", "midi_f0")])
+        assert ("keyboard", "midi_f0") not in synth.get_parameters()
+        assert ("keyboard", "midi_f0") in synth.get_parameters(include_frozen=True)
+
+        # Now unfreeze and make sure they are returned
+        synth.unfreeze_all_parameters()
+        assert ("keyboard", "midi_f0") in synth.get_parameters()
+
     def test_set_hyperparameters(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.Voice(synthglobals)
         hparams = synth.hyperparameters
-        for (name, subname), value in hparams.items():
+        for (module_name, param_name, subname), value in hparams.items():
             if subname == "curve":
                 value = 1.0 - value
             if subname == "symmetric":
                 value = not value
-            synth.set_hyperparameter(name, subname, value)
+            synth.set_hyperparameter((module_name, param_name, subname), value)
         hparams2 = synth.hyperparameters
-        for (name, subname), value in hparams2.items():
+        for (module_name, param_name, subname), value in hparams2.items():
             if subname == "curve":
-                assert value == 1.0 - hparams[(name, subname)]
+                assert value == 1.0 - hparams[(module_name, param_name, subname)]
             if subname == "symmetric":
-                assert value == (not hparams[(name, subname)])
+                assert value == (not hparams[(module_name, param_name, subname)])
