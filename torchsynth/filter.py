@@ -17,11 +17,10 @@ class FIRLowPass(SynthModule0Ddeprecated):
         cutoff (float) : cutoff frequency of low-pass in Hz, must be between 5 and
         half the sampling rate. Defaults to 1000Hz.
         filter_length (int) :   The length of the filter in samples.
-        A longer filter will
+         A longer filter will
         result in a steeper filter cutoff. Should be greater than 4.
         Defaults to 512 samples.
         sample_rate (int)   :   Sampling rate to run processing at.
-
     """
 
     def __init__(
@@ -53,7 +52,6 @@ class FIRLowPass(SynthModule0Ddeprecated):
 
         Args:
             audio (T)  :   audio samples to filter
-
         """
 
         impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
@@ -73,7 +71,6 @@ class FIRLowPass(SynthModule0Ddeprecated):
             cutoff (T) : Low-pass cutoff frequency in Hz. Must be between 0 and
             half the sampling rate.
             length (T) : Length of the filter impulse response to create.
-
         """
 
         # Normalized frequency
@@ -94,10 +91,9 @@ class MovingAverage(SynthModule0Ddeprecated):
 
     Args:
         filter_length (int) : Length of filter and number of samples
-        to take average over.
+         to take average over.
         Must be greater than 0. Defaults to 32.
         sample_rate (int) : Sampling rate to run processing at.
-
     """
 
     def __init__(self, filter_length: int = 32, sample_rate: int = DEFAULT_SAMPLE_RATE):
@@ -162,6 +158,7 @@ class SVF(SynthModule0Ddeprecated):
         mod_depth: float = 0.0,
         **kwargs
     ):
+        super().__init__(**kwargs)
 
         # Set the filter type
         self.mode = mode.lower()
@@ -245,7 +242,6 @@ class SVF(SynthModule0Ddeprecated):
 
     @staticmethod
     def svf_coefficients(cutoff, res_coefficient, sample_rate):
-
         """
         Calculates the filter coefficients for SVF.
 
@@ -253,7 +249,6 @@ class SVF(SynthModule0Ddeprecated):
             cutoff (T)  :   Filter cutoff frequency in Hz.
             resonance (T) : Filter resonance
             sample_rate (T) : Sample rate to process at
-
         """
 
         g = torch.tan(torch.pi * cutoff / sample_rate)
@@ -269,22 +264,24 @@ class TorchLowPassSVF(SVF):
 
     Args:
         kwargs: see SVF
-
     """
 
-    def __init__(self, kwargs):
-        super().__init__("lpf", kwargs)
+    def __init__(self, **kwargs):
+        super().__init__("lpf", **kwargs)
+
 
 
 class TorchHighPassSVF(SVF):
     """
     IIR High-pass using SVF architecture
 
+    Parameters
+    ----------
     kwargs: see SVF
     """
 
-    def __init__(self, kwargs):
-        super().__init__("hpf", kwargs)
+    def __init__(self, **kwargs):
+        super().__init__("hpf", **kwargs)
 
 
 class TorchBandPassSVF(SVF):
@@ -293,22 +290,19 @@ class TorchBandPassSVF(SVF):
 
     Args:
         kwargs: see SVF
-
     """
 
-    def __init__(self, kwargs):
-        super().__init__("bpf", kwargs)
+    def __init__(self, **kwargs):
+        super().__init__("bpf", **kwargs)
 
 
 class TorchBandStopSVF(SVF):
-
     """
     IIR Band-stop using SVF architecture
 
     Args:
         kwargs: see SVF
-
     """
 
-    def __init__(self, kwargs):
-        super().__init__("bsf", kwargs)
+    def __init__(self, **kwargs):
+        super().__init__("bsf", **kwargs)
