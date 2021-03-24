@@ -1,18 +1,16 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+import torchcsprng as csprng
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
 
-import torchcsprng as csprng
-
 from torchsynth.globals import SynthGlobals
-from torchsynth.parameter import ModuleParameter
 from torchsynth.module import (
-    AudioMixer,
     ADSR,
-    VCA,
     LFO,
+    VCA,
+    AudioMixer,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
@@ -20,6 +18,7 @@ from torchsynth.module import (
     SquareSawVCO,
     SynthModule,
 )
+from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
 
 # https://github.com/turian/torchsynth/issues/131
@@ -80,6 +79,32 @@ class AbstractSynth(LightningModule):
                 raise ValueError(f"{module} buffer size does not match")
 
             self.add_module(name, module)
+
+    def get_parameters(
+        self, include_frozen: bool = False
+    ) -> Dict[Tuple[str, str], ModuleParameter]:
+        """
+        Returns a dictionary of ModuleParameters for this synth keyed
+        on a tuple of the SynthModule name and the parameter name
+        """
+        parameters = []
+
+        # Each parameter in this synth will have a unique combination of module name
+        # and parameter name -- create a dictionary keyed on that.
+        for module_name, module in self.named_modules():
+            # Make sure this is a SynthModule, b/c we are using ParameterDict
+            # and ParameterDict is a module, we get those returned as well
+            # TODO: see https://github.com/turian/torchsynth/issues/213
+            if isinstance(module, SynthModule):
+                for parameter in module.parameters():
+                    if include_frozen or not ModuleParameter.is_parameter_frozen(
+                        parameter
+                    ):
+                        parameters.append(
+                            ((module_name, parameter.parameter_name), parameter)
+                        )
+
+        return dict(parameters)
 
     def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
@@ -148,6 +173,39 @@ class AbstractSynth(LightningModule):
         when calling test, which we use to forward Synths on multi-gpu platforms
         """
         return T(0.0, device=self.device)
+
+    @property
+    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+        """
+        Returns a dictionary of curve and symmetry hyperparameter values keyed
+        on a tuple of the module name, parameter name, and hyperparameter name
+        """
+        hparams = []
+        for (module_name, parameter_name), parameter in self.get_parameters().items():
+            hparams.append(
+                (
+                    (module_name, parameter_name, "curve"),
+                    parameter.parameter_range.curve,
+                )
+            )
+            hparams.append(
+                (
+                    (module_name, parameter_name, "symmetric"),
+                    parameter.parameter_range.symmetric,
+                )
+            )
+
+        return dict(hparams)
+
+    def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
+        """
+        Set a hyperparameter. Pass in the module name, parameter name, and
+        hyperparameter to set, and the value to set it to.
+        """
+        module = getattr(self, hyperparameter[0])
+        parameter = module.get_parameter(hyperparameter[1])
+        assert not ModuleParameter.is_parameter_frozen(parameter)
+        setattr(parameter.parameter_range, hyperparameter[2], value)
 
     def randomize(self, seed: Optional[int] = None):
         """

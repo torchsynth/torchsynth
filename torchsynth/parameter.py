@@ -50,6 +50,7 @@ class ModuleParameterRange:
         return (
             f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
             + f"max={self.maximum}, curve={self.curve}, "
+            + f"symmetric={self.symmetric}, "
             + f"description={self.description})"
         )
 

@@ -1,10 +1,11 @@
 from typing import Any, List
 
 import torch
-from torch import nn as nn, tensor as T
+from torch import nn as nn
+from torch import tensor as T
 
 from torchsynth import util as util
-from torchsynth.default import DEFAULT_SAMPLE_RATE, DEFAULT_BUFFER_SIZE
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.parameter import ModuleParameter
 
 
