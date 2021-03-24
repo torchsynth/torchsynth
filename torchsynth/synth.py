@@ -6,13 +6,14 @@ from torch import tensor as T
 
 import torchcsprng as csprng
 
-from torchsynth import util as util
 from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter
 from torchsynth.module import (
+    AudioMixer,
     ADSR,
     VCA,
-    CrossfadeKnob,
+    LFO,
+    ModulationMixer,
     MonophonicKeyboard,
     Noise,
     SineVCO,
@@ -158,12 +159,14 @@ class AbstractSynth(LightningModule):
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1, generator=mt19937_gen)
-            for module in self._modules:
-                self._modules[module].seed = seed
         else:
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = torch.rand_like(parameter, device=self.device)
+
+        # Add seed to all modules
+        for module in self._modules:
+            self._modules[module].seed = seed
 
 
 class Voice(AbstractSynth):
@@ -178,13 +181,20 @@ class Voice(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("pitch_adsr", ADSR(synthglobals)),
-                ("amp_adsr", ADSR(synthglobals)),
+                ("adsr_1", ADSR(synthglobals)),
+                ("adsr_2", ADSR(synthglobals)),
+                ("lfo_1", LFO(synthglobals)),
+                ("lfo_2", LFO(synthglobals)),
+                ("lfo_1_amp_adsr", ADSR(synthglobals)),
+                ("lfo_2_amp_adsr", ADSR(synthglobals)),
+                ("lfo_1_rate_adsr", ADSR(synthglobals)),
+                ("lfo_2_rate_adsr", ADSR(synthglobals)),
+                ("mod_matrix", ModulationMixer(synthglobals, n_input=4, n_output=5)),
                 ("vco_1", SineVCO(synthglobals)),
                 ("vco_2", SquareSawVCO(synthglobals)),
                 ("noise", Noise(synthglobals)),
                 ("vca", VCA(synthglobals)),
-                ("vco_ratio", CrossfadeKnob(synthglobals)),
+                ("mixer", AudioMixer(synthglobals, n_input=3, curves=[1.0, 1.0, 0.1])),
             ]
         )
 
@@ -192,12 +202,27 @@ class Voice(AbstractSynth):
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         midi_f0, note_on_duration = self.keyboard()
-        pitch_envelope = self.pitch_adsr.forward(note_on_duration)
-        amp_envelope = self.amp_adsr.forward(note_on_duration)
 
-        audio_out = self.vco_1.forward(midi_f0, pitch_envelope)
-        vco_2_out = self.vco_2.forward(midi_f0, pitch_envelope)
-        audio_out = util.crossfade2D(audio_out, vco_2_out, self.vco_ratio.p("ratio"))
+        # ADSRs for modulating LFOs
+        lfo_1_rate = self.lfo_1_rate_adsr(note_on_duration)
+        lfo_2_rate = self.lfo_2_rate_adsr(note_on_duration)
+        lfo_1_amp = self.lfo_1_amp_adsr(note_on_duration)
+        lfo_2_amp = self.lfo_2_amp_adsr(note_on_duration)
 
-        audio_out = self.noise.forward(audio_out)
-        return self.vca.forward(amp_envelope, audio_out)
+        # Compute LFOs with envelopes
+        lfo_1 = self.vca(self.lfo_1(lfo_1_rate), lfo_1_amp)
+        lfo_2 = self.vca(self.lfo_2(lfo_2_rate), lfo_2_amp)
+
+        # ADSRs for Oscillators and noise
+        adsr_1 = self.adsr_1(note_on_duration)
+        adsr_2 = self.adsr_2(note_on_duration)
+
+        # Mix all modulation signals
+        modulation = self.mod_matrix(adsr_1, adsr_2, lfo_1, lfo_2)
+
+        # Create signal and with modulations and mix together
+        vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[1])
+        vco_2_out = self.vca(self.vco_2(midi_f0, modulation[2]), modulation[3])
+        noise_out = self.vca(self.noise(device=self.device), modulation[4])
+
+        return self.mixer(vco_1_out, vco_2_out, noise_out)

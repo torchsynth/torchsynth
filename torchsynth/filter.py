@@ -270,6 +270,7 @@ class TorchLowPassSVF(SVF):
         super().__init__("lpf", **kwargs)
 
 
+
 class TorchHighPassSVF(SVF):
     """
     IIR High-pass using SVF architecture
