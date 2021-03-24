@@ -1,4 +1,5 @@
-## Example of how to build new synths
+Example of how to build new synths
+==================================
 
 **Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
 
