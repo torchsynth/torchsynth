@@ -1,18 +1,16 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+import torchcsprng as csprng
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
 
-import torchcsprng as csprng
-
 from torchsynth.globals import SynthGlobals
-from torchsynth.parameter import ModuleParameter
 from torchsynth.module import (
-    AudioMixer,
     ADSR,
-    VCA,
     LFO,
+    VCA,
+    AudioMixer,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
@@ -20,6 +18,7 @@ from torchsynth.module import (
     SquareSawVCO,
     SynthModule,
 )
+from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
 
 # https://github.com/turian/torchsynth/issues/131
