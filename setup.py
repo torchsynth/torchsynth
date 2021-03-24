@@ -55,7 +55,8 @@ setup(
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             "sphinx>=3.0.4",  # not directly required, pinned by Snyk to avoid a vulnerability
-            "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
+            # Temporarily disabled so we can push to pypi
+            # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
             "sphinxcontrib-napoleon",
             "mock",
             "recommonmark",
