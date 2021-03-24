@@ -1,4 +1,4 @@
-torchsynth
+Torchsynth
 ==========
 
 ```eval_rst
