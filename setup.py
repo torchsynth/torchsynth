@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __author__ = "Joseph Turian, Jordie Shier, Max Henry"
 __contact__ = ""
 __url__ = ""
