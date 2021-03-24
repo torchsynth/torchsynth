@@ -31,16 +31,6 @@ class TestParameterRange:
         assert param_range.curve == 2.0
         assert param_range.curve == 2.0
 
-    # I think string unit tests are pointless
-    """
-    def test_repr(self):
-        param_range = ModuleParameterRange(0.0, 1.0)
-        assert (
-            repr(param_range)
-            == "ModuleParameterRange(name=None, min=0.0, max=1.0, curve=1.0, description=None)"
-        )
-    """
-
     def test_to_0to1(self):
         # Test linear scaling
         param_range = ModuleParameterRange(0.0, 10.0)
