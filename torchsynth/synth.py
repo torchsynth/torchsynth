@@ -82,7 +82,7 @@ class AbstractSynth(LightningModule):
             self.add_module(name, module)
 
     def get_parameters(
-        self, include_frozen: Optional[bool] = False
+        self, include_frozen: bool = False
     ) -> Dict[Tuple[str, str], ModuleParameter]:
         """
         Returns a dictionary of ModuleParameters for this synth keyed
@@ -182,10 +182,18 @@ class AbstractSynth(LightningModule):
         on a tuple of the module name, parameter name, and hyperparameter name
         """
         hparams = []
-        for param_key, parameter in self.get_parameters().items():
-            hparams.append(((*param_key, "curve"), parameter.parameter_range.curve))
+        for (module_name, parameter_name), parameter in self.get_parameters().items():
             hparams.append(
-                ((*param_key, "symmetric"), parameter.parameter_range.symmetric)
+                (
+                    (module_name, parameter_name, "curve"),
+                    parameter.parameter_range.curve,
+                )
+            )
+            hparams.append(
+                (
+                    (module_name, parameter_name, "symmetric"),
+                    parameter.parameter_range.symmetric,
+                )
             )
 
         return dict(hparams)
