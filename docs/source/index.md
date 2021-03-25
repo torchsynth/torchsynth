@@ -45,11 +45,21 @@ Welcome to torchsynth's documentation!
    contribute/dev_guidelines
 ```
 
+```eval_rst
+.. toctree::
+   :maxdepth: 3
+   :name: modules
+   :caption: Modules
 
-Indices and tables
-------------------
+   modules
+```
 
 ```eval_rst
-* :ref:`genindex`
-* :ref:`search`
+.. toctree::
+   :maxdepth: 1
+   :name: docmap
+   :caption: INDICES AND TABLES
+
+   genindex
+   search
 ```
