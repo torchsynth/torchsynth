@@ -145,12 +145,12 @@ class TestAbstractSynth:
             ]
         )
         synth.randomize()
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize(1)
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test that trying to set a frozen parameter raises an error
         with pytest.raises(RuntimeError, match="Parameter is frozen"):
@@ -164,8 +164,8 @@ class TestAbstractSynth:
         # Unfreezing parameters and randomizing now leads to different results
         synth.unfreeze_all_parameters()
         synth.randomize(1)
-        assert torch.all(~synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(~synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(~synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(~synth.keyboard.p("duration").isclose(dur_val))
 
         # Can set parameters directly with freeze arg that they should be frozen
         synth.set_parameters(
@@ -175,16 +175,16 @@ class TestAbstractSynth:
             },
             freeze=True,
         )
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize()
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize(1)
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test randomization with synth with non-ModuleParameters raises error
         synth.register_parameter("param", torch.nn.Parameter(T(0.0)))
