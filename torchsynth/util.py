@@ -4,8 +4,6 @@ Utility functions for torch DSP related things
 TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
-import math
-
 import torch
 import torch.tensor as T
 
@@ -54,7 +52,8 @@ def normalize(signal: Signal) -> Signal:
     return signal / max_sample
 
 
-# Here are some old functions that we are not currently using but might want in the future.
+# Here are some old functions that we are not currently using but
+# might want in the future.
 # # What is amin here? And maybe we should convert it to a value in defaults?
 # # What is the range of amplitude?
 # def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
