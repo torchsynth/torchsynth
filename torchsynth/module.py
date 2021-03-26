@@ -747,7 +747,7 @@ class MonophonicKeyboard(SynthModule):
             description="pitch value in 'midi' (69 = 440Hz)",
         ),
         ModuleParameterRange(
-            0.0,
+            0.01,
             4.0,
             curve=0.5,
             name="duration",
