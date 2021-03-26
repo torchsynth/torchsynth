@@ -93,7 +93,7 @@ class SynthModule(nn.Module):
         return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
-        return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
