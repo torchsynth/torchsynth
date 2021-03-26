@@ -59,6 +59,7 @@ setup(
             "sphinxcontrib-napoleon",
             "mock",
             "recommonmark",
+            "linkify-it-py",
         ],
     },
 )
