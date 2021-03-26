@@ -445,12 +445,12 @@ from torchsynth.module import LFO, ModulationMixer
 # Envelope to be applied to LFO rate
 time_plot(envelope[0].cpu().detach().numpy())
 
-lfo = LFO(synthglobals, device).to(device)
-lfo.set_parameter("mod_depth", T([10.0, 0.0], device=device))
-lfo.set_parameter("frequency", T([1.0, 1.0], device=device))
+lfo = LFO(synthglobals, device=device)
+lfo.set_parameter("mod_depth", T([10.0, 0.0]))
+lfo.set_parameter("frequency", T([1.0, 1.0]))
 out = lfo(envelope)
 
-lfo2 = LFO(synthglobals, device).to(device)
+lfo2 = LFO(synthglobals, device=device)
 out2 = lfo2(envelope)
 
 print(out.shape)
