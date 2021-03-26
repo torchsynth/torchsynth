@@ -50,6 +50,12 @@ class ModuleParameterRange:
         self.symmetric = symmetric
 
     def to(self, device: torch.device):
+        """
+        Send all the attributes of this object to a device.
+        """
+        # Upon instantiation we will get the ranges as floats, however, if this
+        # has been called before then the attributes will already be tensors (although
+        # potentially still on the CPU), so just update the device
         if self.device is None and isinstance(self.minimum, float):
             self.device = device
             self.minimum = T(self.minimum, device=self.device)

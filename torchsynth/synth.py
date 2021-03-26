@@ -227,6 +227,10 @@ class AbstractSynth(LightningModule):
             self._modules[module].seed = seed
 
     def to(self, device=None, **kwargs):
+        """
+        Override to method on LightningModule. This sets all children SynthModules
+        to the correct device by calling their respective to methods.
+        """
         super().to(device=device, **kwargs)
         for module in self.modules():
             if isinstance(module, SynthModule):

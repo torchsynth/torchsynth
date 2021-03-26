@@ -87,6 +87,7 @@ class SynthModule(nn.Module):
                 ]
             )
             if kwargs:
+                # Parameter values can also be passed in as keyword args.
                 for name, data in kwargs.items():
                     if data.device != self.device:
                         data = data.to(self.device)
@@ -203,7 +204,9 @@ class SynthModule(nn.Module):
 
     def to(self, device=None, **kwargs):
         """
-        Overriding the to call for nn.Module to transfer this module to device
+        Overriding the to call for nn.Module to transfer this module to device. This
+        makes sure that the ParameterRanges for each ModuleParamter and the globals
+        are also transferred to the correct device.
         """
         self.synthglobals.to(device)
         self.device = device
@@ -578,7 +581,6 @@ class LFO(VCO):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        device: torch.device,
         exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
@@ -593,7 +595,7 @@ class LFO(VCO):
                     description=f"Selection parameter for {lfo} LFO",
                 )
             )
-        super().__init__(synthglobals, device=device, **kwargs)
+        super().__init__(synthglobals, **kwargs)
         self.exponent = exponent
 
     def _forward(self, mod_signal: Signal) -> Signal:
