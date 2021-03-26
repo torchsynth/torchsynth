@@ -20,7 +20,8 @@ class ModuleParameterRange:
     Args:
         minimum (float) :   minimum value in range
         maximum (float) :   maximum value in range
-        curve   (float) : shape of the curve, values less than 1
+        device  (torch.device) : Device for storing tensors
+        curve   (float) :   shape of the curve, values less than 1
         place more emphasis on smaller values and values greater than 1
         place more emphasis no larger values. Defaults to 1 which is linear.
         symmetric (bool) :  whether or not the parameter range is symmetric,
@@ -33,7 +34,8 @@ class ModuleParameterRange:
         self,
         minimum: float,
         maximum: float,
-        curve: float = 1.0,
+        device: Optional[torch.device] = None,
+        curve: float = 1,
         symmetric: bool = False,
         # TODO: Make this not optional
         name: Optional[str] = None,
@@ -41,10 +43,27 @@ class ModuleParameterRange:
     ):
         self.name = name
         self.description = description
+        self.device = device
         self.minimum = minimum
         self.maximum = maximum
         self.curve = curve
         self.symmetric = symmetric
+
+    def to(self, device: torch.device):
+        if self.device == None:
+            assert isinstance(self.minimum, float)
+            self.device = device
+            self.minimum = T(self.minimum, device=self.device)
+            self.maximum = T(self.maximum, device=self.device)
+            self.curve = T(self.curve, device=self.device)
+            self.symmetric = T(self.symmetric, device=self.device)
+        else:
+            # assert isinstance(self.minimum, torch.tensor)
+            self.device = device
+            self.minimum = self.minimum.clone().detach().to(self.device)
+            self.maximum = self.maximum.clone().detach().to(self.device)
+            self.curve = self.curve.clone().detach().to(self.device)
+            self.symmetric = self.symmetric.clone().detach().to(self.device)
 
     def __repr__(self):
         return (
@@ -62,8 +81,8 @@ class ModuleParameterRange:
           normalized (T): value within [0,1] range to convert to range defined by
           minimum and maximum
         """
-        assert torch.all(0.0 <= normalized)
-        assert torch.all(normalized <= 1.0)
+        assert torch.all(T(0.0, device=self.device) <= normalized)
+        assert torch.all(normalized <= T(1.0, device=self.device))
 
         if not self.symmetric:
             if self.curve != 1:
@@ -75,7 +94,7 @@ class ModuleParameterRange:
         dist = 2.0 * normalized - 1.0
         if self.curve != 1:
             normalized = torch.where(
-                dist == 0.0,
+                dist == T(0.0, device=self.device),
                 dist,
                 torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
             )

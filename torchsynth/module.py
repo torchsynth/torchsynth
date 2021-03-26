@@ -34,7 +34,6 @@ class SynthModule(nn.Module):
     # TODO: Make this non-optional
     parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
-    # TODO: have these already moved to cuda
     def __init__(
         self, synthglobals: SynthGlobals, device: torch.device, **kwargs: Dict[str, T]
     ):
@@ -56,6 +55,7 @@ class SynthModule(nn.Module):
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
         self.device = device
+        self.synthglobals.to(device)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
         # If this module needs a random seed, here it is
         self.seed: Optional[int] = None
@@ -65,6 +65,8 @@ class SynthModule(nn.Module):
                 p.name: p for p in self.parameter_ranges
             }
             assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
+            for parameter_range in self.parameter_ranges:
+                parameter_range.to(self.device)
             self.add_parameters(
                 [
                     ModuleParameter(
@@ -163,7 +165,9 @@ class SynthModule(nn.Module):
         """
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
-        assert torch.all(0 <= value) and torch.all(value <= 1)
+        assert torch.all(T(0, device=self.device) <= value) and torch.all(
+            value <= T(1, device=self.device)
+        )
         assert value.shape == (self.batch_size,)
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
@@ -174,7 +178,9 @@ class SynthModule(nn.Module):
             parameter_id (str)  : Id of the parameter to update
             value (T)           : Value to update parameter with
         """
-        assert torch.all(0 <= value) and torch.all(value <= 1)
+        assert torch.all(T(0, device=self.device) <= value) and torch.all(
+            value <= T(1, device=self.device)
+        )
         assert value.shape == (self.batch_size,)
         self.torchparameters[parameter_id].data = value
 
@@ -239,7 +245,7 @@ class ADSR(SynthModule):
         behind the scenes to make the playing experience feel natural.
         """
         assert note_on_duration.ndim == 1
-        assert torch.all(note_on_duration > 0)
+        assert torch.all(note_on_duration > T(0, device=self.device))
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")

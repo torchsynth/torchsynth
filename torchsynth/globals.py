@@ -1,3 +1,4 @@
+import torch
 import torch.tensor as T
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
@@ -28,6 +29,11 @@ class SynthGlobals:
         self.batch_size = batch_size
         self.sample_rate = sample_rate
         self.buffer_size = buffer_size
+
+    def to(self, device: torch.device):
+        self.batch_size = self.batch_size.to(device)
+        self.sample_rate = self.sample_rate.to(device)
+        self.buffer_size = self.buffer_size.to(device)
 
     def __repr__(self):
         return (
