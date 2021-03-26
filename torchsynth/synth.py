@@ -238,21 +238,34 @@ class Voice(AbstractSynth):
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("adsr_1", ADSR(synthglobals)),
-                ("adsr_2", ADSR(synthglobals)),
-                ("lfo_1", LFO(synthglobals)),
-                ("lfo_2", LFO(synthglobals)),
-                ("lfo_1_amp_adsr", ADSR(synthglobals)),
-                ("lfo_2_amp_adsr", ADSR(synthglobals)),
-                ("lfo_1_rate_adsr", ADSR(synthglobals)),
-                ("lfo_2_rate_adsr", ADSR(synthglobals)),
-                ("mod_matrix", ModulationMixer(synthglobals, n_input=4, n_output=5)),
-                ("vco_1", SineVCO(synthglobals)),
-                ("vco_2", SquareSawVCO(synthglobals)),
-                ("noise", Noise(synthglobals)),
-                ("vca", VCA(synthglobals)),
-                ("mixer", AudioMixer(synthglobals, n_input=3, curves=[1.0, 1.0, 0.1])),
+                ("keyboard", MonophonicKeyboard(synthglobals, device=self.device)),
+                ("adsr_1", ADSR(synthglobals, device=self.device)),
+                ("adsr_2", ADSR(synthglobals, device=self.device)),
+                ("lfo_1", LFO(synthglobals, device=self.device)),
+                ("lfo_2", LFO(synthglobals, device=self.device)),
+                ("lfo_1_amp_adsr", ADSR(synthglobals, device=self.device)),
+                ("lfo_2_amp_adsr", ADSR(synthglobals, device=self.device)),
+                ("lfo_1_rate_adsr", ADSR(synthglobals, device=self.device)),
+                ("lfo_2_rate_adsr", ADSR(synthglobals, device=self.device)),
+                (
+                    "mod_matrix",
+                    ModulationMixer(
+                        synthglobals, device=self.device, n_input=4, n_output=5
+                    ),
+                ),
+                ("vco_1", SineVCO(synthglobals, device=self.device)),
+                ("vco_2", SquareSawVCO(synthglobals, device=self.device)),
+                ("noise", Noise(synthglobals, device=self.device)),
+                ("vca", VCA(synthglobals, device=self.device)),
+                (
+                    "mixer",
+                    AudioMixer(
+                        synthglobals,
+                        device=self.device,
+                        n_input=3,
+                        curves=[1.0, 1.0, 0.1],
+                    ),
+                ),
             ]
         )
 

@@ -35,11 +35,17 @@ class SynthModule(nn.Module):
     parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
     # TODO: have these already moved to cuda
-    def __init__(self, synthglobals: SynthGlobals, **kwargs: Dict[str, T]):
+    def __init__(
+        self, synthglobals: SynthGlobals, device: torch.device, **kwargs: Dict[str, T]
+    ):
         """
         Args:
-            synthglobals (:obj:`SynthGlobals`) :These are global settings
+            synthglobals (:obj:`SynthGlobals`): These are global settings
             shared across all modules in the same synth.
+
+            device (:obj:`torch.device`):
+            The device for creating all tensors.
+
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -49,6 +55,7 @@ class SynthModule(nn.Module):
         """
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
+        self.device = device
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
         # If this module needs a random seed, here it is
         self.seed: Optional[int] = None
@@ -63,7 +70,8 @@ class SynthModule(nn.Module):
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        data=torch.rand((self.synthglobals.batch_size,)),
+                        # Should we use CSPRNG here? Or doesn't matter?
+                        data=torch.rand((self.synthglobals.batch_size,), device=device),
                         parameter_range=parameter_range,
                     )
                     for parameter_range in self.parameter_ranges
@@ -239,7 +247,7 @@ class ADSR(SynthModule):
 
         new_attack = torch.minimum(attack, note_on_duration)
         new_decay = torch.maximum(
-            note_on_duration - attack, T([0.0], device=attack.device)
+            note_on_duration - attack, T([0.0], device=self.device)
         )
         new_decay = torch.minimum(new_decay, decay)
 
@@ -268,14 +276,14 @@ class ADSR(SynthModule):
         duration_ = self.seconds_to_samples(duration)
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size, device=duration.device)
+        tmp = torch.arange(self.buffer_size, device=self.device)
         ramp = tmp.repeat([self.batch_size, 1])
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0, device=duration.device))
+        ramp = torch.maximum(ramp, T(0.0, device=self.device))
         ramp = (ramp + EPS) / (duration_[:, None] + EPS)
-        ramp = torch.minimum(ramp, T(1.0, device=duration.device))
+        ramp = torch.minimum(ramp, T(1.0, device=self.device))
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
@@ -294,9 +302,7 @@ class ADSR(SynthModule):
         return ramp.as_subclass(Signal)
 
     def make_attack(self, attack_time) -> Signal:
-        return self._ramp(
-            torch.zeros(self.batch_size, device=attack_time.device), attack_time
-        )
+        return self._ramp(torch.zeros(self.batch_size, device=self.device), attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
@@ -496,15 +502,22 @@ class Noise(SynthModule):
     Generates white noise that is the same length as the buffer
     """
 
+    def __init__(
+        self, synthglobals: SynthGlobals, device: Optional[torch.device] = None
+    ):
+        super().__init__(synthglobals, device)
+        self.noise = torch.empty(
+            (self.batch_size, self.buffer_size), device=self.device
+        )
+
     def _forward(self, device: Optional[torch.device] = None) -> Signal:
         if self.seed is not None:
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            noise = torch.empty((self.batch_size, self.buffer_size), device=device)
-            noise.data.uniform_(-1, 1, generator=mt19937_gen)
+            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            noise = torch.rand((self.batch_size, self.buffer_size), device=device)
-            noise = noise * 2 - 1
-        return noise.as_subclass(Signal)
+            self.noise = torch.rand((self.batch_size, self.buffer_size), device=device)
+            self.noise = self.noise * 2 - 1
+        return self.noise.as_subclass(Signal)
 
 
 class LFO(VCO):
