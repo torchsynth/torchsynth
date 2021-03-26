@@ -170,8 +170,16 @@ note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    synthglobals=synthglobals,
+    device=device,
 ).to(device)
+# I'm curious here if just doing device=device is enough and we
+# don't need the .to(device)
 envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # -
@@ -193,7 +201,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals=synthglobals).to(device)
+adsr = ADSR(synthglobals, device).to(device)
 envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
@@ -233,12 +241,18 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
-    synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration
+    synthglobals, device, midi_f0=T([69.0, 50.0]), duration=note_on_duration
 ).to(device)
 
 # Reset envelope
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    synthglobals=synthglobals,
+    device=device,
 ).to(device)
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
@@ -248,7 +262,10 @@ envelope = adsr(duration)
 
 # SineVCO test
 sine_vco = SineVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([-12.0, 12.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([-12.0, 12.0]),
+    synthglobals=synthglobals,
+    device=device,
 ).to(device)
 sine_out = sine_vco(midi_f0, envelope)
 
@@ -284,13 +301,14 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device, midi_f0=T([30.0, 30.0])).to(device)
 
 square_saw = SquareSawVCO(
     tuning=T([0.0, 0.0]),
     mod_depth=T([0.0, 0.0]),
     shape=T([0.0, 1.0]),
     synthglobals=synthglobals,
+    device=device,
 ).to(device)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
@@ -321,7 +339,7 @@ print(err)
 # amplitude to smooth it out.
 
 # +
-vca = VCA(synthglobals)
+vca = VCA(synthglobals, device=device)
 test_output = vca(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
@@ -337,11 +355,16 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
-keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device=device, midi_f0=T([50.0, 50.0])).to(
+    device
+)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([0.0, 5.0]),
+    synthglobals=synthglobals,
+    device=device,
 ).to(device)
 operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 
@@ -350,7 +373,10 @@ operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([2.0, 5.0]),
+    synthglobals=synthglobals,
+    device=device,
 ).to(device)
 fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
@@ -366,7 +392,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-noise = Noise(synthglobals)
+noise = Noise(synthglobals, device=device)
 
 # Optionally can pass in the device to make sure the noise gets created
 # on the current device.
@@ -383,17 +409,17 @@ from torchsynth.module import AudioMixer
 
 env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=device)
 
-keyboard = MonophonicKeyboard(synthglobals).to(device)
-sine = SineVCO(synthglobals).to(device)
-square_saw = SquareSawVCO(synthglobals).to(device)
-noise = Noise(synthglobals)
+keyboard = MonophonicKeyboard(synthglobals, device=device).to(device)
+sine = SineVCO(synthglobals, device=device).to(device)
+square_saw = SquareSawVCO(synthglobals, device=device).to(device)
+noise = Noise(synthglobals, device=device)
 
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
 noise_out = noise(device)
 
-mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25]).to(device)
+mixer = AudioMixer(synthglobals, device, 3, curves=[1.0, 1.0, 0.25]).to(device)
 output = mixer(sine_out, sqr_out, noise_out)
 
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normalize=False)
@@ -418,12 +444,12 @@ from torchsynth.module import LFO, ModulationMixer
 # Envelope to be applied to LFO rate
 time_plot(envelope[0].cpu().detach().numpy())
 
-lfo = LFO(synthglobals).to(device)
+lfo = LFO(synthglobals, device).to(device)
 lfo.set_parameter("mod_depth", T([10.0, 0.0], device=device))
 lfo.set_parameter("frequency", T([1.0, 1.0], device=device))
 out = lfo(envelope)
 
-lfo2 = LFO(synthglobals).to(device)
+lfo2 = LFO(synthglobals, device).to(device)
 out2 = lfo2(envelope)
 
 print(out.shape)
@@ -433,7 +459,7 @@ time_plot(out2[0].detach().cpu().numpy())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals, 2, 1).to(device)
+mixer = ModulationMixer(synthglobals, device, 2, 1).to(device)
 mods_mixed = mixer(out, out2)
 
 print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
@@ -773,6 +799,7 @@ env = ADSR(
     release=T([0.0]),
     alpha=T([3.0]),
     synthglobals=synthglobals1short,
+    device=device,
 )(T([0.2]))
 bpf = TorchBandPassSVF(
     cutoff=T(20),

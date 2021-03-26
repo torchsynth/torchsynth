@@ -550,6 +550,7 @@ class LFO(VCO):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: torch.device,
         exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
@@ -564,7 +565,7 @@ class LFO(VCO):
                     description=f"Selection parameter for {lfo} LFO",
                 )
             )
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals, device=device, **kwargs)
         self.exponent = exponent
 
     def _forward(self, mod_signal: Signal) -> Signal:
