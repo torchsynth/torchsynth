@@ -27,9 +27,7 @@ in terms of throughput.
 
 You will need to install the particular version of
 [torchcsprng](https://github.com/pytorch/csprng) for your CUDA
-device. Please follow their simple installation instructions.  But
-if you use the CPU version of torchcsprng, it probably won't affect
-performance much.
+device. Please follow their simple installation instructions.
 
 ## Development Installation
 
