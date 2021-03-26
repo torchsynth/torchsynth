@@ -6,7 +6,7 @@ import pytest
 import torch
 import torch.tensor as T
 
-import torchsynth.deprecated
+import torchsynth
 import torchsynth.module as synthmodule
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
@@ -16,6 +16,9 @@ class TestSynthModule:
     Tests for SynthModules
     """
 
+    # Disabling tests that relied upon deprecated synth
+    # module, but we can add them back later for SynthModule.
+    """
     def test_get_parameter(self):
         module = torchsynth.deprecated.SynthModule0Ddeprecated()
         param_1 = ModuleParameter(data=T(1.0), parameter_name="param_1")
@@ -67,6 +70,7 @@ class TestSynthModule:
         module.add_parameters([param_1])
         assert module.torchparameters["param_1"] == 0.25
         assert module.p("param_1") == 5000.0
+    """
 
     def test_softmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
