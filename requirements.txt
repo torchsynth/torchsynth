@@ -25,3 +25,5 @@ sphinxcontrib-napoleon
 mock
 recommonmark
 sphinx>=3.0.4 # not directly required, pinned by Snyk to avoid a vulnerability
+myst-parser
+linkify-it-py

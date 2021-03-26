@@ -60,6 +60,8 @@ setup(
             "sphinxcontrib-napoleon",
             "mock",
             "recommonmark",
+            "myst-parser",
+            "linkify-it-py",
         ],
     },
 )
