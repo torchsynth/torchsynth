@@ -7,7 +7,7 @@ Submodules
 torchsynth.defaults module
 --------------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.default
    :members:
    :undoc-members:
@@ -17,7 +17,7 @@ torchsynth.defaults module
 torchsynth.filter module
 ------------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.filter
    :members:
    :undoc-members:
@@ -27,7 +27,7 @@ torchsynth.filter module
 torchsynth.module module
 ------------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.module
    :members:
    :undoc-members:
@@ -37,7 +37,7 @@ torchsynth.module module
 torchsynth.parameter module
 ---------------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.parameter
    :members:
    :undoc-members:
@@ -47,7 +47,7 @@ torchsynth.parameter module
 torchsynth.signal module
 ------------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.signal
    :members:
    :undoc-members:
@@ -57,7 +57,7 @@ torchsynth.signal module
 torchsynth.util module
 ----------------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth.util
    :members:
    :undoc-members:
@@ -67,7 +67,7 @@ torchsynth.util module
 Module contents
 ---------------
 
-```eval_rst
+```{eval-rst}
 .. automodule:: torchsynth
    :members:
    :undoc-members:
