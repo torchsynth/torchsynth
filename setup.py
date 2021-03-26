@@ -60,6 +60,7 @@ setup(
             "sphinxcontrib-napoleon",
             "mock",
             "recommonmark",
+            "myst-parser",
         ],
     },
 )
