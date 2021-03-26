@@ -54,12 +54,6 @@ def normalize(signal: Signal) -> Signal:
     return signal / max_sample
 
 
-def sinc(x: T) -> T:
-    return torch.where(
-        x == T(0, device=x.device), T(1.0, device=x.device), torch.sin(x) / x
-    )
-
-
 # Here are some old functions that we are not currently using but might want in the future.
 # # What is amin here? And maybe we should convert it to a value in defaults?
 # # What is the range of amplitude?
@@ -145,3 +139,7 @@ def sinc(x: T) -> T:
 #     return window
 #
 #
+# def sinc(x: T) -> T:
+#     return torch.where(
+#         x == T(0, device=x.device), T(1.0, device=x.device), torch.sin(x) / x
+#     )

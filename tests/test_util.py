@@ -15,6 +15,7 @@ class TestTorchUtil:
     Tests for util methods
     """
 
+    """
     def test_reverse_signal(self):
         signal = np.arange(10)
         tensor_signal = T(signal)
@@ -27,7 +28,6 @@ class TestTorchUtil:
         torch_sinc = util.sinc(T(x).float())
         assert np.allclose(numpy_sinc, torch_sinc.numpy())
 
-    """
     def test_blackman(self):
         length = 128
         torch_blackman = torch.blackman_window(length, False)
