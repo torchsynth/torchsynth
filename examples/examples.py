@@ -552,6 +552,7 @@ for i in range(synthglobals16.batch_size):
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
 
+# +
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered

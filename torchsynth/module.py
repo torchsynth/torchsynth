@@ -207,6 +207,8 @@ class SynthModule(nn.Module):
         """
         self.synthglobals.to(device)
         self.device = device
+        for name, parameter in self.torchparameters.items():
+            parameter.parameter_range.to(device)
         return super().to(device=device, **kwargs)
 
 

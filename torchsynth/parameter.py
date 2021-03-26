@@ -225,14 +225,3 @@ class ModuleParameter(nn.Parameter):
             return parameter.frozen
         else:
             raise ValueError(f"Param {parameter} is not a ModuleParameter")
-
-    def __torch_function__(self, func, types, args=(), kwargs=None):
-        if kwargs is None:
-            kwargs = {}
-
-        if func.__name__ == "to":
-            for arg in args:
-                if isinstance(arg, torch.device):
-                    self.parameter_range.to(arg)
-
-        return super().__torch_function__(func, types, args, kwargs)
