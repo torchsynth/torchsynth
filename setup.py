@@ -32,9 +32,9 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "torch>=1.7",
+        "torch>=1.8.1",  # Needed for torchcsprng==0.2.1
+        "torchcsprng==0.2.1",  # Support for fp16
         "pytorch-lightning",
-        "torchcsprng==0.2.0",
     ],
     extras_require={
         "test": [
