@@ -66,6 +66,7 @@ class SynthModule(nn.Module):
             }
             assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
             for parameter_range in self.parameter_ranges:
+                # Put all the parameter ranges onto the device
                 parameter_range.to(self.device)
             self.add_parameters(
                 [
