@@ -67,7 +67,9 @@ class ModuleParameterRange:
 
         if not self.symmetric:
             if self.curve != 1:
-                normalized = torch.exp2(torch.log2(normalized) / self.curve)
+                normalized = torch.exp2(
+                    torch.log2(normalized.float()) / self.curve
+                ).half()
 
             return self.minimum + (self.maximum - self.minimum) * normalized
 
@@ -77,7 +79,10 @@ class ModuleParameterRange:
             normalized = torch.where(
                 dist == 0.0,
                 dist,
-                torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
+                (
+                    torch.exp2(torch.log2(torch.abs(dist).float()) / self.curve)
+                    * torch.sign(dist)
+                ).half(),
             )
 
         return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0)

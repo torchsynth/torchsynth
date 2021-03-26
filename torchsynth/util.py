@@ -20,14 +20,14 @@ def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
     """
     Convert an amplitude value to decibels
     """
-    return 20 * torch.log10(torch.max(amplitude, amin))
+    return 20 * torch.log10(torch.max(amplitude, amin).float()).half()
 
 
 def db_to_amplitude(db: T) -> T:
     """
     Convert decibel value to an amplitude between 0 and 1
     """
-    return torch.pow(10, db / 20)
+    return torch.pow(T(10).float(), db / 20).half()
 
 
 def peak_gain_for_Q(Q: T) -> T:
@@ -38,7 +38,7 @@ def peak_gain_for_Q(Q: T) -> T:
     if Q <= 0.707:
         return T(1.0)
 
-    return Q * Q / torch.pow((Q * Q - 0.25), 0.5)
+    return Q * Q / torch.pow((Q * Q - 0.25).float(), 0.5).half()
 
 
 def hz_to_midi(hz: T) -> T:
@@ -52,7 +52,7 @@ def midi_to_hz(midi: T) -> T:
     """
     Convert from midi (linear pitch) to frequency in Hz.
     """
-    return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
+    return 440.0 * (torch.exp2((midi - 69.0) / 12.0))
 
 
 def fix_length(signal: T, length: Union[int, T]) -> T:

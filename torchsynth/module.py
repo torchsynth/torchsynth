@@ -16,7 +16,16 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
-torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
+# Not sure if this is the best place to put this?
+gpus = torch.cuda.device_count()
+if gpus > 0:
+    torch.set_default_tensor_type(torch.CudaHalfTensor)
+else:
+    torch.set_default_tensor_type(torch.HalfTensor)
+
+torch.pi = (
+    torch.acos(torch.zeros(1).float()).half().item() * 2
+)  # which is 3.1415927410125732
 
 
 class SynthModule(nn.Module):
@@ -98,7 +107,7 @@ class SynthModule(nn.Module):
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
         # assert seconds.ndim == 1
-        return torch.round(seconds * self.sample_rate).int()
+        return torch.round((seconds * self.sample_rate).float()).int()
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -289,7 +298,7 @@ class ADSR(SynthModule):
             ramp[torch.sum(ramp, axis=1) == 0] = 1.0
 
         # Apply scaling factor.
-        ramp = torch.pow(ramp, self.p("alpha")[:, None])
+        ramp = torch.pow(ramp.float(), self.p("alpha")[:, None]).half()
 
         return ramp.as_subclass(Signal)
 
@@ -391,15 +400,17 @@ class VCO(SynthModule):
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = torch.clamp(
-            (midi_f0 + self.p("tuning")).unsqueeze(1) + modulation, 0.0, 127.0
-        )
+            ((midi_f0 + self.p("tuning")).unsqueeze(1) + modulation).float(), 0.0, 127.0
+        ).half()
         return util.midi_to_hz(control_as_midi)
 
     def make_argument(self, freq: Signal) -> Signal:
         """
         Generates the phase argument to feed a cosine function to make audio.
         """
-        return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
+        return torch.cumsum(
+            (2 * torch.pi * freq / self.sample_rate).float(), dim=1
+        ).half()
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
@@ -416,7 +427,7 @@ class SineVCO(VCO):
     """
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
-        return torch.cos(argument)
+        return torch.cos(argument.float()).half()
 
 
 class TorchFmVCO(VCO):
@@ -438,11 +449,11 @@ class TorchFmVCO(VCO):
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
         modulation_hz = fm_depth * mod_signal
-        return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
+        return torch.clamp((f0_hz + modulation_hz).float(), 0.0, self.nyquist).half()
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         # Classically, FM operators are sine waves.
-        return torch.cos(argument)
+        return torch.cos(argument.float()).half()
 
 
 class SquareSawVCO(VCO):
@@ -466,7 +477,9 @@ class SquareSawVCO(VCO):
         partials = self.partials_constant(midi_f0).unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
         shape = self.p("shape").unsqueeze(1)
-        return (1 - shape / 2) * square * (1 + shape * torch.cos(argument))
+        return (
+            (1 - shape / 2) * square * (1 + shape * torch.cos(argument.float()).half())
+        )
 
     def partials_constant(self, midi_f0):
         """
@@ -571,7 +584,7 @@ class LFO(VCO):
 
         # Apply mode selection to the LFO shapes
         mode = torch.stack([self.p(lfo) for lfo in self.lfo_types], dim=1)
-        mode = torch.pow(mode, self.exponent)
+        mode = torch.pow(mode.float(), self.exponent).half()
         mode = mode / torch.sum(mode, dim=1, keepdim=True)
 
         return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
@@ -585,7 +598,7 @@ class LFO(VCO):
         Creates a set of LFO shapes at the correct frequency:
         Sinusoid, Triangle, Saw, Reverse Saw, and Square
         """
-        cos = torch.cos(argument + torch.pi)
+        cos = torch.cos((argument + torch.pi).float()).half()
         square = torch.sign(cos)
 
         cos = (cos + 1.0) / 2.0
@@ -800,7 +813,7 @@ class SoftModeSelector(SynthModule):
         # Is this tensor creation slow?
         # But usually parameter stuff is not the bottleneck
         params = torch.stack([p.data for p in self.torchparameters.values()])
-        params = torch.pow(params, exponent=self.exponent)
+        params = torch.pow(params.float(), exponent=self.exponent).half()
         return params / torch.sum(params, dim=0)
 
 
