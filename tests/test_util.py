@@ -27,13 +27,15 @@ class TestTorchUtil:
         torch_sinc = util.sinc(T(x).float())
         assert np.allclose(numpy_sinc, torch_sinc.numpy())
 
+    """
     def test_blackman(self):
         length = 128
         torch_blackman = torch.blackman_window(length, False)
         blackman_2 = util.blackman(T(length).float())
         assert np.allclose(blackman_2.numpy(), torch_blackman.numpy(), atol=1e-07)
+    """
 
-    def test_fix_length2D(self):
+    def test_fix_length(self):
         signal1 = torch.rand([2, 88100]).as_subclass(Signal)
         assert util.fix_length(signal1, length=T(44100)).shape == (2, 44100)
         assert util.fix_length(signal1, length=T(90000)).shape == (2, 90000)
@@ -59,7 +61,7 @@ class TestTorchUtil:
         assert torch.max(torch.abs(signal1_norm)) == 1.0
         assert signal1[1, :].eq(signal1_norm[1, :]).all()
 
-    def test_normalize_2D(self):
+    def test_normalize(self):
         signal = torch.rand([2, 44100]).as_subclass(Signal) * T([[100], [0.01]])
         signal_norm = util.normalize(signal)
         max_vals = torch.max(torch.abs(signal_norm), dim=1)

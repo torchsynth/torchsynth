@@ -9,15 +9,16 @@ import math
 import torch
 import torch.tensor as T
 
-from torchsynth.default import EPS, EQ_POW
 from torchsynth.signal import Signal
+
+torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
 
 def midi_to_hz(midi: T) -> T:
     """
     Convert from midi (linear pitch) to frequency in Hz.
     """
-    return 440.0 * (2.0 ** ((midi - 69.0) / 12.0))
+    return 440.0 * (torch.exp2((midi - 69.0) / 12.0))
 
 
 def fix_length(signal: Signal, length: T) -> Signal:
@@ -40,7 +41,9 @@ def normalize_if_clipping(signal: Signal) -> Signal:
     or greater than 1.0
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
-    return torch.where(max_sample > 1.0, signal / max_sample, signal)
+    return torch.where(
+        max_sample > T(1.0, device=signal.device), signal / max_sample, signal
+    )
 
 
 def normalize(signal: Signal) -> Signal:
@@ -52,27 +55,9 @@ def normalize(signal: Signal) -> Signal:
 
 
 def sinc(x: T) -> T:
-    return torch.where(x == 0, T(1.0, device=x.device), torch.sin(x) / x)
-
-
-def blackman(length: T) -> T:
-    num_samples = torch.ceil(length)
-    diff = num_samples - length
-    n = torch.arange(num_samples.detach() - (diff.detach() / 2), device=length.device)
-    cos_a = torch.cos(2 * math.pi * n / (length - 1))
-    cos_b = torch.cos(4 * math.pi * n / (length - 1))
-    window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
-
-    # Linearly interpolate the ends of the window to achieve fractional length
-    window = torch.cat(
-        (
-            T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
-            window[1:-1],
-            T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
-        )
+    return torch.where(
+        x == T(0, device=x.device), T(1.0, device=x.device), torch.sin(x) / x
     )
-
-    return window
 
 
 # Here are some old functions that we are not currently using but might want in the future.
@@ -138,4 +123,25 @@ def blackman(length: T) -> T:
 #         stop = stop - (temp / num)
 #
 #     return torch.linspace(start, stop, num)
+#
+#
+# def blackman(length: T) -> T:
+#     num_samples = torch.ceil(length)
+#     diff = num_samples - length
+#     n = torch.arange(num_samples.detach() - (diff.detach() / 2), device=length.device)
+#     cos_a = torch.cos(2 * torch.pi * n / (length - 1)).to(length.device)
+#     cos_b = torch.cos(4 * torch.pi * n / (length - 1)).to(length.device)
+#     window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
+#
+#     # Linearly interpolate the ends of the window to achieve fractional length
+#     window = torch.cat(
+#         (
+#             T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
+#             window[1:-1],
+#             T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
+#         )
+#     ).to(length.device)
+#
+#     return window
+#
 #
