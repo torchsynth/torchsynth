@@ -19,6 +19,8 @@ class TestAbstractSynth:
     Tests for AbstractSynth
     """
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     def test_construction(self):
         # Test empty construction
         synthglobals = torchsynth.globals.SynthGlobals(
@@ -36,8 +38,9 @@ class TestAbstractSynth:
             tuning=T([-12.0, 3.0]),
             mod_depth=T([50.0, -50.0]),
             synthglobals=synthglobals,
+            device=self.device,
         )
-        noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
+        noise = synthmodule.Noise(synthglobals=synthglobals, device=self.device)
 
         synth.add_synth_modules([("vco", vco), ("noise", noise)])
         assert hasattr(synth, "vco")
@@ -71,6 +74,7 @@ class TestAbstractSynth:
                 tuning=T([12.0, -5.0]),
                 mod_depth=T([50.0, 50.0]),
                 synthglobals=synthglobals_weird_sr,
+                device=self.device,
             )
             synth.add_synth_modules([("vco_2", vco_2)])
 
@@ -87,6 +91,7 @@ class TestAbstractSynth:
                 release=T([1.0]),
                 alpha=T([1.0]),
                 synthglobals=synthglobals_new_batchsize,
+                device=self.device,
             )
             synth.add_synth_modules([("adsr", adsr)])
 
@@ -97,6 +102,7 @@ class TestAbstractSynth:
             )
             adsr = synthmodule.ADSR(
                 synthglobals=synthglobals_new_batchsize,
+                device=self.device,
             )
             synth.add_synth_modules([("adsr", adsr)])
 
@@ -107,6 +113,7 @@ class TestAbstractSynth:
             )
             adsr = synthmodule.ADSR(
                 synthglobals=synthglobals_new_buffersize,
+                device=self.device,
             )
             synth.add_synth_modules([("adsr", adsr)])
 

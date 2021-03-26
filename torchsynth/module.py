@@ -502,9 +502,7 @@ class Noise(SynthModule):
     Generates white noise that is the same length as the buffer
     """
 
-    def __init__(
-        self, synthglobals: SynthGlobals, device: Optional[torch.device] = None
-    ):
+    def __init__(self, synthglobals: SynthGlobals, device: torch.device):
         super().__init__(synthglobals, device)
         self.noise = torch.empty(
             (self.batch_size, self.buffer_size), device=self.device
@@ -633,6 +631,7 @@ class ModulationMixer(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: torch.device,
         n_input: int,
         n_output: int,
         curves: Optional[List[float]] = None,
@@ -659,7 +658,7 @@ class ModulationMixer(SynthModule):
                     )
                 )
 
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
         self.n_input = n_input
         self.n_output = n_output
 
@@ -689,6 +688,7 @@ class AudioMixer(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: torch.device,
         n_input: int,
         curves: Optional[List[float]] = None,
         **kwargs: Dict[str, T],
@@ -713,7 +713,7 @@ class AudioMixer(SynthModule):
                 )
             )
 
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
         self.n_input = n_input
 
     def _forward(self, *signals: Signal) -> Signal:
@@ -784,6 +784,7 @@ class SoftModeSelector(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: torch.device,
         n_modes: int,
         exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
@@ -803,7 +804,7 @@ class SoftModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
         self.exponent = exponent
 
     def forward(self) -> Tuple[T, T]:
@@ -826,6 +827,7 @@ class HardModeSelector(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: torch.device,
         n_modes: int,
         **kwargs: Dict[str, T],
     ):
@@ -839,7 +841,7 @@ class HardModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
 
     def forward(self) -> Tuple[T, T]:
         # Is this tensor creation slow?
