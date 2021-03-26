@@ -61,6 +61,7 @@ setup(
             "mock",
             "recommonmark",
             "myst-parser",
+            "linkify-it-py",
         ],
     },
 )
