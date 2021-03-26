@@ -50,7 +50,7 @@ class ModuleParameterRange:
         self.symmetric = symmetric
 
     def to(self, device: torch.device):
-        if self.device == None:
+        if self.device is None:
             assert isinstance(self.minimum, float)
             self.device = device
             self.minimum = T(self.minimum, device=self.device)
