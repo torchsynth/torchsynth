@@ -177,11 +177,12 @@ adsr = ADSR(
     alpha=alpha,
     synthglobals=synthglobals,
     device=device,
-).to(device)
+)
+
 # I'm curious here if just doing device=device is enough and we
 # don't need the .to(device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
 # -
 
 # Here's the l1 error between the two envelopes
@@ -201,9 +202,9 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals, device).to(device)
+adsr = ADSR(synthglobals, device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
@@ -242,7 +243,7 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
     synthglobals, device, midi_f0=T([69.0, 50.0]), duration=note_on_duration
-).to(device)
+)
 
 # Reset envelope
 adsr = ADSR(
@@ -253,7 +254,7 @@ adsr = ADSR(
     alpha=alpha,
     synthglobals=synthglobals,
     device=device,
-).to(device)
+)
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
@@ -265,8 +266,11 @@ sine_vco = SineVCO(
     tuning=T([0.0, 0.0]),
     mod_depth=T([-12.0, 12.0]),
     synthglobals=synthglobals,
-    device=device,
 ).to(device)
+
+
+print(sine_vco.get_parameter("tuning").parameter_range.minimum)
+
 sine_out = sine_vco(midi_f0, envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
@@ -393,10 +397,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 
 # +
 noise = Noise(synthglobals, device=device)
-
-# Optionally can pass in the device to make sure the noise gets created
-# on the current device.
-out = noise(device)
+out = noise()
 
 stft_plot(out[0].detach().cpu().numpy())
 ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
@@ -417,9 +418,9 @@ noise = Noise(synthglobals, device=device)
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
-noise_out = noise(device)
+noise_out = noise()
 
-mixer = AudioMixer(synthglobals, device, 3, curves=[1.0, 1.0, 0.25]).to(device)
+mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25]).to(device)
 output = mixer(sine_out, sqr_out, noise_out)
 
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normalize=False)
@@ -459,7 +460,7 @@ time_plot(out2[0].detach().cpu().numpy())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals, device, 2, 1).to(device)
+mixer = ModulationMixer(synthglobals=synthglobals, device=device, n_input=2, n_output=1)
 mods_mixed = mixer(out, out2)
 
 print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
@@ -550,13 +551,11 @@ for i in range(synthglobals16.batch_size):
     ipd.display(
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
-# -
 
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Voice we just created.
-
 for n, p in voice1.named_parameters():
     print(f"{n:40}")
 

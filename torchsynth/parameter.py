@@ -50,20 +50,21 @@ class ModuleParameterRange:
         self.symmetric = symmetric
 
     def to(self, device: torch.device):
-        if self.device is None:
-            assert isinstance(self.minimum, float)
+        if self.device is None and isinstance(self.minimum, float):
             self.device = device
             self.minimum = T(self.minimum, device=self.device)
             self.maximum = T(self.maximum, device=self.device)
             self.curve = T(self.curve, device=self.device)
             self.symmetric = T(self.symmetric, device=self.device)
         else:
-            # assert isinstance(self.minimum, torch.tensor)
+            assert isinstance(self.minimum, torch.Tensor)
             self.device = device
-            self.minimum = self.minimum.clone().detach().to(self.device)
-            self.maximum = self.maximum.clone().detach().to(self.device)
-            self.curve = self.curve.clone().detach().to(self.device)
-            self.symmetric = self.symmetric.clone().detach().to(self.device)
+            self.minimum = self.minimum.to(self.device)
+            self.maximum = self.maximum.to(self.device)
+            self.curve = self.curve.to(self.device)
+            self.symmetric = self.symmetric.to(self.device)
+
+        return self
 
     def __repr__(self):
         return (
@@ -224,3 +225,14 @@ class ModuleParameter(nn.Parameter):
             return parameter.frozen
         else:
             raise ValueError(f"Param {parameter} is not a ModuleParameter")
+
+    def __torch_function__(self, func, types, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+
+        if func.__name__ == "to":
+            for arg in args:
+                if isinstance(arg, torch.device):
+                    self.parameter_range.to(arg)
+
+        return super().__torch_function__(func, types, args, kwargs)

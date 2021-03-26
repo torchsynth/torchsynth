@@ -3,6 +3,7 @@ Synth modules in Torch.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+import copy
 
 import torch
 import torch.nn as nn
@@ -35,7 +36,10 @@ class SynthModule(nn.Module):
     parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
     def __init__(
-        self, synthglobals: SynthGlobals, device: torch.device, **kwargs: Dict[str, T]
+        self,
+        synthglobals: SynthGlobals,
+        device: Optional[torch.device] = None,
+        **kwargs: Dict[str, T],
     ):
         """
         Args:
@@ -61,13 +65,15 @@ class SynthModule(nn.Module):
         self.seed: Optional[int] = None
 
         if self.parameter_ranges:
+            # We need to create copies of the ParameterRanges here now that they can
+            # exist on either the CPU or GPU. All instances of a particular SynthModule
+            # implementation will otherwise reference the same ParameterRange objects
+            # which could lead to the ParameterRanges inadvertently being moved.
+            parameter_ranges = copy.deepcopy(self.parameter_ranges)
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
-                p.name: p for p in self.parameter_ranges
+                p.name: p for p in parameter_ranges
             }
-            assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
-            for parameter_range in self.parameter_ranges:
-                # Put all the parameter ranges onto the device
-                parameter_range.to(self.device)
+            assert len(self._parameter_ranges_dict) == len(parameter_ranges)
             self.add_parameters(
                 [
                     ModuleParameter(
@@ -75,13 +81,15 @@ class SynthModule(nn.Module):
                         parameter_name=parameter_range.name,
                         # Should we use CSPRNG here? Or doesn't matter?
                         data=torch.rand((self.synthglobals.batch_size,), device=device),
-                        parameter_range=parameter_range,
+                        parameter_range=parameter_range.to(device),
                     )
-                    for parameter_range in self.parameter_ranges
+                    for parameter_range in parameter_ranges
                 ]
             )
             if kwargs:
                 for name, data in kwargs.items():
+                    if data.device != self.device:
+                        data = data.to(self.device)
                     self.set_parameter(name, data)
 
     @property
@@ -192,6 +200,14 @@ class SynthModule(nn.Module):
         value = self.torchparameters[parameter_id].from_0to1()
         assert value.shape == (self.batch_size,)
         return value
+
+    def to(self, device=None, **kwargs):
+        """
+        Overriding the to call for nn.Module to transfer this module to device
+        """
+        self.synthglobals.to(device)
+        self.device = device
+        return super().to(device=device, **kwargs)
 
 
 class ADSR(SynthModule):
@@ -511,16 +527,19 @@ class Noise(SynthModule):
 
     def __init__(self, synthglobals: SynthGlobals, device: torch.device):
         super().__init__(synthglobals, device)
-        self.noise = torch.empty(
-            (self.batch_size, self.buffer_size), device=self.device
+        self.register_buffer(
+            "noise",
+            torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
 
-    def _forward(self, device: Optional[torch.device] = None) -> Signal:
+    def _forward(self) -> Signal:
         if self.seed is not None:
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
             self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            self.noise = torch.rand((self.batch_size, self.buffer_size), device=device)
+            self.noise = torch.rand(
+                (self.batch_size, self.buffer_size), device=self.device
+            )
             self.noise = self.noise * 2 - 1
         return self.noise.as_subclass(Signal)
 
@@ -639,7 +658,6 @@ class ModulationMixer(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        device: torch.device,
         n_input: int,
         n_output: int,
         curves: Optional[List[float]] = None,
@@ -666,7 +684,7 @@ class ModulationMixer(SynthModule):
                     )
                 )
 
-        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
         self.n_input = n_input
         self.n_output = n_output
 
@@ -696,7 +714,6 @@ class AudioMixer(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        device: torch.device,
         n_input: int,
         curves: Optional[List[float]] = None,
         **kwargs: Dict[str, T],
@@ -721,7 +738,7 @@ class AudioMixer(SynthModule):
                 )
             )
 
-        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
         self.n_input = n_input
 
     def _forward(self, *signals: Signal) -> Signal:
@@ -792,7 +809,6 @@ class SoftModeSelector(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        device: torch.device,
         n_modes: int,
         exponent: T = T(2.718281828),  # e
         **kwargs: Dict[str, T],
@@ -812,7 +828,7 @@ class SoftModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
         self.exponent = exponent
 
     def forward(self) -> Tuple[T, T]:
@@ -835,7 +851,6 @@ class HardModeSelector(SynthModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        device: torch.device,
         n_modes: int,
         **kwargs: Dict[str, T],
     ):
@@ -849,7 +864,7 @@ class HardModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals=synthglobals, device=device, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
 
     def forward(self) -> Tuple[T, T]:
         # Is this tensor creation slow?

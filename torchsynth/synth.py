@@ -226,6 +226,13 @@ class AbstractSynth(LightningModule):
         for module in self._modules:
             self._modules[module].seed = seed
 
+    def to(self, device=None, **kwargs):
+        super().to(device=device, **kwargs)
+        for module in self.modules():
+            if isinstance(module, SynthModule):
+                module.to(device=device, **kwargs)
+        return self
+
 
 class Voice(AbstractSynth):
     """
@@ -294,6 +301,6 @@ class Voice(AbstractSynth):
         # Create signal and with modulations and mix together
         vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[1])
         vco_2_out = self.vca(self.vco_2(midi_f0, modulation[2]), modulation[3])
-        noise_out = self.vca(self.noise(device=self.device), modulation[4])
+        noise_out = self.vca(self.noise(), modulation[4])
 
         return self.mixer(vco_1_out, vco_2_out, noise_out)
