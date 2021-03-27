@@ -5,8 +5,8 @@ import torch.tensor as T
 from torchsynth.globals import SynthGlobals
 from torchsynth.synth import Voice
 
-# #%load_ext autoreload
-# #%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 # -
 
 if torch.cuda.is_available():
@@ -24,17 +24,5 @@ with torch.no_grad():
 
 with torch.no_grad():
     # %timeit -r 100 -n 1 voice()
-
-voice.synthglobals.batch_size
-
-voice.synthglobals.sample_rate
-
-voice.synthglobals.buffer_size
-
-voice.sample_rate
-
-voice.hyperparameters
-
-voice.set_hyperparameter(('adsr_1', 'attack', 'curve'), 0.75)
 
 
