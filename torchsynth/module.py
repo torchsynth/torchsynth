@@ -425,7 +425,7 @@ class VCO(SynthModule):
         assert midi_f0.shape == (self.batch_size,)
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        assert (control_as_frequency >= 0).all() and (
+        assert (control_as_frequency >= 0.0).all() and (
             control_as_frequency <= self.nyquist
         ).all()
 
