@@ -56,19 +56,20 @@ class ModuleParameterRange:
         # Upon instantiation we will get the ranges as floats, however, if this
         # has been called before then the attributes will already be tensors (although
         # potentially still on the CPU), so just update the device
-        if self.device is None and isinstance(self.minimum, float):
-            self.device = device
-            self.minimum = T(self.minimum, device=self.device)
-            self.maximum = T(self.maximum, device=self.device)
-            self.curve = T(self.curve, device=self.device)
-            self.symmetric = T(self.symmetric, device=self.device)
-        else:
-            assert isinstance(self.minimum, torch.Tensor)
-            self.device = device
-            self.minimum = self.minimum.to(self.device)
-            self.maximum = self.maximum.to(self.device)
-            self.curve = self.curve.to(self.device)
-            self.symmetric = self.symmetric.to(self.device)
+        self.device = device
+        # if self.device is None and isinstance(self.minimum, float):
+        #     self.device = device
+        #     self.minimum = T(self.minimum, device=self.device)
+        #     self.maximum = T(self.maximum, device=self.device)
+        #     self.curve = T(self.curve, device=self.device)
+        #     self.symmetric = T(self.symmetric, device=self.device)
+        # else:
+        #     assert isinstance(self.minimum, torch.Tensor)
+        #     self.device = device
+        #     self.minimum = self.minimum.to(self.device)
+        #     self.maximum = self.maximum.to(self.device)
+        #     self.curve = self.curve.to(self.device)
+        #     self.symmetric = self.symmetric.to(self.device)
 
         return self
 
