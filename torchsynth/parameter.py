@@ -43,7 +43,7 @@ class ModuleParameterRange:
     ):
         self.name = name
         self.description = description
-        self.device = device
+        self.device = None
         self.minimum = minimum
         self.maximum = maximum
         self.curve = curve
@@ -56,7 +56,7 @@ class ModuleParameterRange:
         # Upon instantiation we will get the ranges as floats, however, if this
         # has been called before then the attributes will already be tensors (although
         # potentially still on the CPU), so just update the device
-        self.device = device
+        # self.device = device
         # if self.device is None and isinstance(self.minimum, float):
         #     self.device = device
         #     self.minimum = T(self.minimum, device=self.device)
