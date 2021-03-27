@@ -115,9 +115,11 @@ class SynthModule(nn.Module):
         return util.fix_length2D(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
-        # Do we want this?
-        # assert seconds.ndim == 1
-        return torch.round(seconds * self.sample_rate)
+        """
+        Converts a tensor of seconds to number of samples at the current sample rate.
+        Returns the number of samples as a float and can be fractional.
+        """
+        return seconds * self.sample_rate
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
