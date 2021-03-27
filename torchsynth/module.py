@@ -174,9 +174,7 @@ class SynthModule(nn.Module):
             parameter_id (str)  : Id of the parameter to update
             value (T)           : Value to update parameter with
         """
-        if value.device != self.device:
-            value = value.to(self.device)
-
+        value = value.to(self.device)
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
         assert torch.all(T(0, device=self.device) <= value) and torch.all(
@@ -192,9 +190,7 @@ class SynthModule(nn.Module):
             parameter_id (str)  : Id of the parameter to update
             value (T)           : Value to update parameter with
         """
-        if value.device != self.device:
-            value = value.to(self.device)
-
+        value = value.to(self.device)
         assert torch.all(T(0, device=self.device) <= value) and torch.all(
             value <= T(1, device=self.device)
         )

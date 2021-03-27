@@ -74,6 +74,22 @@ class TestSynthModule:
         assert module.p("param_1") == 5000.0
     """
 
+    def test_set_parameter(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        module = synthmodule.ADSR(synthglobals, attack=T([0.5, 1.0]))
+
+        # Confirm value set correctly from constructor
+        assert torch.all(module.p("attack") == T([0.5, 1.0]))
+
+        # Confirm value set correctly from 0to1 range
+        module.set_parameter_0to1("attack", T([0.33, 0.25]))
+        assert torch.all(module.get_parameter_0to1("attack") == T([0.33, 0.25]))
+
+        # Mode module to device (GPU if available) and make sure parameters have moved
+        module.to(self.device)
+        for parameter in module.torchparameters.values():
+            assert parameter.device.type == self.device
+
     def test_softmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         mode_selector = synthmodule.SoftModeSelector(
@@ -84,7 +100,11 @@ class TestSynthModule:
         mode_selector.set_parameter("mode2weight", T([0.8, 0.0]))
         assert (
             torch.mean(
-                mode_selector() - T([[1 / 3, 1.0000], [1 / 3, 0.0000], [1 / 3, 0.0000]])
+                mode_selector()
+                - T(
+                    [[1 / 3, 1.0000], [1 / 3, 0.0000], [1 / 3, 0.0000]],
+                    device=self.device,
+                )
             )
             < 1e-6
         )
@@ -98,7 +118,11 @@ class TestSynthModule:
         mode_selector.set_parameter("mode1weight", T([0.7, 0.5]))
         mode_selector.set_parameter("mode2weight", T([0.7, 0.0]))
         assert (
-            torch.mean(mode_selector() - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]])) < 1e-6
+            torch.mean(
+                mode_selector()
+                - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]], device=self.device)
+            )
+            < 1e-6
         )
 
     def test_audiomixer(self):
