@@ -17,4 +17,4 @@ synthglobals64 = SynthGlobals(
 voice = Voice(synthglobals=synthglobals64).to(device)
 
 with torch.no_grad():
-    # %timeit voice() # nofmt
+    # %timeit voice()
