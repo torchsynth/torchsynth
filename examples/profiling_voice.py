@@ -15,7 +15,7 @@ else:
     device = 'cpu'
 
 synthglobals64 = SynthGlobals(
-    batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
+    batch_size=T(64), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 voice = Voice(synthglobals=synthglobals64).to(device)
 

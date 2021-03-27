@@ -251,6 +251,16 @@ class ADSR(SynthModule):
         ),
     ]
 
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer(
+            "range", torch.arange(self.buffer_size, device=self.device)
+        )
+
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
@@ -309,11 +319,8 @@ class ADSR(SynthModule):
         start_ = self.seconds_to_samples(start)
         duration_ = self.seconds_to_samples(duration)
 
-        # Build ramps template.
-        tmp = torch.arange(self.buffer_size, device=self.device)
-        ramp = tmp.repeat([self.batch_size, 1])
-
         # Shape ramps.
+        ramp = self.range.expand(self.batch_size, self.buffer_size)
         ramp = ramp - start_[:, None]
         ramp = torch.maximum(ramp, T(0.0, device=self.device))
         ramp = (ramp + EPS) / (duration_[:, None] + EPS)
@@ -542,6 +549,7 @@ class Noise(SynthModule):
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
+        self.noise.data.uniform_(-1, 1)
 
     def _forward(self) -> Signal:
         if self.seed is not None:

@@ -200,7 +200,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals, device)
+adsr = ADSR(synthglobals, device=device)
 envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
 
