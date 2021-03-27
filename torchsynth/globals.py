@@ -31,9 +31,8 @@ class SynthGlobals:
         self.buffer_size = buffer_size
 
     def to(self, device: torch.device):
-        self.batch_size = self.batch_size.to(device)
-        self.sample_rate = self.sample_rate.to(device)
-        self.buffer_size = self.buffer_size.to(device)
+        # Only helpful to have sample rate as a float tensor on GPU
+        self.sample_rate = self.sample_rate.to(device).float()
 
     def __repr__(self):
         return (

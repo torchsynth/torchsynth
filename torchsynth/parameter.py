@@ -56,21 +56,7 @@ class ModuleParameterRange:
         # Upon instantiation we will get the ranges as floats, however, if this
         # has been called before then the attributes will already be tensors (although
         # potentially still on the CPU), so just update the device
-        # self.device = device
-        # if self.device is None and isinstance(self.minimum, float):
-        #     self.device = device
-        #     self.minimum = T(self.minimum, device=self.device)
-        #     self.maximum = T(self.maximum, device=self.device)
-        #     self.curve = T(self.curve, device=self.device)
-        #     self.symmetric = T(self.symmetric, device=self.device)
-        # else:
-        #     assert isinstance(self.minimum, torch.Tensor)
-        #     self.device = device
-        #     self.minimum = self.minimum.to(self.device)
-        #     self.maximum = self.maximum.to(self.device)
-        #     self.curve = self.curve.to(self.device)
-        #     self.symmetric = self.symmetric.to(self.device)
-
+        self.device = device
         return self
 
     def __repr__(self):
@@ -89,20 +75,21 @@ class ModuleParameterRange:
           normalized (T): value within [0,1] range to convert to range defined by
           minimum and maximum
         """
-        assert torch.all(T(0.0, device=self.device) <= normalized)
-        assert torch.all(normalized <= T(1.0, device=self.device))
+        # TODO: These asserts are very slow
+        # assert torch.all(0.0 <= normalized)
+        # assert torch.all(normalized <= 1.0)
 
         if not self.symmetric:
-            if self.curve != 1:
+            if self.curve != 1.0:
                 normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
             return self.minimum + (self.maximum - self.minimum) * normalized
 
         # Compute the curve for a symmetric curve
         dist = 2.0 * normalized - 1.0
-        if self.curve != 1:
+        if self.curve != 1.0:
             normalized = torch.where(
-                dist == T(0.0, device=self.device),
+                dist == 0.0,
                 dist,
                 torch.exp2(torch.log2(torch.abs(dist)) / self.curve) * torch.sign(dist),
             )

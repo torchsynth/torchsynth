@@ -202,12 +202,6 @@ class AbstractSynth(LightningModule):
         Set a hyperparameter. Pass in the module name, parameter name, and
         hyperparameter to set, and the value to set it to.
         """
-        # Hyperparameters as Tensors on the correct device
-        if isinstance(value, torch.Tensor) and value.device != self.device:
-            value = value.to(self.device)
-        else:
-            value = T(value, device=self.device)
-
         module = getattr(self, hyperparameter[0])
         parameter = module.get_parameter(hyperparameter[1])
         assert not ModuleParameter.is_parameter_frozen(parameter)
@@ -232,16 +226,15 @@ class AbstractSynth(LightningModule):
         for module in self._modules:
             self._modules[module].seed = seed
 
-    def to(self, device=None, **kwargs):
+    def on_post_move_to_device(self) -> None:
         """
-        Override to method on LightningModule. This sets all children SynthModules
-        to the correct device by calling their respective to methods.
+        LightningModule trigger after this Synth has been moved to a different device.
+        Use this to update children SynthModules device settings
         """
-        super().to(device=device, **kwargs)
+        self.synthglobals.to(self.device)
         for module in self.modules():
             if isinstance(module, SynthModule):
-                module.to(device=device, **kwargs)
-        return self
+                module.update_device(self.device)
 
 
 class Voice(AbstractSynth):
@@ -255,30 +248,27 @@ class Voice(AbstractSynth):
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("keyboard", MonophonicKeyboard(synthglobals, device=self.device)),
-                ("adsr_1", ADSR(synthglobals, device=self.device)),
-                ("adsr_2", ADSR(synthglobals, device=self.device)),
-                ("lfo_1", LFO(synthglobals, device=self.device)),
-                ("lfo_2", LFO(synthglobals, device=self.device)),
-                ("lfo_1_amp_adsr", ADSR(synthglobals, device=self.device)),
-                ("lfo_2_amp_adsr", ADSR(synthglobals, device=self.device)),
-                ("lfo_1_rate_adsr", ADSR(synthglobals, device=self.device)),
-                ("lfo_2_rate_adsr", ADSR(synthglobals, device=self.device)),
+                ("keyboard", MonophonicKeyboard(synthglobals)),
+                ("adsr_1", ADSR(synthglobals)),
+                ("adsr_2", ADSR(synthglobals)),
+                ("lfo_1", LFO(synthglobals)),
+                ("lfo_2", LFO(synthglobals)),
+                ("lfo_1_amp_adsr", ADSR(synthglobals)),
+                ("lfo_2_amp_adsr", ADSR(synthglobals)),
+                ("lfo_1_rate_adsr", ADSR(synthglobals)),
+                ("lfo_2_rate_adsr", ADSR(synthglobals)),
                 (
                     "mod_matrix",
-                    ModulationMixer(
-                        synthglobals, device=self.device, n_input=4, n_output=5
-                    ),
+                    ModulationMixer(synthglobals, n_input=4, n_output=5),
                 ),
-                ("vco_1", SineVCO(synthglobals, device=self.device)),
-                ("vco_2", SquareSawVCO(synthglobals, device=self.device)),
-                ("noise", Noise(synthglobals, device=self.device)),
-                ("vca", VCA(synthglobals, device=self.device)),
+                ("vco_1", SineVCO(synthglobals)),
+                ("vco_2", SquareSawVCO(synthglobals)),
+                ("noise", Noise(synthglobals)),
+                ("vca", VCA(synthglobals)),
                 (
                     "mixer",
                     AudioMixer(
                         synthglobals,
-                        device=self.device,
                         n_input=3,
                         curves=[1.0, 1.0, 0.1],
                     ),

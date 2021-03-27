@@ -65,10 +65,9 @@ class SynthModule(nn.Module):
         self.seed: Optional[int] = None
 
         if self.parameter_ranges:
-            # We need to create copies of the ParameterRanges here now that they can
-            # exist on either the CPU or GPU. All instances of a particular SynthModule
-            # implementation will otherwise reference the same ParameterRange objects
-            # which could lead to the ParameterRanges inadvertently being moved.
+            # TODO: Is this copying thing what we want?
+            # We want to create copies of the parameter ranges otherwise each instance
+            # of the same module type (ex. ADSR) will reference the same param range
             parameter_ranges = copy.deepcopy(self.parameter_ranges)
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
                 p.name: p for p in parameter_ranges
@@ -81,7 +80,7 @@ class SynthModule(nn.Module):
                         parameter_name=parameter_range.name,
                         # Should we use CSPRNG here? Or doesn't matter?
                         data=torch.rand((self.synthglobals.batch_size,), device=device),
-                        parameter_range=parameter_range.to(device),
+                        parameter_range=parameter_range,
                     )
                     for parameter_range in parameter_ranges
                 ]
@@ -105,7 +104,7 @@ class SynthModule(nn.Module):
 
     @property
     def nyquist(self):
-        return self.sample_rate // 2
+        return self.sample_rate / T(2, device=self.device)
 
     @property
     def buffer_size(self) -> T:
@@ -118,7 +117,7 @@ class SynthModule(nn.Module):
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
         # assert seconds.ndim == 1
-        return torch.round(seconds * self.sample_rate).int()
+        return torch.round(seconds * self.sample_rate)
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -131,7 +130,9 @@ class SynthModule(nn.Module):
         Wrapper for _forward that ensures a buffer_size length output.
         TODO: Make this forward0d() after everything is 1D
         """
-        return self.to_buffer_size(self._forward(*args, **kwargs))
+        signal = self._forward(*args, **kwargs)
+        buffered = self.to_buffer_size(signal)
+        return buffered
 
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
@@ -214,11 +215,14 @@ class SynthModule(nn.Module):
         makes sure that the ParameterRanges for each ModuleParamter and the globals
         are also transferred to the correct device.
         """
+        self.update_device(device)
+        return super().to(device=device, **kwargs)
+
+    def update_device(self, device=None):
         self.synthglobals.to(device)
         self.device = device
         for name, parameter in self.torchparameters.items():
             parameter.parameter_range.to(device)
-        return super().to(device=device, **kwargs)
 
 
 class ADSR(SynthModule):
@@ -289,7 +293,7 @@ class ADSR(SynthModule):
         decay_signal = self.make_decay(new_attack, new_decay)
         release_signal = self.make_release(note_on_duration)
 
-        return attack_signal * decay_signal * release_signal
+        return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
 
     def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
@@ -536,8 +540,8 @@ class Noise(SynthModule):
     Generates white noise that is the same length as the buffer
     """
 
-    def __init__(self, synthglobals: SynthGlobals, device: torch.device):
-        super().__init__(synthglobals, device)
+    def __init__(self, synthglobals: SynthGlobals, **kwargs):
+        super().__init__(synthglobals, **kwargs)
         self.register_buffer(
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
@@ -548,10 +552,7 @@ class Noise(SynthModule):
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
             self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            self.noise = torch.rand(
-                (self.batch_size, self.buffer_size), device=self.device
-            )
-            self.noise = self.noise * 2 - 1
+            self.noise.data.uniform_(-1, 1)
         return self.noise.as_subclass(Signal)
 
 
