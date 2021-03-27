@@ -16,8 +16,6 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
-torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
-
 
 class SynthModule(nn.Module):
     """
@@ -93,7 +91,7 @@ class SynthModule(nn.Module):
         return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
-        return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         # Do we want this?
