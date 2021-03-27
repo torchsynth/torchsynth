@@ -25,8 +25,8 @@ in terms of throughput.
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
 
-You will need to install the particular version of
-[torchcsprng](https://github.com/pytorch/csprng) for your CUDA
+You will need to install the particular version of [torchcsprng
+0.2.0](https://github.com/pytorch/csprng), not 0.2.1, for your CUDA
 device. Please follow their simple installation instructions.
 
 ## Development Installation
