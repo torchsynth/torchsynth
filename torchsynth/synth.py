@@ -236,6 +236,7 @@ class AbstractSynth(LightningModule):
         self.synthglobals.to(self.device)
         for module in self.modules():
             if isinstance(module, SynthModule):
+                # TODO look into performance of calling to instead
                 module.update_device(self.device)
 
 
