@@ -4,6 +4,9 @@ import torch.tensor as T
 
 from torchsynth.globals import SynthGlobals
 from torchsynth.synth import Voice
+
+# %load_ext autoreload
+# %autoreload 2
 # -
 
 if torch.cuda.is_available():
@@ -16,5 +19,15 @@ synthglobals64 = SynthGlobals(
 )
 voice = Voice(synthglobals=synthglobals64).to(device)
 
+out = voice()
+
 with torch.no_grad():
     # %timeit voice()
+
+voice.synthglobals.batch_size
+
+voice.synthglobals.sample_rate
+
+voice.synthglobals.buffer_size
+
+
