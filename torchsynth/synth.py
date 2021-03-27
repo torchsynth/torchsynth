@@ -202,6 +202,12 @@ class AbstractSynth(LightningModule):
         Set a hyperparameter. Pass in the module name, parameter name, and
         hyperparameter to set, and the value to set it to.
         """
+        # Hyperparameters as Tensors on the correct device
+        if isinstance(value, torch.Tensor) and value.device != self.device:
+            value = value.to(self.device)
+        else:
+            value = T(value, device=self.device)
+
         module = getattr(self, hyperparameter[0])
         parameter = module.get_parameter(hyperparameter[1])
         assert not ModuleParameter.is_parameter_frozen(parameter)
