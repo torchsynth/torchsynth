@@ -179,8 +179,6 @@ adsr = ADSR(
     device=device,
 )
 
-# I'm curious here if just doing device=device is enough and we
-# don't need the .to(device)
 envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
 # -
@@ -261,15 +259,13 @@ midi_f0, duration = keyboard()
 
 envelope = adsr(duration)
 
-# SineVCO test
+# SineVCO test -- call to(device) instead of passing in device to constructor also works
 sine_vco = SineVCO(
     tuning=T([0.0, 0.0]),
     mod_depth=T([-12.0, 12.0]),
     synthglobals=synthglobals,
 ).to(device)
 
-
-print(sine_vco.get_parameter("tuning").parameter_range.minimum)
 
 sine_out = sine_vco(midi_f0, envelope)
 
@@ -313,7 +309,7 @@ square_saw = SquareSawVCO(
     shape=T([0.0, 1.0]),
     synthglobals=synthglobals,
     device=device,
-).to(device)
+)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
 square_saw_out = square_saw(keyboard.p("midi_f0"), env2)
@@ -369,7 +365,7 @@ sine_operator = SineVCO(
     mod_depth=T([0.0, 5.0]),
     synthglobals=synthglobals,
     device=device,
-).to(device)
+)
 operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 
 # Shape the modulation depth.
@@ -381,7 +377,7 @@ fm_vco = TorchFmVCO(
     mod_depth=T([2.0, 5.0]),
     synthglobals=synthglobals,
     device=device,
-).to(device)
+)
 fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
@@ -410,9 +406,9 @@ from torchsynth.module import AudioMixer
 
 env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=device)
 
-keyboard = MonophonicKeyboard(synthglobals, device=device).to(device)
-sine = SineVCO(synthglobals, device=device).to(device)
-square_saw = SquareSawVCO(synthglobals, device=device).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device=device)
+sine = SineVCO(synthglobals, device=device)
+square_saw = SquareSawVCO(synthglobals, device=device)
 noise = Noise(synthglobals, device=device)
 
 midi_f0, note_on_duration = keyboard()
