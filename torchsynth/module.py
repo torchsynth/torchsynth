@@ -217,8 +217,14 @@ class SynthModule(nn.Module):
         return super().to(device=device, **kwargs)
 
     def update_device(self, device=None):
+        """
+        This handles the device transfer tasks that are not managed by PyTorch.
+        """
         self.synthglobals.to(device)
         self.device = device
+        # Currently the parameters ranges themselves are not move to a different
+        # device, but each ParameterRange object is device aware if it needs to be
+        # TODO: Do ParameterRanges need to be device aware? See issue #240
         for name, parameter in self.torchparameters.items():
             parameter.parameter_range.to(device)
 

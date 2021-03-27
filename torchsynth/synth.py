@@ -55,30 +55,32 @@ class AbstractSynth(LightningModule):
         assert self.synthglobals.buffer_size.ndim == 0
         return self.synthglobals.buffer_size
 
-    def add_synth_modules(self, modules: List[Tuple[str, SynthModule]]):
+    def add_synth_modules(
+        self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]
+    ):
         """
         Add a set of named children TorchSynthModules to this synth. Registers them
         with the torch nn.Module so that all parameters are recognized.
 
         Args:
-            modules List[Tuple[str, SynthModule]]: A list of SynthModules and
-                                            their names.
+            modules List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]: A list of
+                SynthModule classes with their names and any parameters to pass to
+                their constructor.
         """
 
-        for name, module in modules:
-            if not isinstance(module, SynthModule):
+        for module_tuple in modules:
+            if len(module_tuple) == 3:
+                name, module, params = module_tuple
+            else:
+                name, module = module_tuple
+                params = {}
+
+            if not issubclass(module, SynthModule):
                 raise TypeError(f"{module} is not a SynthModule")
 
-            if module.batch_size != self.batch_size:
-                raise ValueError(f"{module} batch_size does not match")
-
-            if module.sample_rate != self.sample_rate:
-                raise ValueError(f"{module} sample rate does not match")
-
-            if module.buffer_size != self.buffer_size:
-                raise ValueError(f"{module} buffer size does not match")
-
-            self.add_module(name, module)
+            self.add_module(
+                name, module(self.synthglobals, device=self.device, **params)
+            )
 
     def get_parameters(
         self, include_frozen: bool = False
@@ -248,31 +250,21 @@ class Voice(AbstractSynth):
         # Register all modules as children
         self.add_synth_modules(
             [
-                ("keyboard", MonophonicKeyboard(synthglobals)),
-                ("adsr_1", ADSR(synthglobals)),
-                ("adsr_2", ADSR(synthglobals)),
-                ("lfo_1", LFO(synthglobals)),
-                ("lfo_2", LFO(synthglobals)),
-                ("lfo_1_amp_adsr", ADSR(synthglobals)),
-                ("lfo_2_amp_adsr", ADSR(synthglobals)),
-                ("lfo_1_rate_adsr", ADSR(synthglobals)),
-                ("lfo_2_rate_adsr", ADSR(synthglobals)),
-                (
-                    "mod_matrix",
-                    ModulationMixer(synthglobals, n_input=4, n_output=5),
-                ),
-                ("vco_1", SineVCO(synthglobals)),
-                ("vco_2", SquareSawVCO(synthglobals)),
-                ("noise", Noise(synthglobals)),
-                ("vca", VCA(synthglobals)),
-                (
-                    "mixer",
-                    AudioMixer(
-                        synthglobals,
-                        n_input=3,
-                        curves=[1.0, 1.0, 0.1],
-                    ),
-                ),
+                ("keyboard", MonophonicKeyboard),
+                ("adsr_1", ADSR),
+                ("adsr_2", ADSR),
+                ("lfo_1", LFO),
+                ("lfo_2", LFO),
+                ("lfo_1_amp_adsr", ADSR),
+                ("lfo_2_amp_adsr", ADSR),
+                ("lfo_1_rate_adsr", ADSR),
+                ("lfo_2_rate_adsr", ADSR),
+                ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
+                ("vco_1", SineVCO),
+                ("vco_2", SquareSawVCO),
+                ("noise", Noise),
+                ("vca", VCA),
+                ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
             ]
         )
 
