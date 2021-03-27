@@ -51,11 +51,9 @@ class ModuleParameterRange:
 
     def to(self, device: torch.device):
         """
-        Send all the attributes of this object to a device.
+        Update the device attribute. Can do more here in the future if need be,
+        but from initial profiling it is faster to not have the attributes as tensors
         """
-        # Upon instantiation we will get the ranges as floats, however, if this
-        # has been called before then the attributes will already be tensors (although
-        # potentially still on the CPU), so just update the device
         self.device = device
         return self
 
