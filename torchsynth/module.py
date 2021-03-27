@@ -17,8 +17,6 @@ from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
-torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
-
 
 class SynthModule(nn.Module):
     """
@@ -33,7 +31,7 @@ class SynthModule(nn.Module):
 
     # This outlines all the parameters available in this module
     # TODO: Make this non-optional
-    parameter_ranges: Optional[List[ModuleParameterRange]] = None
+    default_parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
     def __init__(
         self,
@@ -61,28 +59,28 @@ class SynthModule(nn.Module):
         self.device = device
         self.synthglobals.to(device)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+        self.parameter_ranges = []
         # If this module needs a random seed, here it is
         self.seed: Optional[int] = None
 
-        if self.parameter_ranges:
-            # TODO: Is this copying thing what we want?
+        if self.default_parameter_ranges is not None:
             # We want to create copies of the parameter ranges otherwise each instance
             # of the same module type (ex. ADSR) will reference the same param range
-            parameter_ranges = copy.deepcopy(self.parameter_ranges)
+            assert isinstance(self.default_parameter_ranges, list)
+            self.parameter_ranges = copy.deepcopy(self.default_parameter_ranges)
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
-                p.name: p for p in parameter_ranges
+                p.name: p for p in self.parameter_ranges
             }
-            assert len(self._parameter_ranges_dict) == len(parameter_ranges)
+            assert len(self._parameter_ranges_dict) == len(self.parameter_ranges)
             self.add_parameters(
                 [
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        # Should we use CSPRNG here? Or doesn't matter?
                         data=torch.rand((self.synthglobals.batch_size,), device=device),
                         parameter_range=parameter_range,
                     )
-                    for parameter_range in parameter_ranges
+                    for parameter_range in self.parameter_ranges
                 ]
             )
             if kwargs:
@@ -112,12 +110,14 @@ class SynthModule(nn.Module):
         return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
-        return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
-        # Do we want this?
-        # assert seconds.ndim == 1
-        return torch.round(seconds * self.sample_rate)
+        """
+        Converts a tensor of seconds to number of samples at the current sample rate.
+        Returns the number of samples as a float and can be fractional.
+        """
+        return seconds * self.sample_rate
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -215,8 +215,14 @@ class SynthModule(nn.Module):
         return super().to(device=device, **kwargs)
 
     def update_device(self, device=None):
+        """
+        This handles the device transfer tasks that are not managed by PyTorch.
+        """
         self.synthglobals.to(device)
         self.device = device
+        # Currently the parameters ranges themselves are not move to a different
+        # device, but each ParameterRange object is device aware if it needs to be
+        # TODO: Do ParameterRanges need to be device aware? See issue #240
         for name, parameter in self.torchparameters.items():
             parameter.parameter_range.to(device)
 
@@ -226,7 +232,7 @@ class ADSR(SynthModule):
     Envelope class for building a control rate ADSR signal.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0, 2.0, curve=0.5, name="attack", description="attack time (sec)"
         ),
@@ -377,7 +383,7 @@ class VCO(SynthModule):
         phase (:obj:'T',optional) :   initial phase values
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             -24.0,
             24.0,
@@ -503,7 +509,9 @@ class SquareSawVCO(VCO):
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges + [
+    default_parameter_ranges: List[
+        ModuleParameterRange
+    ] = VCO.default_parameter_ranges + [
         ModuleParameterRange(
             0.0, 1.0, name="shape", description="Waveshape - square to saw [0,1]"
         )
@@ -596,9 +604,9 @@ class LFO(VCO):
         **kwargs: Dict[str, T],
     ):
         self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
-        self.parameter_ranges = self.default_ranges.copy()
+        self.default_parameter_ranges = self.default_ranges.copy()
         for lfo in self.lfo_types:
-            self.parameter_ranges.append(
+            self.default_parameter_ranges.append(
                 ModuleParameterRange(
                     0.0,
                     1.0,
@@ -686,10 +694,10 @@ class ModulationMixer(SynthModule):
             curves = [0.5] * n_input
 
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = []
+        self.default_parameter_ranges = []
         for i in range(n_input):
             for j in range(n_output):
-                self.parameter_ranges.append(
+                self.default_parameter_ranges.append(
                     ModuleParameterRange(
                         0.0,
                         1.0,
@@ -741,9 +749,9 @@ class AudioMixer(SynthModule):
             curves = [1.0] * n_input
 
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = []
+        self.default_parameter_ranges = []
         for i in range(n_input):
-            self.parameter_ranges.append(
+            self.default_parameter_ranges.append(
                 ModuleParameterRange(
                     0.0,
                     1.0,
@@ -775,7 +783,7 @@ class CrossfadeKnob(SynthModule):
     Crossfade knob parameter with no signal generation
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0,
             1.0,
@@ -791,7 +799,7 @@ class MonophonicKeyboard(SynthModule):
     parameters that output a midi_f0 and note duration.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0,
             127.0,
@@ -834,7 +842,7 @@ class SoftModeSelector(SynthModule):
         https://github.com/turian/torchsynth/issues/165
         """
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = [
+        self.default_parameter_ranges = [
             ModuleParameterRange(
                 0.0,
                 1.0,
@@ -870,7 +878,7 @@ class HardModeSelector(SynthModule):
         **kwargs: Dict[str, T],
     ):
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = [
+        self.default_parameter_ranges = [
             ModuleParameterRange(
                 0.0,
                 1.0,

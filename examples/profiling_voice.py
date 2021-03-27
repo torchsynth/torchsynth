@@ -24,5 +24,3 @@ with torch.no_grad():
 
 with torch.no_grad():
     # %timeit -r 100 -n 1 voice()
-
-
