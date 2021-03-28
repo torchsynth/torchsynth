@@ -19,6 +19,8 @@ class TestAbstractSynth:
     Tests for AbstractSynth
     """
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     def test_construction(self):
         # Test empty construction
         synthglobals = torchsynth.globals.SynthGlobals(
@@ -31,23 +33,28 @@ class TestAbstractSynth:
 
     def test_add_synth_module(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
-        synth = torchsynth.synth.AbstractSynth(synthglobals)
-        vco = synthmodule.SineVCO(
-            tuning=T([-12.0, 3.0]),
-            mod_depth=T([50.0, -50.0]),
-            synthglobals=synthglobals,
+        synth = torchsynth.synth.AbstractSynth(synthglobals).to(self.device)
+        synth.add_synth_modules(
+            [
+                (
+                    "vco",
+                    synthmodule.SineVCO,
+                    {"tuning": T([-12.0, 3.0]), "mod_depth": T([50.0, -50.0])},
+                ),
+                ("noise", synthmodule.Noise),
+            ]
         )
-        noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
 
-        synth.add_synth_modules([("vco", vco), ("noise", noise)])
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
         # Make sure all the ModuleParameters were registered correctly
         synth_params = [p for p in synth.parameters() if isinstance(p, ModuleParameter)]
-        module_params = [p for p in vco.parameters() if isinstance(p, ModuleParameter)]
+        module_params = [
+            p for p in synth.vco.parameters() if isinstance(p, ModuleParameter)
+        ]
         module_params.extend(
-            [p for p in noise.parameters() if isinstance(p, ModuleParameter)]
+            [p for p in synth.noise.parameters() if isinstance(p, ModuleParameter)]
         )
         for p in module_params:
             fails = True
@@ -58,57 +65,18 @@ class TestAbstractSynth:
                     fails = False
             assert not fails
 
-        # Expect a TypeError if a non SynthModule0Ddeprecated is passed in
+        # Make sure that all the SynthModules and params are on the correct device now
+        for module in synth.modules():
+            if not isinstance(module, synthmodule.SynthModule):
+                continue
+
+            assert module.device.type == self.device
+            for parameter in module.parameters():
+                assert parameter.device.type == self.device
+
+        # Expect a TypeError if a non SynthModule is passed in
         with pytest.raises(TypeError):
-            synth.add_synth_modules([("module", torch.nn.Module())])
-
-        # Expect a ValueError if the incorrect sample rate or buffer size is passed in
-        with pytest.raises(ValueError):
-            synthglobals_weird_sr = torchsynth.globals.SynthGlobals(
-                batch_size=T(2), sample_rate=T(16000)
-            )
-            vco_2 = synthmodule.SineVCO(
-                tuning=T([12.0, -5.0]),
-                mod_depth=T([50.0, 50.0]),
-                synthglobals=synthglobals_weird_sr,
-            )
-            synth.add_synth_modules([("vco_2", vco_2)])
-
-        # This should raise an assertion because it has a different batch size than
-        # the other modules
-        with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
-                batch_size=T(1)
-            )
-            adsr = synthmodule.ADSR(
-                attack=T([0.5]),
-                decay=T([0.25]),
-                sustain=T([0.5]),
-                release=T([1.0]),
-                alpha=T([1.0]),
-                synthglobals=synthglobals_new_batchsize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
-
-        # Same here
-        with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
-                batch_size=T(1)
-            )
-            adsr = synthmodule.ADSR(
-                synthglobals=synthglobals_new_batchsize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
-
-        # Same here
-        with pytest.raises(ValueError):
-            synthglobals_new_buffersize = torchsynth.globals.SynthGlobals(
-                batch_size=T(2), buffer_size=T(2048)
-            )
-            adsr = synthmodule.ADSR(
-                synthglobals=synthglobals_new_buffersize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
+            synth.add_synth_modules([("module", torch.nn.Module)])
 
     def test_deterministic_noise(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))

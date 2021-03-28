@@ -16,6 +16,8 @@ class TestSynthModule:
     Tests for SynthModules
     """
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     # Disabling tests that relied upon deprecated synth
     # module, but we can add them back later for SynthModule.
     """
@@ -72,40 +74,70 @@ class TestSynthModule:
         assert module.p("param_1") == 5000.0
     """
 
+    def test_set_parameter(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        module = synthmodule.ADSR(synthglobals, attack=T([0.5, 1.0]))
+
+        # Confirm value set correctly from constructor
+        assert torch.all(module.p("attack") == T([0.5, 1.0]))
+
+        # Confirm value set correctly from 0to1 range
+        module.set_parameter_0to1("attack", T([0.33, 0.25]))
+        assert torch.all(module.get_parameter_0to1("attack") == T([0.33, 0.25]))
+
+        # Mode module to device (GPU if available) and make sure parameters have moved
+        module.to(self.device)
+        for parameter in module.torchparameters.values():
+            assert parameter.device.type == self.device
+
     def test_softmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
-        mode_selector = synthmodule.SoftModeSelector(synthglobals, n_modes=3)
+        mode_selector = synthmodule.SoftModeSelector(
+            synthglobals, device=self.device, n_modes=3
+        )
         mode_selector.set_parameter("mode0weight", T([0.8, 1.0]))
         mode_selector.set_parameter("mode1weight", T([0.8, 0.0]))
         mode_selector.set_parameter("mode2weight", T([0.8, 0.0]))
         assert (
             torch.mean(
-                mode_selector() - T([[1 / 3, 1.0000], [1 / 3, 0.0000], [1 / 3, 0.0000]])
+                mode_selector()
+                - T(
+                    [[1 / 3, 1.0000], [1 / 3, 0.0000], [1 / 3, 0.0000]],
+                    device=self.device,
+                )
             )
             < 1e-6
         )
 
     def test_hardmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
-        mode_selector = synthmodule.HardModeSelector(synthglobals, n_modes=3)
+        mode_selector = synthmodule.HardModeSelector(
+            synthglobals, device=self.device, n_modes=3
+        )
         mode_selector.set_parameter("mode0weight", T([0.8, 0.0]))
         mode_selector.set_parameter("mode1weight", T([0.7, 0.5]))
         mode_selector.set_parameter("mode2weight", T([0.7, 0.0]))
         assert (
-            torch.mean(mode_selector() - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]])) < 1e-6
+            torch.mean(
+                mode_selector()
+                - T([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]], device=self.device)
+            )
+            < 1e-6
         )
 
     def test_audiomixer(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
 
         # Make sure parameters get setup correctly
-        mixer = synthmodule.AudioMixer(synthglobals, n_input=3)
+        mixer = synthmodule.AudioMixer(synthglobals, device=self.device, n_input=3)
         params = [p for p in mixer.parameters()]
         assert len(params) == 3
         for param in params:
             assert param.parameter_range.curve == 1.0
 
-        mixer = synthmodule.AudioMixer(synthglobals, n_input=2, curves=[0.75, 1.5])
+        mixer = synthmodule.AudioMixer(
+            synthglobals, device=self.device, n_input=2, curves=[0.75, 1.5]
+        )
         params = [p for p in mixer.parameters()]
         assert len(params) == 2
         assert params[0].parameter_range.curve == 0.75
@@ -113,19 +145,23 @@ class TestSynthModule:
 
         # if curves are passed in then the number of curves must equal n_input
         with pytest.raises(AssertionError):
-            mixer = synthmodule.AudioMixer(synthglobals, n_input=3, curves=[0.75, 1.5])
+            mixer = synthmodule.AudioMixer(
+                synthglobals, device=self.device, n_input=3, curves=[0.75, 1.5]
+            )
 
     def test_modulationmixer(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
 
-        mixer = synthmodule.ModulationMixer(synthglobals, n_input=2, n_output=2)
+        mixer = synthmodule.ModulationMixer(
+            synthglobals, device=self.device, n_input=2, n_output=2
+        )
         params = [p for p in mixer.parameters()]
         assert len(params) == 4
         for param in params:
             assert param.parameter_range.curve == 0.5
 
         mixer = synthmodule.ModulationMixer(
-            synthglobals, n_input=1, n_output=2, curves=[1.0]
+            synthglobals, device=self.device, n_input=1, n_output=2, curves=[1.0]
         )
         params = [p for p in mixer.parameters()]
         assert len(params) == 2
@@ -135,5 +171,9 @@ class TestSynthModule:
         # if curves are passed in then the number of curves must equal n_input
         with pytest.raises(AssertionError):
             mixer = synthmodule.AudioMixer(
-                synthglobals, n_input=5, n_output=5, curves=[0.75, 1.5]
+                synthglobals,
+                device=self.device,
+                n_input=5,
+                n_output=5,
+                curves=[0.75, 1.5],
             )
