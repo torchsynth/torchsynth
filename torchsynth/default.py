@@ -1,7 +1,7 @@
 """
 Default parameters
 """
-DEFAULT_SAMPLE_RATE = 44100
+DEFAULT_SAMPLE_RATE = 48000
 
 # Number of samples for fixed length synthesis.
 # 4 seconds by default

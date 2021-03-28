@@ -263,8 +263,15 @@ class ADSR(SynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer("comparison", torch.empty(1, dtype=torch.bool))
+        self.register_buffer("rate", T(200.0, device=self.device))
+        self.register_buffer("zero", T(0.0, device=self.device))
+        self.register_buffer("one", T(1.0, device=self.device))
+        self.register_buffer("range", torch.arange(800.0, device=self.device))
+        self.upsample = torch.nn.Upsample(
+            self.buffer_size, mode="linear", align_corners=False
+        )
 
+    # @profile
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
@@ -287,25 +294,29 @@ class ADSR(SynthModule):
         behind the scenes to make the playing experience feel natural.
         """
         assert note_on_duration.ndim == 1
-        assert torch.all(note_on_duration > T(0, device=self.device))
+        # assert torch.all(note_on_duration > T(0, device=self.device))
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
         decay = self.p("decay")
+        self.alpha = self.p("alpha").unsqueeze(1)
 
         new_attack = torch.minimum(attack, note_on_duration)
-        new_decay = torch.maximum(
-            note_on_duration - attack, T([0.0], device=self.device)
-        )
+        new_decay = torch.maximum(note_on_duration - attack, self.zero)
         new_decay = torch.minimum(new_decay, decay)
 
         attack_signal = self.make_attack(new_attack)
         decay_signal = self.make_decay(new_attack, new_decay)
         release_signal = self.make_release(note_on_duration)
 
-        return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
+        env = attack_signal * decay_signal * release_signal
+        env = self.upsample(env.unsqueeze(1)).squeeze(1)
 
-    def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
+        return env
+
+    def _ramp(
+        self, duration: T, start: Optional[T] = None, inverse: Optional[bool] = False
+    ) -> Signal:
         """Makes a ramp of a given duration in seconds.
 
         The construction of this matrix is rather cryptic. Essentially, this
@@ -316,22 +327,24 @@ class ADSR(SynthModule):
         `duration` is the length of the ramp up, also in seconds.
         """
 
-        assert start.ndim == 1
         assert duration.ndim == 1
 
         # Convert to number of samples.
-        start_ = self.seconds_to_samples(start)
-        duration_ = self.seconds_to_samples(duration)
+        if start is not None:
+            start = (start * self.rate).unsqueeze(1)
+        else:
+            start = 0.0
+
+        duration = (duration * self.rate).unsqueeze(1)
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size, device=self.device)
-        ramp = tmp.repeat([self.batch_size, 1])
+        ramp = self.range.expand((self.batch_size, self.range.shape[0]))
 
         # Shape ramps.
-        ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0, device=self.device))
-        ramp = (ramp + EPS) / (duration_[:, None] + EPS)
-        ramp = torch.minimum(ramp, T(1.0, device=self.device))
+        ramp = ramp - start
+        ramp = torch.maximum(ramp, self.zero)
+        ramp = (ramp + EPS) / duration + EPS
+        ramp = torch.minimum(ramp, self.one)
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
@@ -339,26 +352,24 @@ class ADSR(SynthModule):
         ultimate calculation of the ADSR signal (a * d * r => 0's). So this
         replaces only rows who sum to 0 (i.e., all components are zero).
         """
-
         if inverse:
-            ramp = 1.0 - ramp
-            ramp[torch.sum(ramp, axis=1) == 0] = 1.0
+            ramp = torch.where(duration > 0.0, 1.0 - ramp, ramp)
 
         # Apply scaling factor.
-        ramp = torch.pow(ramp, self.p("alpha")[:, None])
-
+        ramp = torch.pow(ramp, self.alpha)
         return ramp.as_subclass(Signal)
 
     def make_attack(self, attack_time) -> Signal:
-        return self._ramp(torch.zeros(self.batch_size, device=self.device), attack_time)
+        return self._ramp(attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
-        _a = 1.0 - self.p("sustain")[:, None]
-        _b = self._ramp(attack_time, decay_time, inverse=True)
-        return torch.squeeze(_a * _b + self.p("sustain")[:, None])
+        sustain = self.p("sustain").unsqueeze(1)
+        a = 1.0 - sustain
+        b = self._ramp(decay_time, start=attack_time, inverse=True)
+        return torch.squeeze(a * b + sustain)
 
     def make_release(self, note_on_duration) -> Signal:
-        return self._ramp(note_on_duration, self.p("release"), inverse=True)
+        return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
 
     def __str__(self):
         return (
@@ -413,8 +424,8 @@ class VCO(SynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer("above_zero", torch.empty(1, dtype=torch.bool))
-        self.register_buffer("below_nyquist", torch.empty(1, dtype=torch.bool))
+        # self.register_buffer("above_zero", torch.empty(1, dtype=torch.bool))
+        # self.register_buffer("below_nyquist", torch.empty(1, dtype=torch.bool))
 
     def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
@@ -446,10 +457,10 @@ class VCO(SynthModule):
         # Make sure the control signal isn't aliasing
         # TODO Can't seem to find a good way to handle this, avoided the tensor
         # creation, but the asserts are slow when it's looking at a tensor on device
-        torch.gt(torch.max(control_as_frequency), 0.0, out=self.above_zero)
-        torch.lt(torch.min(control_as_frequency), self.nyquist, out=self.below_nyquist)
-        assert self.above_zero
-        assert self.below_nyquist
+        # torch.gt(torch.max(control_as_frequency), 0.0, out=self.above_zero)
+        # torch.lt(torch.min(control_as_frequency), self.nyquist, out=self.below_nyquist)
+        # assert self.above_zero
+        # assert self.below_nyquist
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.p("initial_phase").unsqueeze(1)
@@ -572,13 +583,10 @@ class Noise(SynthModule):
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
+        mt19937_gen = csprng.create_mt19937_generator(42)
+        self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
 
     def _forward(self) -> Signal:
-        if self.seed is not None:
-            mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
-        else:
-            self.noise.data.uniform_(-1, 1)
         return self.noise.as_subclass(Signal)
 
 
