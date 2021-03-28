@@ -102,7 +102,7 @@ class SynthModule(nn.Module):
 
     @property
     def nyquist(self):
-        return self.sample_rate / T(2, device=self.device)
+        return self.sample_rate / 2.0
 
     @property
     def buffer_size(self) -> T:
@@ -257,6 +257,14 @@ class ADSR(SynthModule):
         ),
     ]
 
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer("comparison", torch.empty(1, dtype=torch.bool))
+
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
@@ -399,6 +407,15 @@ class VCO(SynthModule):
         ),
     ]
 
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer("above_zero", torch.empty(1, dtype=torch.bool))
+        self.register_buffer("below_nyquist", torch.empty(1, dtype=torch.bool))
+
     def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
@@ -425,9 +442,14 @@ class VCO(SynthModule):
         assert midi_f0.shape == (self.batch_size,)
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        assert (control_as_frequency >= 0.0).all() and (
-            control_as_frequency <= self.nyquist
-        ).all()
+
+        # Make sure the control signal isn't aliasing
+        # TODO Can't seem to find a good way to handle this, avoided the tensor
+        # creation, but the asserts are slow when it's looking at a tensor on device
+        torch.gt(torch.max(control_as_frequency), 0.0, out=self.above_zero)
+        torch.lt(torch.min(control_as_frequency), self.nyquist, out=self.below_nyquist)
+        assert self.above_zero
+        assert self.below_nyquist
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.p("initial_phase").unsqueeze(1)
