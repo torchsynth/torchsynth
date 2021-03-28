@@ -78,6 +78,7 @@ def run_lightning_module(
     batch_size: int,
     n_batches: int,
     output: str,
+    profile: bool,
 ):
     mock_dataset = BatchIDXDataset(batch_size * n_batches)
     dataloader = torch.utils.data.DataLoader(
@@ -105,29 +106,33 @@ def run_lightning_module(
         callbacks=[TorchSynthCallback()],
     )
 
-    pr = cProfile.Profile()
-    pr.enable()
-    trainer.test(module, test_dataloaders=dataloader)
-    pr.disable()
+    if profile:
+        pr = cProfile.Profile()
+        pr.enable()
+        trainer.test(module, test_dataloaders=dataloader)
+        pr.disable()
 
-    s = io.StringIO()
-    ps = pstats.Stats(pr, stream=s).sort_stats("cumtime")
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats("cumtime")
 
-    if output is not None:
-        ps.print_stats()
-        result = s.getvalue()
-        result = "ncalls" + result.split("ncalls")[-1]
-        result = "\n".join(
-            [",".join(line.rstrip().split(None, 5)) for line in result.split("\n")]
-        )
+        if output is not None:
+            ps.print_stats()
+            result = s.getvalue()
+            result = "ncalls" + result.split("ncalls")[-1]
+            result = "\n".join(
+                [",".join(line.rstrip().split(None, 5)) for line in result.split("\n")]
+            )
 
-        with open(output, "w+") as fp:
-            fp.write(result)
+            with open(output, "w+") as fp:
+                fp.write(result)
+        else:
+            # ps.print_stats("torchsynth")
+            ps.print_stats(100)
+            # ps.print_stats()
+            print(s.getvalue())
+
     else:
-        # ps.print_stats("torchsynth")
-        ps.print_stats(100)
-        # ps.print_stats()
-        print(s.getvalue())
+        trainer.test(module, test_dataloaders=dataloader)
 
 
 def main(arguments):
@@ -149,6 +154,7 @@ def main(arguments):
     parser.add_argument(
         "--output", "-o", help="Profiler output", type=str, default=None
     )
+    parser.add_argument("--profile", "-p", action="store_true", default=False)
 
     args = parser.parse_args(arguments)
 
@@ -156,7 +162,9 @@ def main(arguments):
     module = instantiate_module(args.module, synthglobals)
 
     if isinstance(module, pl.LightningModule):
-        run_lightning_module(module, args.batch_size, args.num_batches, args.output)
+        run_lightning_module(
+            module, args.batch_size, args.num_batches, args.output, args.profile
+        )
     else:
         print("Non-lightning module")
 
