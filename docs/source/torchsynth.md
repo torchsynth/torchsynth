@@ -14,16 +14,6 @@ torchsynth.defaults module
    :show-inheritance:
 ```
 
-torchsynth.filter module
-------------------------
-
-```{eval-rst}
-.. automodule:: torchsynth.filter
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 torchsynth.module module
 ------------------------
 

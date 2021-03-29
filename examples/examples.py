@@ -183,6 +183,7 @@ adsr = ADSR(
 
 envelope = adsr(note_on_duration)
 time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
+print(adsr)
 # -
 
 # Here's the l1 error between the two envelopes

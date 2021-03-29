@@ -770,7 +770,7 @@ class ModulationMixer(SynthModule):
                     )
                 )
 
-        super().__init__(synthglobals=synthglobals, **kwargs)
+        super().__init__(synthglobals, **kwargs)
         self.n_input = n_input
         self.n_output = n_output
 
@@ -824,7 +824,7 @@ class AudioMixer(SynthModule):
                 )
             )
 
-        super().__init__(synthglobals=synthglobals, **kwargs)
+        super().__init__(synthglobals, **kwargs)
         self.n_input = n_input
 
     def _forward(self, *signals: Signal) -> Signal:
