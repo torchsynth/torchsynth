@@ -55,7 +55,11 @@ class TorchSynthCallback(pl.Callback):
         _ = pl_module(batch_idx)
 
 
-def instantiate_module(name: str, synthglobals: SynthGlobals, **kwargs) -> AbstractSynth:
+def instantiate_module(
+    name: str,
+    synthglobals: SynthGlobals,
+    **kwargs
+) -> AbstractSynth:
     """
     Try to instantiate the module corresponding to the name providing
     """
