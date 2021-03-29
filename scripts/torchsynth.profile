@@ -14,7 +14,7 @@ Args:
 
 import sys
 import argparse
-from typing import Any, Union
+from typing import Any
 import cProfile, pstats, io
 
 import torch
@@ -22,9 +22,7 @@ import torch.tensor as T
 import pytorch_lightning as pl
 import multiprocessing
 
-import torchsynth.module
 import torchsynth.synth
-from torchsynth.module import SynthModule
 from torchsynth.synth import AbstractSynth
 from torchsynth.globals import SynthGlobals
 
@@ -57,7 +55,7 @@ class TorchSynthCallback(pl.Callback):
         _ = pl_module(batch_idx)
 
 
-def instantiate_module(name: str, synthglobals: SynthGlobals, **kwargs) -> SynthModule:
+def instantiate_module(name: str, synthglobals: SynthGlobals, **kwargs) -> AbstractSynth:
     """
     Try to instantiate the module corresponding to the name providing
     """
@@ -66,7 +64,7 @@ def instantiate_module(name: str, synthglobals: SynthGlobals, **kwargs) -> Synth
 
 
 def run_lightning_module(
-    module: Union[SynthModule, AbstractSynth],
+    module: AbstractSynth,
     batch_size: int,
     n_batches: int,
     output: str,
