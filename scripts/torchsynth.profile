@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-
 """
-Script for running profiles on specific modules in torchsynth
+Script for running profiles on specific synth modules in torchsynth
+
+usage: torchsynth.profile [-h] [--batch-size BATCH_SIZE] [--num_batches NUM_BATCHES]
+                          [--save SAVE] [--profile] module
+
+Args:
+    batch-size: size of batch-size to run module at, defaults to 64
+    num-batches: number of batches to run, defaults to 64
+    profile: whether to run cProfile, defaults to False
+    save: file to save results as csv, defaults to None (don't save file)
 """
 
 import sys
 import argparse
 from typing import Any, Union
 import cProfile, pstats, io
-from pstats import SortKey
 
 import torch
 import torch.tensor as T
@@ -54,22 +61,7 @@ def instantiate_module(name: str, synthglobals: SynthGlobals, **kwargs) -> Synth
     """
     Try to instantiate the module corresponding to the name providing
     """
-    # Look first in torchsynth.module
-    try:
-        module = getattr(torchsynth.module, name)
-    except AttributeError:
-        module = False
-
-    # Next look in torchsynth.synth
-    if not module:
-        try:
-            module = getattr(torchsynth.synth, name)
-        except AttributeError:
-            pass
-
-    if not module:
-        raise AttributeError(f"No module {name} found")
-
+    module = getattr(torchsynth.synth, name)
     return module(synthglobals, **kwargs)
 
 
@@ -107,6 +99,7 @@ def run_lightning_module(
     )
 
     if profile:
+        # Run module with profiling
         pr = cProfile.Profile()
         pr.enable()
         trainer.test(module, test_dataloaders=dataloader)
@@ -115,6 +108,7 @@ def run_lightning_module(
         s = io.StringIO()
         ps = pstats.Stats(pr, stream=s).sort_stats("cumtime")
 
+        # Save profiling results to a csv file
         if output is not None:
             ps.print_stats()
             result = s.getvalue()
@@ -126,9 +120,7 @@ def run_lightning_module(
             with open(output, "w+") as fp:
                 fp.write(result)
         else:
-            # ps.print_stats("torchsynth")
-            ps.print_stats(100)
-            # ps.print_stats()
+            ps.print_stats(profile)
             print(s.getvalue())
 
     else:
@@ -152,18 +144,19 @@ def main(arguments):
         "--num_batches", "-n", help="Number of batches to run", type=int, default=64
     )
     parser.add_argument(
-        "--output", "-o", help="Profiler output", type=str, default=None
+        "--save", "-s", help="File to save profiler results", type=str, default=None
     )
-    parser.add_argument("--profile", "-p", action="store_true", default=False)
+    parser.add_argument("--profile", "-p", action='store_true', default=False)
 
     args = parser.parse_args(arguments)
 
+    # Try to create the synth module that is being profiled
     synthglobals = SynthGlobals(T(args.batch_size))
     module = instantiate_module(args.module, synthglobals)
 
     if isinstance(module, pl.LightningModule):
         run_lightning_module(
-            module, args.batch_size, args.num_batches, args.output, args.profile
+            module, args.batch_size, args.num_batches, args.save, args.profile
         )
     else:
         print("Non-lightning module")
