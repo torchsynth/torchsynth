@@ -1,14 +1,9 @@
 from typing import Optional
-import math
 
 import torch
 import torch.tensor as T
 
-from torchsynth.default import (
-    DEFAULT_BUFFER_SIZE,
-    DEFAULT_SAMPLE_RATE,
-    DEFAULT_CONTROL_RATE,
-)
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 
 
 class SynthGlobals:
