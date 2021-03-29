@@ -122,7 +122,7 @@ def run_lightning_module(
             with open(output, "w+") as fp:
                 fp.write(result)
         else:
-            ps.print_stats(profile)
+            ps.print_stats()
             print(s.getvalue())
 
     else:

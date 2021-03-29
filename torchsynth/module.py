@@ -128,7 +128,6 @@ class SynthModule(nn.Module):
     def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Wrapper for _forward that ensures a buffer_size length output.
-        TODO: Make this forward0d() after everything is 1D
         """
         signal = self._forward(*args, **kwargs)
         buffered = self.to_buffer_size(signal)
@@ -227,7 +226,51 @@ class SynthModule(nn.Module):
             parameter.parameter_range.to(device)
 
 
-class ADSR(SynthModule):
+class ControlRateModule(SynthModule):
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        upsample: Optional[bool] = False,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.upsample = upsample
+        if upsample:
+            self.upsample = torch.nn.Upsample(
+                self.synthglobals.buffer_size, mode="linear", align_corners=True
+            )
+
+    @property
+    def sample_rate(self) -> T:
+        assert self.synthglobals.control_rate.ndim == 0
+        return self.synthglobals.control_rate
+
+    @property
+    def buffer_size(self) -> T:
+        assert self.synthglobals.control_buffer_size.ndim == 0
+        return self.synthglobals.control_buffer_size
+
+    def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+        """
+        Wrapper for _forward that ensures a buffer_size length output.
+        """
+        signal = self._forward(*args, **kwargs)
+        if self.upsample:
+            signal = self.upsample(signal.unsqueeze(1)).squeeze(1)
+            buffered = util.fix_length(signal, self.synthglobals.buffer_size)
+        else:
+            buffered = self.to_buffer_size(signal)
+
+        return buffered
+
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+        """
+        Each SynthModule should override this.
+        """
+        raise NotImplementedError("Derived classes must override this method")
+
+
+class ADSR(ControlRateModule):
     """
     Envelope class for building a control rate ADSR signal.
     """
@@ -263,12 +306,12 @@ class ADSR(SynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer("rate", T(480.0, device=self.device))
+
+        # Create some values that will be automatically loaded on device
         self.register_buffer("zero", T(0.0, device=self.device))
         self.register_buffer("one", T(1.0, device=self.device))
-        self.register_buffer("range", torch.arange(480.0 * 4, device=self.device))
-        self.upsample = torch.nn.Upsample(
-            self.buffer_size, mode="linear", align_corners=False
+        self.register_buffer(
+            "range", torch.arange(self.buffer_size, device=self.device)
         )
 
     def _forward(self, note_on_duration: T) -> Signal:
@@ -308,10 +351,7 @@ class ADSR(SynthModule):
         decay_signal = self.make_decay(new_attack, new_decay)
         release_signal = self.make_release(note_on_duration)
 
-        env = attack_signal * decay_signal * release_signal
-        env = self.upsample(env.unsqueeze(1)).squeeze(1)
-
-        return env
+        return attack_signal * decay_signal * release_signal
 
     def _ramp(
         self, duration: T, start: Optional[T] = None, inverse: Optional[bool] = False
@@ -330,11 +370,11 @@ class ADSR(SynthModule):
 
         # Convert to number of samples.
         if start is not None:
-            start = (start * self.rate).unsqueeze(1)
+            start = (start * self.sample_rate).unsqueeze(1)
         else:
             start = 0.0
 
-        duration = (duration * self.rate).unsqueeze(1)
+        duration = (duration * self.sample_rate).unsqueeze(1)
 
         # Build ramps template.
         ramp = self.range.expand((self.batch_size, self.range.shape[0]))
@@ -589,7 +629,7 @@ class Noise(SynthModule):
         return self.noise.as_subclass(Signal)
 
 
-class LFO(VCO):
+class LFO(ControlRateModule):
     """
     An abstract base class for low frequency oscillators
     """
@@ -642,11 +682,13 @@ class LFO(VCO):
         """
         Must be implemented in deriving classes
         """
+        # This module accepts signals at control rate!
         assert mod_signal.shape == (self.batch_size, self.buffer_size)
 
         # Create frequency signal
         frequency = self.make_control(mod_signal)
-        argument = self.make_argument(frequency) + self.p("initial_phase").unsqueeze(1)
+        argument = torch.cumsum(2 * torch.pi * frequency / self.sample_rate, dim=1)
+        argument = argument + self.p("initial_phase").unsqueeze(1)
 
         # Get LFO shapes
         shapes = torch.stack(self.make_lfo_shapes(argument), dim=1).as_subclass(Signal)

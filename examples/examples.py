@@ -111,7 +111,7 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
 synthglobals = SynthGlobals(
-    batch_size=T(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
+    batch_size=T(2), sample_rate=T(48000), buffer_size=T(4 * 48000)
 )
 
 # For a few examples, we'll only generate one sound
@@ -121,8 +121,10 @@ synthglobals1 = SynthGlobals(
 
 # And a short one sound
 synthglobals1short = SynthGlobals(
-    batch_size=T(1), sample_rate=T(44100), buffer_size=T(4096)
+    batch_size=T(1), sample_rate=T(48000), buffer_size=T(4096)
 )
+
+print(synthglobals)
 
 # ## The Envelope
 # Our module is based on an ADSR envelope, standing for "attack, decay, sustain,
@@ -198,11 +200,16 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 #    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
 # -
 
+# **Generating Random Envelopes**
+#
+# If we don't set parameters for an ADSR, then the parameters will be random when initialized. We can also pass in an upsample attribute to allow control signal modules to upsample to full sample rate.
+
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals, device=device)
+adsr = ADSR(synthglobals, device=device, upsample=True)
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
+print(envelope.shape)
+time_plot(envelope.clone().detach().cpu().T)
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
@@ -252,6 +259,7 @@ adsr = ADSR(
     alpha=alpha,
     synthglobals=synthglobals,
     device=device,
+    upsample=True,
 )
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
@@ -438,8 +446,13 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-# Envelope to be applied to LFO rate
-time_plot(envelope[0].cpu().detach().numpy())
+# Reset envelope -- No upsampling
+adsr = ADSR(synthglobals=synthglobals, device=device, upsample=False)
+
+# Trigger the keyboard, which returns a midi_f0 and note duration
+midi_f0, duration = keyboard()
+
+envelope = adsr(duration)
 
 lfo = LFO(synthglobals, device=device)
 lfo.set_parameter("mod_depth", T([10.0, 0.0]))
