@@ -82,7 +82,7 @@ def run_lightning_module(
 ):
     mock_dataset = BatchIDXDataset(batch_size * n_batches)
     dataloader = torch.utils.data.DataLoader(
-        mock_dataset, num_workers=NCORES, batch_size=n_batches
+        mock_dataset, num_workers=NCORES, batch_size=batch_size
     )
 
     accelerator = None
@@ -149,7 +149,7 @@ def main(arguments):
         default=64,
     )
     parser.add_argument(
-        "--num_batches", "-n", help="Number of batches to run", type=int, default=25
+        "--num_batches", "-n", help="Number of batches to run", type=int, default=64
     )
     parser.add_argument(
         "--output", "-o", help="Profiler output", type=str, default=None

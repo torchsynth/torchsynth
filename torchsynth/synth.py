@@ -165,7 +165,7 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        if batch_idx:
+        if batch_idx is not None:
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
@@ -174,7 +174,7 @@ class AbstractSynth(LightningModule):
         This is boilerplate for lightning -- this is required by lightning Trainer
         when calling test, which we use to forward Synths on multi-gpu platforms
         """
-        return T(0.0, device=self.device)
+        return 0.0
 
     @property
     def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
@@ -214,15 +214,17 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         if seed is not None:
-            # Profile to make sure this isn't too slow?
-            mt19937_gen = csprng.create_mt19937_generator(seed)
+            torch.manual_seed(seed)
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    parameter.data.uniform_(0, 1, generator=mt19937_gen)
+                    new_params = torch.rand(
+                        (self.batch_size,), device="cpu", pin_memory=True
+                    )
+                    parameter.data = new_params.to(self.device, non_blocking=True)
         else:
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    parameter.data = torch.rand_like(parameter, device=self.device)
+                    parameter.data.uniform_(0, 1)
 
         # Add seed to all modules
         for module in self._modules:

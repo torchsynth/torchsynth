@@ -263,15 +263,14 @@ class ADSR(SynthModule):
         **kwargs: Dict[str, T],
     ):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer("rate", T(200.0, device=self.device))
+        self.register_buffer("rate", T(480.0, device=self.device))
         self.register_buffer("zero", T(0.0, device=self.device))
         self.register_buffer("one", T(1.0, device=self.device))
-        self.register_buffer("range", torch.arange(800.0, device=self.device))
+        self.register_buffer("range", torch.arange(480.0 * 4, device=self.device))
         self.upsample = torch.nn.Upsample(
             self.buffer_size, mode="linear", align_corners=False
         )
 
-    # @profile
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 

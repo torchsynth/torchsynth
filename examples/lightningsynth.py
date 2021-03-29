@@ -46,7 +46,7 @@ print("Usings %d gpus" % gpus)
 # Note this is the batch size for our synth!
 # i.e. this many synth sounds are generated at once
 # Not the batch size of the datasets
-BATCH_SIZE = 256
+BATCH_SIZE = 64
 
 import multiprocessing
 
