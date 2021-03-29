@@ -55,9 +55,14 @@ contribute/dev_guidelines
 ---
 maxdepth: 3
 name: modules
-caption: Modules
+caption: Torchsynth Packages
 ---
-modules
+defaults
+filter
+module
+parameter
+signal
+util
 ```
 
 
