@@ -541,16 +541,20 @@ class VCA(SynthModule):
 
 class Noise(SynthModule):
     """
-    Generates white noise that is the same length as the buffer
+    Generates white noise that is the same length as the buffer.
+
+    A batch size number of noise samples are pre-computed for performance.
+    A seed for the noise generator is required. If you use multiple of
+    these in a synth then choose different seeds for each instance.
     """
 
-    def __init__(self, synthglobals: SynthGlobals, **kwargs):
+    def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
         super().__init__(synthglobals, **kwargs)
         self.register_buffer(
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
-        mt19937_gen = csprng.create_mt19937_generator(42)
+        mt19937_gen = csprng.create_mt19937_generator(seed)
         self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
 
     def _forward(self) -> Signal:

@@ -265,7 +265,7 @@ class Voice(AbstractSynth):
                 ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
-                ("noise", Noise),
+                ("noise", Noise, {"seed": 13}),
                 ("vca", VCA),
                 ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
             ]
