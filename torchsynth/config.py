@@ -33,5 +33,5 @@ def check_for_determinism():
     if not torch.all(sample.eq(expected)):
         warnings.warn(
             "Random number generator produced incorrect results. "
-            "Reproducible dataset generation is not supported."
+            "Reproducible dataset generation is not supported on this system."
         )
