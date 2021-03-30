@@ -1,3 +1,3 @@
 from . import config
 
-config.check_for_determinism()
+# config.check_for_determinism()
