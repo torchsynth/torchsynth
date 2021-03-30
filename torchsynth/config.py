@@ -31,7 +31,8 @@ def check_for_determinism():
     torch.random.manual_seed(0)
     sample = torch.rand((3, 3), dtype=torch.float)
     if not torch.all(sample.eq(expected)):
-        warnings.warn(
+        # TODO Make this a warning before we release v1
+        raise EnvironmentError(
             "Random number generator produced incorrect results. "
             "Reproducible dataset generation is not supported on this system."
         )
