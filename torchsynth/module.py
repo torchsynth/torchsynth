@@ -228,6 +228,14 @@ class SynthModule(nn.Module):
 
 
 class ControlRateModule(SynthModule):
+    """
+    Control rate module is an abstract base class for SynthModules that run
+    at a control rate as opposed to full audio rate.
+
+    Optionally, the output control signal can be upsampled to the correct
+    sample rate and buffer size.
+    """
+
     def __init__(
         self,
         synthglobals: SynthGlobals,
@@ -243,11 +251,17 @@ class ControlRateModule(SynthModule):
 
     @property
     def sample_rate(self) -> T:
+        """
+        The internal sample rate for this module is control rate
+        """
         assert self.synthglobals.control_rate.ndim == 0
         return self.synthglobals.control_rate
 
     @property
     def buffer_size(self) -> T:
+        """
+        The internal buffer size for this module is the control buffer size
+        """
         assert self.synthglobals.control_buffer_size.ndim == 0
         return self.synthglobals.control_buffer_size
 
