@@ -550,13 +550,10 @@ class Noise(SynthModule):
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
+        mt19937_gen = csprng.create_mt19937_generator(42)
+        self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
 
     def _forward(self) -> Signal:
-        if self.seed is not None:
-            mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
-        else:
-            self.noise.data.uniform_(-1, 1)
         return self.noise.as_subclass(Signal)
 
 
