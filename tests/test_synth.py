@@ -92,6 +92,18 @@ class TestAbstractSynth:
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
 
+        if self.device == "cuda":
+            synth.to("cuda")
+            synth.randomize(1)
+            cuda11 = synth()
+            synth.randomize()
+            cuda2 = synth()
+            synth.randomize(1)
+            cuda12 = synth()
+
+            assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
+            assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6
+
     def test_randomize_parameter_freezing(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.Voice(synthglobals)
