@@ -252,12 +252,12 @@ class Voice(AbstractSynth):
         self.add_synth_modules(
             [
                 ("keyboard", MonophonicKeyboard),
-                ("adsr_1", ADSR),
-                ("adsr_2", ADSR),
-                ("lfo_1", LFO),
-                ("lfo_2", LFO),
-                ("lfo_1_amp_adsr", ADSR),
-                ("lfo_2_amp_adsr", ADSR),
+                ("adsr_1", ADSR, {"upsample": True}),
+                ("adsr_2", ADSR, {"upsample": True}),
+                ("lfo_1", LFO, {"upsample": True}),
+                ("lfo_2", LFO, {"upsample": True}),
+                ("lfo_1_amp_adsr", ADSR, {"upsample": True}),
+                ("lfo_2_amp_adsr", ADSR, {"upsample": True}),
                 ("lfo_1_rate_adsr", ADSR),
                 ("lfo_2_rate_adsr", ADSR),
                 ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),

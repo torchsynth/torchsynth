@@ -227,7 +227,51 @@ class SynthModule(nn.Module):
             parameter.parameter_range.to(device)
 
 
-class ADSR(SynthModule):
+class ControlRateModule(SynthModule):
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        upsample: Optional[bool] = False,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+        self.upsample = upsample
+        if upsample:
+            self.upsample = torch.nn.Upsample(
+                self.synthglobals.buffer_size, mode="linear", align_corners=True
+            )
+
+    @property
+    def sample_rate(self) -> T:
+        assert self.synthglobals.control_rate.ndim == 0
+        return self.synthglobals.control_rate
+
+    @property
+    def buffer_size(self) -> T:
+        assert self.synthglobals.control_buffer_size.ndim == 0
+        return self.synthglobals.control_buffer_size
+
+    def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+        """
+        Wrapper for _forward that ensures a buffer_size length output.
+        """
+        signal = self._forward(*args, **kwargs)
+        if self.upsample:
+            signal = self.upsample(signal.unsqueeze(1)).squeeze(1)
+            buffered = util.fix_length(signal, self.synthglobals.buffer_size)
+        else:
+            buffered = self.to_buffer_size(signal)
+
+        return buffered
+
+    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+        """
+        Each SynthModule should override this.
+        """
+        raise NotImplementedError("Derived classes must override this method")
+
+
+class ADSR(ControlRateModule):
     """
     Envelope class for building a control rate ADSR signal.
     """
@@ -257,6 +301,20 @@ class ADSR(SynthModule):
         ),
     ]
 
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, **kwargs)
+
+        # Create some values that will be automatically loaded on device
+        self.register_buffer("zero", T(0.0, device=self.device))
+        self.register_buffer("one", T(1.0, device=self.device))
+        self.register_buffer(
+            "range", torch.arange(self.buffer_size, device=self.device)
+        )
+
     def _forward(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
@@ -284,11 +342,10 @@ class ADSR(SynthModule):
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
         decay = self.p("decay")
+        self.alpha = self.p("alpha").unsqueeze(1)
 
         new_attack = torch.minimum(attack, note_on_duration)
-        new_decay = torch.maximum(
-            note_on_duration - attack, T([0.0], device=self.device)
-        )
+        new_decay = torch.maximum(note_on_duration - attack, self.zero)
         new_decay = torch.minimum(new_decay, decay)
 
         attack_signal = self.make_attack(new_attack)
@@ -297,33 +354,40 @@ class ADSR(SynthModule):
 
         return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
 
-    def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
-        """Makes a ramp of a given duration in seconds.
+    def _ramp(
+        self, duration: T, start: Optional[T] = None, inverse: Optional[bool] = False
+    ) -> Signal:
+        """
+        Makes a ramp of a given duration in seconds.
 
         The construction of this matrix is rather cryptic. Essentially, this
         method works by tilting and clipping ramps between 0 and 1, then
         applying some scaling factor (`alpha`).
 
-        `start` is the initial delay in seconds (all 0's) before the ramp up.
-        `duration` is the length of the ramp up, also in seconds.
+        Parameters
+        ----------
+        duration T: Length of the ramp in seconds
+        start Optional[T]: Initial delay of ramp in seconds. Defaults to None (0 start)
+        inverse Optional[bool]: Flip ramp. Becomes a ramp down. Defaults to False
         """
 
-        assert start.ndim == 1
         assert duration.ndim == 1
+        duration = (duration * self.sample_rate).unsqueeze(1)
 
         # Convert to number of samples.
-        start_ = self.seconds_to_samples(start)
-        duration_ = self.seconds_to_samples(duration)
+        if start is not None:
+            start = (start * self.sample_rate).unsqueeze(1)
+        else:
+            start = 0.0
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size, device=self.device)
-        ramp = tmp.repeat([self.batch_size, 1])
+        ramp = self.range.expand((self.batch_size, self.range.shape[0]))
 
         # Shape ramps.
-        ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0, device=self.device))
-        ramp = (ramp + EPS) / (duration_[:, None] + EPS)
-        ramp = torch.minimum(ramp, T(1.0, device=self.device))
+        ramp = ramp - start
+        ramp = torch.maximum(ramp, self.zero)
+        ramp = (ramp + EPS) / duration + EPS
+        ramp = torch.minimum(ramp, self.one)
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
@@ -331,26 +395,24 @@ class ADSR(SynthModule):
         ultimate calculation of the ADSR signal (a * d * r => 0's). So this
         replaces only rows who sum to 0 (i.e., all components are zero).
         """
-
         if inverse:
-            ramp = 1.0 - ramp
-            ramp[torch.sum(ramp, axis=1) == 0] = 1.0
+            ramp = torch.where(duration > 0.0, 1.0 - ramp, ramp)
 
         # Apply scaling factor.
-        ramp = torch.pow(ramp, self.p("alpha")[:, None])
-
+        ramp = torch.pow(ramp, self.alpha)
         return ramp.as_subclass(Signal)
 
     def make_attack(self, attack_time) -> Signal:
-        return self._ramp(torch.zeros(self.batch_size, device=self.device), attack_time)
+        return self._ramp(attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
-        _a = 1.0 - self.p("sustain")[:, None]
-        _b = self._ramp(attack_time, decay_time, inverse=True)
-        return torch.squeeze(_a * _b + self.p("sustain")[:, None])
+        sustain = self.p("sustain").unsqueeze(1)
+        a = 1.0 - sustain
+        b = self._ramp(decay_time, start=attack_time, inverse=True)
+        return torch.squeeze(a * b + sustain)
 
     def make_release(self, note_on_duration) -> Signal:
-        return self._ramp(note_on_duration, self.p("release"), inverse=True)
+        return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
 
     def __str__(self):
         return (
@@ -550,17 +612,14 @@ class Noise(SynthModule):
             "noise",
             torch.empty((self.batch_size, self.buffer_size), device=self.device),
         )
+        mt19937_gen = csprng.create_mt19937_generator(42)
+        self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
 
     def _forward(self) -> Signal:
-        if self.seed is not None:
-            mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
-        else:
-            self.noise.data.uniform_(-1, 1)
         return self.noise.as_subclass(Signal)
 
 
-class LFO(VCO):
+class LFO(ControlRateModule):
     """
     An abstract base class for low frequency oscillators
     """
@@ -613,11 +672,13 @@ class LFO(VCO):
         """
         Must be implemented in deriving classes
         """
+        # This module accepts signals at control rate!
         assert mod_signal.shape == (self.batch_size, self.buffer_size)
 
         # Create frequency signal
         frequency = self.make_control(mod_signal)
-        argument = self.make_argument(frequency) + self.p("initial_phase").unsqueeze(1)
+        argument = torch.cumsum(2 * torch.pi * frequency / self.sample_rate, dim=1)
+        argument = argument + self.p("initial_phase").unsqueeze(1)
 
         # Get LFO shapes
         shapes = torch.stack(self.make_lfo_shapes(argument), dim=1).as_subclass(Signal)
