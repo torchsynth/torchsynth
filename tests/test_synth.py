@@ -41,7 +41,7 @@ class TestAbstractSynth:
                     synthmodule.SineVCO,
                     {"tuning": T([-12.0, 3.0]), "mod_depth": T([50.0, -50.0])},
                 ),
-                ("noise", synthmodule.Noise),
+                ("noise", synthmodule.Noise, {"seed": 42}),
             ]
         )
 
