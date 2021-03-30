@@ -38,7 +38,7 @@ class SynthGlobals:
         if control_rate is None:
             self.control_rate = (self.sample_rate // 100).clone().detach()
         else:
-            assert self.control_rate.ndim == 0
+            assert control_rate.ndim == 0
             self.control_rate = control_rate
 
         # Buffer size for control signals

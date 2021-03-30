@@ -386,11 +386,11 @@ class ADSR(ControlRateModule):
         """
 
         assert duration.ndim == 1
-        duration = (duration * self.sample_rate).unsqueeze(1)
+        duration = self.seconds_to_samples(duration).unsqueeze(1)
 
         # Convert to number of samples.
         if start is not None:
-            start = (start * self.sample_rate).unsqueeze(1)
+            start = self.seconds_to_samples(start).unsqueeze(1)
         else:
             start = 0.0
 
