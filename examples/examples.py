@@ -201,7 +201,9 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # **Generating Random Envelopes**
 #
-# If we don't set parameters for an ADSR, then the parameters will be random when initialized. We can also pass in an upsample attribute to allow control signal modules to upsample to full sample rate.
+# If we don't set parameters for an ADSR, then the parameters will be random when
+# initialized. We can also pass in an upsample attribute to allow control signal
+# modules to upsample to full sample rate.
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
