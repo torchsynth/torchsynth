@@ -1,4 +1,3 @@
-# Check for determinism on module load
-from .config import check_for_determinism
+from . import config
 
-check_for_determinism()
+config.check_for_determinism()
