@@ -14,6 +14,7 @@ def check_for_determinism():
 
     torchcsprng allowed for determinism between the CPU and GPU, however
     profiling indicated that torch.rand on CPU was more efficient.
+    See https://github.com/pytorch/csprng/issues/126
     """
     expected = torch.tensor(
         [
