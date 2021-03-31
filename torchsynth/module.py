@@ -549,12 +549,11 @@ class Noise(SynthModule):
 
     def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer(
-            "noise",
-            torch.empty((self.batch_size, self.buffer_size), device=self.device),
-        )
-        mt19937_gen = csprng.create_mt19937_generator(seed)
-        self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
+
+        # Create a prime number of noise samples, we will cycle through these
+        torch.random.manual_seed(seed)
+        noise = torch.rand((self.batch_size, self.buffer_size), device="cpu")
+        self.register_buffer("noise", noise.to(self.device))
 
     def _forward(self) -> Signal:
         return self.noise.as_subclass(Signal)
