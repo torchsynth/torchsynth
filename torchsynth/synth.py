@@ -216,7 +216,7 @@ class AbstractSynth(LightningModule):
             torch.manual_seed(seed)
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    if self.device.type != "cpu":
+                    if self.device.type != "cpu":  # pragma: no cover
                         new_params = torch.rand(
                             (self.batch_size,), device="cpu", pin_memory=True
                         )
