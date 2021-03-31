@@ -79,6 +79,8 @@ class TestAbstractSynth:
             synth.add_synth_modules([("module", torch.nn.Module)])
 
     def test_deterministic_noise(self):
+        # This test confirms that randomizing a synth with the same
+        # seed results in the same audio results.
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         synth = torchsynth.synth.Voice(synthglobals)
 
@@ -92,6 +94,8 @@ class TestAbstractSynth:
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
 
+        # If a GPU is available then make sure the same
+        # tests as above are also deterministic on the GPU.
         if self.device == "cuda":
             synth.to("cuda")
             synth.randomize(1)

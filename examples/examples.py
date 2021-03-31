@@ -410,7 +410,7 @@ env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=de
 keyboard = MonophonicKeyboard(synthglobals, device=device)
 sine = SineVCO(synthglobals, device=device)
 square_saw = SquareSawVCO(synthglobals, device=device)
-noise = Noise(synthglobals, 123, device=device)
+noise = Noise(synthglobals, seed=123, device=device)
 
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)

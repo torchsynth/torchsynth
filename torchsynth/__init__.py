@@ -1,3 +1,3 @@
-from . import config
+from . import reproducibility
 
-config.check_for_determinism()
+reproducibility.check_for_determinism()
