@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.default import EPS
+from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
@@ -552,13 +552,31 @@ class Noise(SynthModule):
 
         # Pre-compute noise
         generator = torch.Generator(device="cpu").manual_seed(seed)
-        noise = torch.rand(
-            (self.batch_size, self.buffer_size), device="cpu", generator=generator
-        )
+        noise = torch.empty((DEFAULT_BATCH_SIZE, self.buffer_size), device="cpu")
+        noise.data.uniform_(-1.0, 1.0, generator=generator)
+        if self.batch_size > DEFAULT_BATCH_SIZE:
+            noise = util.batch_resize(noise, self.batch_size)
+
         self.register_buffer("noise", noise.to(self.device))
+        self.offset = 0
 
     def _forward(self) -> Signal:
-        return self.noise.as_subclass(Signal)
+        # Return noise quickly if we are returning the whole batch
+        # and don't need to offset at all.
+        if self.batch_size >= DEFAULT_BATCH_SIZE and self.offset == 0:
+            return self.noise.as_subclass(Signal)
+
+        # If the batch size is smaller than the default batch size then
+        # we need to select a portion of the noise samples. Offset
+        # is used to cycle through all the noise in the default batch size
+        # or select the correct noise sample from the default batch
+        if self.offset == 0:
+            noise = self.noise[: self.batch_size].as_subclass(Signal)
+        else:
+            noise = torch.roll(self.noise, (-self.offset, 0), dims=(0, 1))
+
+        self.offset = (self.offset + self.batch_size) % DEFAULT_BATCH_SIZE
+        return noise[: self.batch_size].as_subclass(Signal)
 
 
 class LFO(VCO):

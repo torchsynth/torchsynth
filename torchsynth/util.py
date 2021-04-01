@@ -52,6 +52,29 @@ def normalize(signal: Signal) -> Signal:
     return signal / max_sample
 
 
+def batch_resize(x: torch.Tensor, size: int):
+    """
+    Repeats or shrinks the number of batches in a tensor to
+    the size indicated.
+    """
+    assert x.ndim > 0
+    batch_size = x.shape[0]
+    repeats = size // batch_size
+
+    # If the new size is greater than the current number
+    # of batches then we want to repeat the batch data,
+    # otherwise select the size
+    if repeats > 0:
+        other_dims = [1] * (x.ndim - 1)
+        x = x.repeat(repeats, *other_dims)
+        remainder = size - repeats * batch_size
+        x = torch.vstack((x, x[:remainder]))
+    else:
+        x = x[:size]
+
+    return x
+
+
 # Here are some old functions that we are not currently using but
 # might want in the future.
 # # What is amin here? And maybe we should convert it to a value in defaults?
