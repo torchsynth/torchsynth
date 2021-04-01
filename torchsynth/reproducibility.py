@@ -36,8 +36,8 @@ def check_for_determinism():
         ]
     )
 
-    torch.random.manual_seed(0)
-    sample = torch.rand((3, 3), device="cpu", dtype=torch.float)
+    generator = torch.Generator(device="cpu").manual_seed(0)
+    sample = torch.rand((3, 3), device="cpu", dtype=torch.float, generator=generator)
     if not torch.all(sample.eq(expected)):  # pragma: no cover
         # TODO Make this a warning before we release v1
         raise EnvironmentError(

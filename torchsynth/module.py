@@ -550,9 +550,11 @@ class Noise(SynthModule):
     def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
         super().__init__(synthglobals, **kwargs)
 
-        # Create a prime number of noise samples, we will cycle through these
-        torch.random.manual_seed(seed)
-        noise = torch.rand((self.batch_size, self.buffer_size), device="cpu")
+        # Pre-compute noise
+        generator = torch.Generator(device="cpu").manual_seed(seed)
+        noise = torch.rand(
+            (self.batch_size, self.buffer_size), device="cpu", generator=generator
+        )
         self.register_buffer("noise", noise.to(self.device))
 
     def _forward(self) -> Signal:
