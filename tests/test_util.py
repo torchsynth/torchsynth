@@ -2,7 +2,7 @@
 Tests for torch DSP utils.
 """
 
-import numpy as np
+import pytest
 import torch
 import torch.tensor as T
 
@@ -67,3 +67,39 @@ class TestTorchUtil:
         max_vals = torch.max(torch.abs(signal_norm), dim=1)
         assert max_vals[0][0].eq(1.0)
         assert max_vals[0][1].eq(1.0)
+
+    def test_batch_resize(self):
+
+        # Test extending a batch from 10 to 25. Should
+        # be 1.5 repetitions of the 10 first batches
+        x = torch.arange(100).view(10, 10)
+        y = util.batch_resize(x, 25)
+
+        assert y.shape == (25, 10)
+        assert torch.all(x == y[:10])
+        assert torch.all(x == y[10:20])
+        assert torch.all(x[:5] == y[20:])
+
+        # Test decreasing the batch from 10 to 7
+        y = util.batch_resize(x, 7)
+        assert y.shape == (7, 10)
+        assert torch.all(x[:7] == y)
+
+        # Check on batches of 2D tensors
+        x = torch.arange(1000).view(10, 10, 10)
+        y = util.batch_resize(x, 25)
+
+        assert y.shape == (25, 10, 10)
+        assert torch.all(x == y[:10])
+        assert torch.all(x == y[10:20])
+        assert torch.all(x[:5] == y[20:])
+
+        # Test decreasing the batch from 10 to 7
+        y = util.batch_resize(x, 7)
+        assert y.shape == (7, 10, 10)
+        assert torch.all(x[:7] == y)
+
+        # Must be 1D or larger tensors
+        with pytest.raises(AssertionError):
+            x = torch.tensor(1)
+            util.batch_resize(x, 25)
