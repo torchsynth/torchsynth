@@ -20,7 +20,8 @@ class ModuleParameterRange:
     Args:
         minimum (float) :   minimum value in range
         maximum (float) :   maximum value in range
-        curve   (float) : shape of the curve, values less than 1
+        device  (torch.device) : Device for storing tensors
+        curve   (float) :   shape of the curve, values less than 1
         place more emphasis on smaller values and values greater than 1
         place more emphasis no larger values. Defaults to 1 which is linear.
         symmetric (bool) :  whether or not the parameter range is symmetric,
@@ -33,7 +34,8 @@ class ModuleParameterRange:
         self,
         minimum: float,
         maximum: float,
-        curve: float = 1.0,
+        device: Optional[torch.device] = None,
+        curve: float = 1,
         symmetric: bool = False,
         # TODO: Make this not optional
         name: Optional[str] = None,
@@ -41,15 +43,25 @@ class ModuleParameterRange:
     ):
         self.name = name
         self.description = description
+        self.device = None
         self.minimum = minimum
         self.maximum = maximum
         self.curve = curve
         self.symmetric = symmetric
 
+    def to(self, device: torch.device):
+        """
+        Update the device attribute. Can do more here in the future if need be,
+        but from initial profiling it is faster to not have the attributes as tensors
+        """
+        self.device = device
+        return self
+
     def __repr__(self):
         return (
             f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
             + f"max={self.maximum}, curve={self.curve}, "
+            + f"symmetric={self.symmetric}, "
             + f"description={self.description})"
         )
 
@@ -61,18 +73,19 @@ class ModuleParameterRange:
           normalized (T): value within [0,1] range to convert to range defined by
           minimum and maximum
         """
-        assert torch.all(0.0 <= normalized)
-        assert torch.all(normalized <= 1.0)
+        # TODO: These asserts are very slow
+        # assert torch.all(0.0 <= normalized)
+        # assert torch.all(normalized <= 1.0)
 
         if not self.symmetric:
-            if self.curve != 1:
+            if self.curve != 1.0:
                 normalized = torch.exp2(torch.log2(normalized) / self.curve)
 
             return self.minimum + (self.maximum - self.minimum) * normalized
 
         # Compute the curve for a symmetric curve
         dist = 2.0 * normalized - 1.0
-        if self.curve != 1:
+        if self.curve != 1.0:
             normalized = torch.where(
                 dist == 0.0,
                 dist,

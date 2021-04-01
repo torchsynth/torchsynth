@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __author__ = "Joseph Turian, Jordie Shier, Max Henry"
 __contact__ = ""
 __url__ = ""
@@ -33,8 +33,8 @@ setup(
         "numpy",
         "scipy",
         "torch>=1.7",
+        "torchcsprng==0.2.0",  # 0.2.1 we had trouble on CUDA 11
         "pytorch-lightning",
-        "torchcsprng==0.2.0",
     ],
     extras_require={
         "test": [
@@ -55,7 +55,8 @@ setup(
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             "sphinx>=3.0.4",  # not directly required, pinned by Snyk to avoid a vulnerability
-            "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
+            # Temporarily disabled so we can push to pypi
+            # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
             "sphinxcontrib-napoleon",
             "mock",
             "myst_parser",

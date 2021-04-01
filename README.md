@@ -25,57 +25,7 @@ in terms of throughput.
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/turian/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/turian/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
 
-You will need to install the particular version of
-[torchcsprng](https://github.com/pytorch/csprng) for your CUDA
-device. Please follow their simple installation instructions.  But
-if you use the CPU version of torchcsprng, it probably won't affect
-performance much.
+[Homepage](https://torchsynth.rtfd.io/en/latest/).
+
 
 ## Development Installation
-
-```
-git clone https://github.com/turian/torchsynth
-cd torchsynth
-pip3 install -e ".[dev]"
-```
-
-Make sure you have pre-commit hooks installed:
-```
-pre-commit install
-```
-This helps us avoid checking dirty jupyter notebook cells into the
-repo.
-
-Note that torchsynth requires PyTorch version 1.7 or greater.
-
-### Examples
-
-Unfortunately, Python 3.9 (e.g. OSX Big Sur) won't work, because
-librosa repends upon numba which isn't packaged for 3.9 yet. In
-which case you'll have to create a Python 3.7 conda environment.
-(You might also need to downgrade LLVM to 10 or 9.):
-```
-conda install -c conda-forge ipython librosa matplotlib numpy matplotlib scipy jupytext
-conda install -c anaconda ipykernel
-python -m ipykernel install --user --name=envname
-```
-and change the kernel to `envname`.
-
-### Tests
-Unit testing is performed using `pytest`.
-
-`pytest` and other project development dependencies can be installed as follows: 
-```
-pip3 install -e ".[test]"
-```
-
-To run tests, run `pytest` from the project root:
-```
-pytest
-```
-
-To run tests with a coverage report:
-```
-pytest --cov=./torchsynth
-```
-

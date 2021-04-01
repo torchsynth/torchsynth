@@ -19,6 +19,8 @@ class TestAbstractSynth:
     Tests for AbstractSynth
     """
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     def test_construction(self):
         # Test empty construction
         synthglobals = torchsynth.globals.SynthGlobals(
@@ -31,23 +33,28 @@ class TestAbstractSynth:
 
     def test_add_synth_module(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
-        synth = torchsynth.synth.AbstractSynth(synthglobals)
-        vco = synthmodule.SineVCO(
-            tuning=T([-12.0, 3.0]),
-            mod_depth=T([50.0, -50.0]),
-            synthglobals=synthglobals,
+        synth = torchsynth.synth.AbstractSynth(synthglobals).to(self.device)
+        synth.add_synth_modules(
+            [
+                (
+                    "vco",
+                    synthmodule.SineVCO,
+                    {"tuning": T([-12.0, 3.0]), "mod_depth": T([50.0, -50.0])},
+                ),
+                ("noise", synthmodule.Noise),
+            ]
         )
-        noise = synthmodule.Noise(ratio=T([0.25, 0.75]), synthglobals=synthglobals)
 
-        synth.add_synth_modules([("vco", vco), ("noise", noise)])
         assert hasattr(synth, "vco")
         assert hasattr(synth, "noise")
 
         # Make sure all the ModuleParameters were registered correctly
         synth_params = [p for p in synth.parameters() if isinstance(p, ModuleParameter)]
-        module_params = [p for p in vco.parameters() if isinstance(p, ModuleParameter)]
+        module_params = [
+            p for p in synth.vco.parameters() if isinstance(p, ModuleParameter)
+        ]
         module_params.extend(
-            [p for p in noise.parameters() if isinstance(p, ModuleParameter)]
+            [p for p in synth.noise.parameters() if isinstance(p, ModuleParameter)]
         )
         for p in module_params:
             fails = True
@@ -58,57 +65,18 @@ class TestAbstractSynth:
                     fails = False
             assert not fails
 
-        # Expect a TypeError if a non SynthModule0Ddeprecated is passed in
+        # Make sure that all the SynthModules and params are on the correct device now
+        for module in synth.modules():
+            if not isinstance(module, synthmodule.SynthModule):
+                continue
+
+            assert module.device.type == self.device
+            for parameter in module.parameters():
+                assert parameter.device.type == self.device
+
+        # Expect a TypeError if a non SynthModule is passed in
         with pytest.raises(TypeError):
-            synth.add_synth_modules([("module", torch.nn.Module())])
-
-        # Expect a ValueError if the incorrect sample rate or buffer size is passed in
-        with pytest.raises(ValueError):
-            synthglobals_weird_sr = torchsynth.globals.SynthGlobals(
-                batch_size=T(2), sample_rate=T(16000)
-            )
-            vco_2 = synthmodule.SineVCO(
-                tuning=T([12.0, -5.0]),
-                mod_depth=T([50.0, 50.0]),
-                synthglobals=synthglobals_weird_sr,
-            )
-            synth.add_synth_modules([("vco_2", vco_2)])
-
-        # This should raise an assertion because it has a different batch size than
-        # the other modules
-        with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
-                batch_size=T(1)
-            )
-            adsr = synthmodule.ADSR(
-                attack=T([0.5]),
-                decay=T([0.25]),
-                sustain=T([0.5]),
-                release=T([1.0]),
-                alpha=T([1.0]),
-                synthglobals=synthglobals_new_batchsize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
-
-        # Same here
-        with pytest.raises(ValueError):
-            synthglobals_new_batchsize = torchsynth.globals.SynthGlobals(
-                batch_size=T(1)
-            )
-            adsr = synthmodule.ADSR(
-                synthglobals=synthglobals_new_batchsize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
-
-        # Same here
-        with pytest.raises(ValueError):
-            synthglobals_new_buffersize = torchsynth.globals.SynthGlobals(
-                batch_size=T(2), buffer_size=T(2048)
-            )
-            adsr = synthmodule.ADSR(
-                synthglobals=synthglobals_new_buffersize,
-            )
-            synth.add_synth_modules([("adsr", adsr)])
+            synth.add_synth_modules([("module", torch.nn.Module)])
 
     def test_deterministic_noise(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
@@ -145,12 +113,12 @@ class TestAbstractSynth:
             ]
         )
         synth.randomize()
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize(1)
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test that trying to set a frozen parameter raises an error
         with pytest.raises(RuntimeError, match="Parameter is frozen"):
@@ -164,8 +132,8 @@ class TestAbstractSynth:
         # Unfreezing parameters and randomizing now leads to different results
         synth.unfreeze_all_parameters()
         synth.randomize(1)
-        assert torch.all(~synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(~synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(~synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(~synth.keyboard.p("duration").isclose(dur_val))
 
         # Can set parameters directly with freeze arg that they should be frozen
         synth.set_parameters(
@@ -175,16 +143,16 @@ class TestAbstractSynth:
             },
             freeze=True,
         )
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize()
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         synth.randomize(1)
-        assert torch.all(synth.keyboard.p("midi_f0").eq(midi_val))
-        assert torch.all(synth.keyboard.p("duration").eq(dur_val))
+        assert torch.all(synth.keyboard.p("midi_f0").isclose(midi_val))
+        assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test randomization with synth with non-ModuleParameters raises error
         synth.register_parameter("param", torch.nn.Parameter(T(0.0)))
@@ -249,3 +217,40 @@ class TestAbstractSynth:
         synth.randomize(1)
         assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
         assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
+
+    def test_get_parameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+        params = synth.get_parameters()
+        assert len(params) > 0
+        for param in params:
+            assert hasattr(synth, param[0])
+            module = getattr(synth, param[0])
+            parameter = module.get_parameter(param[1])
+            assert isinstance(parameter, ModuleParameter)
+
+        # Now make sure that frozen parameters don't get returned unless specified
+        synth.freeze_parameters([("keyboard", "midi_f0")])
+        assert ("keyboard", "midi_f0") not in synth.get_parameters()
+        assert ("keyboard", "midi_f0") in synth.get_parameters(include_frozen=True)
+
+        # Now unfreeze and make sure they are returned
+        synth.unfreeze_all_parameters()
+        assert ("keyboard", "midi_f0") in synth.get_parameters()
+
+    def test_set_hyperparameters(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synth = torchsynth.synth.Voice(synthglobals)
+        hparams = synth.hyperparameters
+        for (module_name, param_name, subname), value in hparams.items():
+            if subname == "curve":
+                value = 1.0 - value
+            if subname == "symmetric":
+                value = not value
+            synth.set_hyperparameter((module_name, param_name, subname), value)
+        hparams2 = synth.hyperparameters
+        for (module_name, param_name, subname), value in hparams2.items():
+            if subname == "curve":
+                assert value == 1.0 - hparams[(module_name, param_name, subname)]
+            if subname == "symmetric":
+                assert value == (not hparams[(module_name, param_name, subname)])
