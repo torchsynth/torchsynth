@@ -393,7 +393,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-noise = Noise(synthglobals, 42, device=device)
+noise = Noise(synthglobals, seed=42, device=device)
 out = noise()
 
 stft_plot(out[0].detach().cpu().numpy())
