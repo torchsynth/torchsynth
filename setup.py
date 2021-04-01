@@ -58,7 +58,7 @@ setup(
             "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
             "sphinxcontrib-napoleon",
             "mock",
-            "recommonmark",
+            "myst_parser",
             "linkify-it-py",
         ],
     },
