@@ -41,7 +41,7 @@ class TestAbstractSynth:
                     synthmodule.SineVCO,
                     {"tuning": T([-12.0, 3.0]), "mod_depth": T([50.0, -50.0])},
                 ),
-                ("noise", synthmodule.Noise),
+                ("noise", synthmodule.Noise, {"seed": 42}),
             ]
         )
 
@@ -79,18 +79,52 @@ class TestAbstractSynth:
             synth.add_synth_modules([("module", torch.nn.Module)])
 
     def test_deterministic_noise(self):
+        # This test confirms that randomizing a synth with the same
+        # seed results in the same audio results.
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
-        synth = torchsynth.synth.Voice(synthglobals)
+        cpusynth = torchsynth.synth.Voice(synthglobals)
 
-        synth.randomize(1)
-        x11 = synth()
-        synth.randomize()
-        x2 = synth()
-        synth.randomize(1)
-        x12 = synth()
+        cpusynth.randomize(1)
+        x11 = cpusynth()
+        cpusynth.randomize(2)
+        x2 = cpusynth()
+        cpusynth.randomize(1)
+        x12 = cpusynth()
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
+
+        # If a GPU is available then make sure the same
+        # tests as above are also deterministic on the GPU.
+        if self.device == "cuda":
+            cudasynth = torchsynth.synth.Voice(synthglobals).to(self.device)
+
+            # Confirm that randomizing the cpu synth and cuda synth results
+            # in the same set of parameters
+            cudasynth.randomize(42)
+            cpusynth.randomize(42)
+            cuda_params = cudasynth.get_parameters()
+            cpu_params = cpusynth.get_parameters()
+            for name, param in cuda_params.items():
+                assert torch.all(param.data.detach().cpu() == cpu_params[name].data)
+
+            # Confirm that we get deterministic results when
+            # randomizing the cuda synth with the same seed
+            cudasynth.randomize(1)
+            cuda11 = cudasynth()
+            cudasynth.randomize(2)
+            cuda2 = cudasynth()
+            cudasynth.randomize(1)
+            cuda12 = cudasynth()
+
+            assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
+            assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6
+
+            # Finally, compare the output audio from the cuda synth to the
+            # cpu synth. Small numerical differences between computations of
+            # GPU and CPU add up, so we need to relax the constraints here.
+            assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-3
+            assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 2e-3
 
     def test_randomize_parameter_freezing(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))

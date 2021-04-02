@@ -8,6 +8,8 @@ class SynthGlobals:
     """
     Any synth module requires these "global" values.
     The should be the same for every module that is connected.
+
+    # TODO batch size and buffer size should not be tensors
     """
 
     def __init__(

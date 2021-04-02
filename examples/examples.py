@@ -393,7 +393,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-noise = Noise(synthglobals, device=device)
+noise = Noise(synthglobals, seed=42, device=device)
 out = noise()
 
 stft_plot(out[0].detach().cpu().numpy())
@@ -410,7 +410,7 @@ env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=de
 keyboard = MonophonicKeyboard(synthglobals, device=device)
 sine = SineVCO(synthglobals, device=device)
 square_saw = SquareSawVCO(synthglobals, device=device)
-noise = Noise(synthglobals, device=device)
+noise = Noise(synthglobals, seed=123, device=device)
 
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)

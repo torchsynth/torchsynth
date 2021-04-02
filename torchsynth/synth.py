@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
-import torchcsprng as csprng
 from pytorch_lightning.core.lightning import LightningModule
 from torch import tensor as T
 
@@ -165,7 +164,7 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        if batch_idx:
+        if batch_idx is not None:
             self.randomize(seed=batch_idx)
         return self._forward(*args, **kwargs)
 
@@ -214,15 +213,25 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         if seed is not None:
-            # Profile to make sure this isn't too slow?
-            mt19937_gen = csprng.create_mt19937_generator(seed)
+            cpu_rng = torch.Generator(device="cpu").manual_seed(seed)
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    parameter.data.uniform_(0, 1, generator=mt19937_gen)
+                    # TODO reproducibility with different batch sizes
+                    # See https://github.com/turian/torchsynth/issues/253
+                    if self.device.type != "cpu":  # pragma: no cover
+                        new_params = torch.rand(
+                            (self.batch_size,),
+                            device="cpu",
+                            pin_memory=True,
+                            generator=cpu_rng,
+                        )
+                        parameter.data = new_params.to(self.device, non_blocking=True)
+                    else:
+                        parameter.data.uniform_(0, 1, generator=cpu_rng)
         else:
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    parameter.data = torch.rand_like(parameter, device=self.device)
+                    parameter.data.uniform_(0, 1)
 
         # Add seed to all modules
         for module in self._modules:
@@ -263,7 +272,7 @@ class Voice(AbstractSynth):
                 ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
-                ("noise", Noise),
+                ("noise", Noise, {"seed": 13}),
                 ("vca", VCA),
                 ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
             ]
