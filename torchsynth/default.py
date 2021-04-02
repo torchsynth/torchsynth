@@ -1,7 +1,10 @@
 """
 Default parameters
 """
-DEFAULT_SAMPLE_RATE = 44100
+DEFAULT_SAMPLE_RATE = 48000
+
+# Modulation signals are computer at a lower sample rate
+DEFAULT_CONTROL_RATE = 480
 
 # Number of samples for fixed length synthesis.
 # 4 seconds by default

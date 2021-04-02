@@ -412,7 +412,7 @@ class ADSR(ControlRateModule):
     def make_release(self, note_on_duration) -> Signal:
         return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return (
             f"""ADSR(a={self.torchparameters['attack']}, """
             f"""d={self.torchparameters['decay']}, """
