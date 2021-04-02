@@ -39,9 +39,7 @@ def normalize_if_clipping(signal: Signal) -> Signal:
     or greater than 1.0
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
-    return torch.where(
-        max_sample > T(1.0, device=signal.device), signal / max_sample, signal
-    )
+    return torch.where(max_sample > 1.0, signal / max_sample, signal)
 
 
 def normalize(signal: Signal) -> Signal:

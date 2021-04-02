@@ -91,6 +91,14 @@ class TestSynthModule:
         for parameter in module.torchparameters.values():
             assert parameter.device.type == self.device
 
+    def test_seconds_to_sample(self):
+        synthglobals = torchsynth.globals.SynthGlobals(
+            batch_size=T(2), sample_rate=T(48000)
+        )
+        module = synthmodule.SineVCO(synthglobals)
+        samples = module.seconds_to_samples(4.0)
+        assert samples == 4 * 48000
+
     def test_softmodeselector(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
         mode_selector = synthmodule.SoftModeSelector(
@@ -209,3 +217,21 @@ class TestSynthModule:
             # of 64, then this should complain
             synthglobals65 = SynthGlobals(T(65))
             synthmodule.Noise(synthglobals65, seed=0)
+
+
+class TestControlRateModule:
+    def test_properties(self):
+        synthglobals = torchsynth.globals.SynthGlobals(T(2))
+        adsr = synthmodule.ADSR(synthglobals)
+
+        # Sample rate and buffer size should raise errors
+        with pytest.raises(NotImplementedError):
+            adsr.sample_rate
+
+        with pytest.raises(NotImplementedError):
+            adsr.buffer_size
+
+        assert adsr.control_rate == torchsynth.default.DEFAULT_CONTROL_RATE
+        expected_buffer = synthglobals.buffer_size / synthglobals.sample_rate
+        expected_buffer *= adsr.control_rate
+        assert adsr.control_buffer_size == expected_buffer
