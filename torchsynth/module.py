@@ -11,6 +11,7 @@ import torch.nn.functional as F
 import torch.tensor as T
 
 import torchsynth.util as util
+from torchsynth.config import DEBUG
 from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
@@ -101,7 +102,7 @@ class SynthModule(nn.Module):
 
     @property
     def nyquist(self):
-        return self.sample_rate / T(2, device=self.device)
+        return self.sample_rate / 2.0
 
     @property
     def buffer_size(self) -> T:
@@ -176,9 +177,7 @@ class SynthModule(nn.Module):
         value = value.to(self.device)
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
-        assert torch.all(T(0, device=self.device) <= value) and torch.all(
-            value <= T(1, device=self.device)
-        )
+        assert torch.all(0.0 <= value) and torch.all(value <= 1.0)
         assert value.shape == (self.batch_size,)
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
@@ -190,9 +189,7 @@ class SynthModule(nn.Module):
             value (T)           : Value to update parameter with
         """
         value = value.to(self.device)
-        assert torch.all(T(0, device=self.device) <= value) and torch.all(
-            value <= T(1, device=self.device)
-        )
+        assert torch.all(0.0 <= value) and torch.all(value <= 1.0)
         assert value.shape == (self.batch_size,)
         self.torchparameters[parameter_id].data = value
 
@@ -333,8 +330,10 @@ class ADSR(ControlRateModule):
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
         """
-        assert note_on_duration.ndim == 1
-        assert torch.all(note_on_duration > T(0, device=self.device))
+
+        if DEBUG:
+            assert note_on_duration.ndim == 1
+            assert torch.all(note_on_duration > 0.0)
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
@@ -484,9 +483,11 @@ class VCO(SynthModule):
         assert midi_f0.shape == (self.batch_size,)
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-        assert (control_as_frequency >= 0).all() and (
-            control_as_frequency <= self.nyquist
-        ).all()
+
+        if DEBUG:
+            assert (control_as_frequency >= 0).all() and (
+                control_as_frequency <= self.nyquist
+            ).all()
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.p("initial_phase").unsqueeze(1)
