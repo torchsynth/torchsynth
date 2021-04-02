@@ -578,6 +578,7 @@ class Noise(SynthModule):
         # we need to select a portion of the noise samples. Offset
         # is used to cycle through all the noise in the default batch size
         # or select the correct noise sample from the default batch
+        # TODO https://github.com/turian/torchsynth/issues/255
         if self.offset == 0:
             noise = self.noise[: self.batch_size].as_subclass(Signal)
         else:

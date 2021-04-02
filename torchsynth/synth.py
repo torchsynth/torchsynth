@@ -38,7 +38,6 @@ class AbstractSynth(LightningModule):
     def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.synthglobals = synthglobals
-        self.generator = torch.Generator(device="cpu")
 
     @property
     def batch_size(self) -> T:
@@ -214,21 +213,21 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         if seed is not None:
-            self.generator.manual_seed(seed)
+            cpu_rng = torch.Generator(device="cpu").manual_seed(seed)
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    # TODO figure out how to support different batch sizes and
-                    # maintain reproducibility.
+                    # TODO reproducibility with different batch sizes
+                    # See https://github.com/turian/torchsynth/issues/253
                     if self.device.type != "cpu":  # pragma: no cover
                         new_params = torch.rand(
                             (self.batch_size,),
                             device="cpu",
                             pin_memory=True,
-                            generator=self.generator,
+                            generator=cpu_rng,
                         )
                         parameter.data = new_params.to(self.device, non_blocking=True)
                     else:
-                        parameter.data.uniform_(0, 1, generator=self.generator)
+                        parameter.data.uniform_(0, 1, generator=cpu_rng)
         else:
             for parameter in self.parameters():
                 if not ModuleParameter.is_parameter_frozen(parameter):
