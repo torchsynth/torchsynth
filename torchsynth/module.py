@@ -843,8 +843,10 @@ class AudioMixer(SynthModule):
 
 class ControlRateUpsample(SynthModule):
     """
-    Used to upsample control signals to the global sampling rate
-    Uses Linear Interpolation and is not suitable for audio rate signals.
+    Upsample control signals to the global sampling rate
+
+    Uses linear interpolation to resample an input control signal to the
+    audio buffer size set in synthglobals.
     """
 
     def __init__(

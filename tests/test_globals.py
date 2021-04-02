@@ -4,7 +4,6 @@ Tests for torch synths
 
 
 import pytest
-import torch.nn
 import torch.tensor as T
 
 from torchsynth.globals import SynthGlobals

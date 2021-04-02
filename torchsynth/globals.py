@@ -40,7 +40,9 @@ class SynthGlobals:
         self.buffer_size = buffer_size
         self.control_rate = control_rate
 
-        # Buffer size for control signals
+        # Buffer size for control signals -- this is calculated to have the
+        # same duration in seconds as that buffer size for the audio rate
+        # signals. Rounded to the nearest integer number of samples.
         self.control_buffer_size = (
             torch.round((buffer_size / sample_rate * control_rate))
             .clone()
