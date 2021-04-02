@@ -231,52 +231,35 @@ class ControlRateModule(SynthModule):
     """
     Control rate module is an abstract base class for SynthModules that run
     at a control rate as opposed to full audio rate.
-
-    Optionally, the output control signal can be upsampled to the correct
-    sample rate and buffer size.
     """
-
-    def __init__(
-        self,
-        synthglobals: SynthGlobals,
-        upsample: Optional[bool] = False,
-        **kwargs: Dict[str, T],
-    ):
-        super().__init__(synthglobals, **kwargs)
-        self.upsample = upsample
-        if upsample:
-            self.upsample = torch.nn.Upsample(
-                self.synthglobals.buffer_size, mode="linear", align_corners=True
-            )
 
     @property
     def sample_rate(self) -> T:
-        """
-        The internal sample rate for this module is control rate
-        """
+        raise NotImplementedError("This module operates at control rate")
+
+    @property
+    def buffer_size(self) -> T:
+        raise NotImplementedError("This module uses control buffer size")
+
+    @property
+    def control_rate(self) -> T:
         assert self.synthglobals.control_rate.ndim == 0
         return self.synthglobals.control_rate
 
     @property
-    def buffer_size(self) -> T:
-        """
-        The internal buffer size for this module is the control buffer size
-        """
+    def control_buffer_size(self) -> T:
         assert self.synthglobals.control_buffer_size.ndim == 0
         return self.synthglobals.control_buffer_size
 
-    def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
-        """
-        Wrapper for _forward that ensures a buffer_size length output.
-        """
-        signal = self._forward(*args, **kwargs)
-        if self.upsample:
-            signal = self.upsample(signal.unsqueeze(1)).squeeze(1)
-            buffered = util.fix_length(signal, self.synthglobals.buffer_size)
-        else:
-            buffered = self.to_buffer_size(signal)
+    def to_buffer_size(self, signal: Signal) -> Signal:
+        return util.fix_length(signal, self.control_buffer_size)
 
-        return buffered
+    def seconds_to_samples(self, seconds: T) -> T:
+        """
+        Converts a tensor of seconds to number of samples at the current control rate.
+        Returns the number of samples as a float and can be fractional.
+        """
+        return seconds * self.control_rate
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -326,7 +309,7 @@ class ADSR(ControlRateModule):
         self.register_buffer("zero", T(0.0, device=self.device))
         self.register_buffer("one", T(1.0, device=self.device))
         self.register_buffer(
-            "range", torch.arange(self.buffer_size, device=self.device)
+            "range", torch.arange(self.control_buffer_size, device=self.device)
         )
 
     def _forward(self, note_on_duration: T) -> Signal:
@@ -615,6 +598,15 @@ class VCA(SynthModule):
         return audio_in * control_in
 
 
+class ControlRateVCA(ControlRateModule):
+    """
+    A VCA that operates at control rate
+    """
+
+    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
+        return audio_in * control_in
+
+
 class Noise(SynthModule):
     """
     Generates white noise that is the same length as the buffer
@@ -690,11 +682,11 @@ class LFO(ControlRateModule):
         Must be implemented in deriving classes
         """
         # This module accepts signals at control rate!
-        assert mod_signal.shape == (self.batch_size, self.buffer_size)
+        assert mod_signal.shape == (self.batch_size, self.control_buffer_size)
 
         # Create frequency signal
         frequency = self.make_control(mod_signal)
-        argument = torch.cumsum(2 * torch.pi * frequency / self.sample_rate, dim=1)
+        argument = torch.cumsum(2 * torch.pi * frequency / self.control_rate, dim=1)
         argument = argument + self.p("initial_phase").unsqueeze(1)
 
         # Get LFO shapes
@@ -866,7 +858,7 @@ class ControlRateUpsample(SynthModule):
         )
 
     def _forward(self, signal: Signal) -> Signal:
-        return self.upsample(signal)
+        return self.upsample(signal.unsqueeze(1)).squeeze(1)
 
 
 class CrossfadeKnob(SynthModule):
