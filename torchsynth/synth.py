@@ -175,7 +175,7 @@ class AbstractSynth(LightningModule):
         This is boilerplate for lightning -- this is required by lightning Trainer
         when calling test, which we use to forward Synths on multi-gpu platforms
         """
-        return T(0.0, device=self.device)
+        return 0.0
 
     @property
     def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
