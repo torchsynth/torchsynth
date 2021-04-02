@@ -33,7 +33,6 @@ setup(
         "numpy",
         "scipy",
         "torch>=1.7",
-        "torchcsprng==0.2.0",  # 0.2.1 we had trouble on CUDA 11
         "pytorch-lightning",
     ],
     extras_require={

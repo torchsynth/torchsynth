@@ -9,10 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.tensor as T
-import torchcsprng as csprng
 
 import torchsynth.util as util
-from torchsynth.default import EPS
+from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
@@ -610,23 +609,52 @@ class ControlRateVCA(ControlRateModule):
 
 class Noise(SynthModule):
     """
-    Generates white noise that is the same length as the buffer
+    Generates white noise that is the same length as the buffer.
+
+    A batch size number of noise samples are pre-computed for performance.
+    A seed for the noise generator is required. If you use multiple of
+    these in a synth then choose different seeds for each instance.
     """
 
-    def __init__(self, synthglobals: SynthGlobals, **kwargs):
+    def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
         super().__init__(synthglobals, **kwargs)
-        self.register_buffer(
-            "noise",
-            torch.empty((self.batch_size, self.buffer_size), device=self.device),
-        )
+
+        # Pre-compute default batch size number of noise samples
+        generator = torch.Generator(device="cpu").manual_seed(seed)
+        noise = torch.empty((DEFAULT_BATCH_SIZE, self.buffer_size), device="cpu")
+        noise.data.uniform_(-1.0, 1.0, generator=generator)
+
+        # Repeat the noise batches if the current batch size is larger than the default
+        if self.batch_size > DEFAULT_BATCH_SIZE:
+            if self.batch_size % DEFAULT_BATCH_SIZE != 0:
+                raise ValueError(
+                    "Batch size is not divisible by the default "
+                    f"batch size of {DEFAULT_BATCH_SIZE}"
+                )
+
+            noise = noise.repeat(self.batch_size // DEFAULT_BATCH_SIZE, 1)
+
+        self.register_buffer("noise", noise.to(self.device))
+        self.offset = 0
 
     def _forward(self) -> Signal:
-        if self.seed is not None:
-            mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
+        # Return noise quickly if we are returning the whole batch
+        # and don't need to offset at all.
+        if self.batch_size >= DEFAULT_BATCH_SIZE and self.offset == 0:
+            return self.noise.as_subclass(Signal)
+
+        # If the batch size is smaller than the default batch size then
+        # we need to select a portion of the noise samples. Offset
+        # is used to cycle through all the noise in the default batch size
+        # or select the correct noise sample from the default batch
+        # TODO https://github.com/turian/torchsynth/issues/255
+        if self.offset == 0:
+            noise = self.noise[: self.batch_size].as_subclass(Signal)
         else:
-            self.noise.data.uniform_(-1, 1)
-        return self.noise.as_subclass(Signal)
+            noise = torch.roll(self.noise, (-self.offset, 0), dims=(0, 1))
+
+        self.offset = (self.offset + self.batch_size) % DEFAULT_BATCH_SIZE
+        return noise[: self.batch_size].as_subclass(Signal)
 
 
 class LFO(ControlRateModule):

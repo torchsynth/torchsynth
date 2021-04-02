@@ -2,7 +2,7 @@
 Tests for torch DSP utils.
 """
 
-import numpy as np
+import pytest
 import torch
 import torch.tensor as T
 

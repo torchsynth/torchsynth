@@ -10,6 +10,9 @@ DEFAULT_CONTROL_RATE = 480
 # 4 seconds by default
 DEFAULT_BUFFER_SIZE = 4 * DEFAULT_SAMPLE_RATE
 
+# Default batch size for rendering sounds.
+DEFAULT_BATCH_SIZE = 64
+
 # Small value to avoid log errors and divide by zero
 # NB I think for logs I've seen either 1e-4 or 1e-8
 EPS = 1e-6

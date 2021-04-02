@@ -7,6 +7,7 @@ import torch
 import torch.tensor as T
 
 import torchsynth
+from torchsynth.globals import SynthGlobals
 import torchsynth.module as synthmodule
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
@@ -185,6 +186,37 @@ class TestSynthModule:
                 n_output=5,
                 curves=[0.75, 1.5],
             )
+
+    def test_noise(self):
+        # Here we create there noise modules with different batch sizes.
+        # We each noise module a number of times to obtain an equal number
+        # of noise signals. All these noise samples should equal each other.
+        # i.e., noise should be returned deterministically regardless of the
+        # batch size.
+        synthglobals32 = SynthGlobals(T(32))
+        synthglobals64 = SynthGlobals(T(64))
+        synthglobals128 = SynthGlobals(T(128))
+
+        noise32 = synthmodule.Noise(synthglobals32, seed=0)
+        noise64 = synthmodule.Noise(synthglobals64, seed=0)
+        noise128 = synthmodule.Noise(synthglobals128, seed=0)
+        # A different seed should give a different result
+        noise128_diff = synthmodule.Noise(synthglobals128, seed=42)
+
+        out1 = torch.vstack((noise32(), noise32(), noise32(), noise32()))
+        out2 = torch.vstack((noise64(), noise64()))
+        out3 = noise128()
+        out4 = noise128_diff()
+
+        assert torch.all(out1 == out2)
+        assert torch.all(out2 == out3)
+        assert torch.all(out3 != out4)
+
+        with pytest.raises(ValueError):
+            # If the batch size if larger than the default
+            # of 64, then this should complain
+            synthglobals65 = SynthGlobals(T(65))
+            synthmodule.Noise(synthglobals65, seed=0)
 
 
 class TestControlRateModule:
