@@ -848,6 +848,27 @@ class AudioMixer(SynthModule):
         return util.normalize_if_clipping(output)
 
 
+class ControlRateUpsample(SynthModule):
+    """
+    Used to upsample control signals to the global sampling rate
+    Uses Linear Interpolation and is not suitable for audio rate signals.
+    """
+
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        device: Optional[torch.device] = None,
+        **kwargs: Dict[str, T],
+    ):
+        super().__init__(synthglobals, device, **kwargs)
+        self.upsample = torch.nn.Upsample(
+            self.synthglobals.buffer_size, mode="linear", align_corners=True
+        )
+
+    def _forward(self, signal: Signal) -> Signal:
+        return self.upsample(signal)
+
+
 class CrossfadeKnob(SynthModule):
     """
     Crossfade knob parameter with no signal generation
