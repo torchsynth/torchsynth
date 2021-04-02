@@ -71,6 +71,7 @@ from torchsynth.module import (
     MonophonicKeyboard,
     SineVCO,
     TorchFmVCO,
+    ControlRateUpsample,
 )
 from torchsynth.parameter import ModuleParameterRange
 
@@ -179,8 +180,9 @@ adsr = ADSR(
     device=device,
 )
 
+
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
+time_plot(envelope.clone().detach().cpu().T, adsr.control_rate.item())
 print(adsr)
 # -
 
@@ -199,12 +201,19 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 #    print(f"{p} grad1={adsr.torchparameters[p].data.grad} grad2={adsr.torchparameters[p].data.grad}")
 # -
 
+# **Generating Random Envelopes**
+#
+# If we don't set parameters for an ADSR, then the parameters will be random when
+# initialized.
+
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals, device)
+adsr = ADSR(synthglobals, device=device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
+print(envelope.shape)
+time_plot(envelope.clone().detach().cpu().T)
 
+#
 # We can also use an optimizer to match the parameters of the two ADSRs
 
 # optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
@@ -258,7 +267,12 @@ adsr = ADSR(
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
 
+# Create an envelope -- modulation signals are computed at a lower
+# sampling rate and must be upsampled prior to feeding into audio
+# rate modules
 envelope = adsr(duration)
+upsample = ControlRateUpsample(synthglobals)
+envelope = upsample(envelope)
 
 # SineVCO test -- call to(device) instead of passing in device to constructor also works
 sine_vco = SineVCO(
@@ -439,8 +453,12 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-# Envelope to be applied to LFO rate
-time_plot(envelope[0].cpu().detach().numpy())
+adsr = ADSR(synthglobals=synthglobals, device=device)
+
+# Trigger the keyboard, which returns a midi_f0 and note duration
+midi_f0, duration = keyboard()
+
+envelope = adsr(duration)
 
 lfo = LFO(synthglobals, device=device)
 lfo.set_parameter("mod_depth", T([10.0, 0.0]))
@@ -452,8 +470,8 @@ out2 = lfo2(envelope)
 
 print(out.shape)
 
-time_plot(out[0].detach().cpu().numpy())
-time_plot(out2[0].detach().cpu().numpy())
+time_plot(out[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
+time_plot(out2[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
@@ -461,7 +479,7 @@ mixer = ModulationMixer(synthglobals=synthglobals, device=device, n_input=2, n_o
 mods_mixed = mixer(out, out2)
 
 print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
-time_plot(mods_mixed[0][0].detach().cpu().numpy())
+time_plot(mods_mixed[0][0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 # -
 
 # ## Voice Module

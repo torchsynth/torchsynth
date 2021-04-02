@@ -7,6 +7,8 @@ from torch import tensor as T
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
+    ControlRateUpsample,
+    ControlRateVCA,
     LFO,
     VCA,
     AudioMixer,
@@ -269,6 +271,8 @@ class Voice(AbstractSynth):
                 ("lfo_2_amp_adsr", ADSR),
                 ("lfo_1_rate_adsr", ADSR),
                 ("lfo_2_rate_adsr", ADSR),
+                ("control_vca", ControlRateVCA),
+                ("control_upsample", ControlRateUpsample),
                 ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
@@ -290,19 +294,28 @@ class Voice(AbstractSynth):
         lfo_2_amp = self.lfo_2_amp_adsr(note_on_duration)
 
         # Compute LFOs with envelopes
-        lfo_1 = self.vca(self.lfo_1(lfo_1_rate), lfo_1_amp)
-        lfo_2 = self.vca(self.lfo_2(lfo_2_rate), lfo_2_amp)
+        lfo_1 = self.control_vca(self.lfo_1(lfo_1_rate), lfo_1_amp)
+        lfo_2 = self.control_vca(self.lfo_2(lfo_2_rate), lfo_2_amp)
 
         # ADSRs for Oscillators and noise
         adsr_1 = self.adsr_1(note_on_duration)
         adsr_2 = self.adsr_2(note_on_duration)
 
         # Mix all modulation signals
-        modulation = self.mod_matrix(adsr_1, adsr_2, lfo_1, lfo_2)
+        (vco_1_pitch, vco_1_amp, vco_2_pitch, vco_2_amp, noise_amp) = self.mod_matrix(
+            adsr_1, adsr_2, lfo_1, lfo_2
+        )
+
+        # Upsample all the control signals
+        vco_1_pitch = self.control_upsample(vco_1_pitch)
+        vco_1_amp = self.control_upsample(vco_1_amp)
+        vco_2_pitch = self.control_upsample(vco_2_pitch)
+        vco_2_amp = self.control_upsample(vco_2_amp)
+        noise_amp = self.control_upsample(noise_amp)
 
         # Create signal and with modulations and mix together
-        vco_1_out = self.vca(self.vco_1(midi_f0, modulation[0]), modulation[1])
-        vco_2_out = self.vca(self.vco_2(midi_f0, modulation[2]), modulation[3])
-        noise_out = self.vca(self.noise(), modulation[4])
+        vco_1_out = self.vca(self.vco_1(midi_f0, vco_1_pitch), vco_1_amp)
+        vco_2_out = self.vca(self.vco_2(midi_f0, vco_2_pitch), vco_2_amp)
+        noise_out = self.vca(self.noise(), noise_amp)
 
         return self.mixer(vco_1_out, vco_2_out, noise_out)
