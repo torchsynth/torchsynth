@@ -203,3 +203,9 @@ class TestSynthModule:
         assert torch.all(out1 == out2)
         assert torch.all(out2 == out3)
         assert torch.all(out3 != out4)
+
+        with pytest.raises(ValueError):
+            # If the batch size if larger than the default
+            # of 64, then this should complain
+            synthglobals65 = SynthGlobals(T(65))
+            synthmodule.Noise(synthglobals65, seed=0)

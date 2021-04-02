@@ -550,12 +550,20 @@ class Noise(SynthModule):
     def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
         super().__init__(synthglobals, **kwargs)
 
-        # Pre-compute noise
+        # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)
         noise = torch.empty((DEFAULT_BATCH_SIZE, self.buffer_size), device="cpu")
         noise.data.uniform_(-1.0, 1.0, generator=generator)
+
+        # Repeat the noise batches if the current batch size is larger than the default
         if self.batch_size > DEFAULT_BATCH_SIZE:
-            noise = util.batch_resize(noise, self.batch_size)
+            if self.batch_size % DEFAULT_BATCH_SIZE != 0:
+                raise ValueError(
+                    "Batch size is not divisible by the default "
+                    f"batch size of {DEFAULT_BATCH_SIZE}"
+                )
+
+            noise = noise.repeat(self.batch_size // DEFAULT_BATCH_SIZE, 1)
 
         self.register_buffer("noise", noise.to(self.device))
         self.offset = 0
