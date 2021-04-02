@@ -204,8 +204,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 # **Generating Random Envelopes**
 #
 # If we don't set parameters for an ADSR, then the parameters will be random when
-# initialized. We can also pass in an upsample attribute to allow control signal
-# modules to upsample to full sample rate.
+# initialized.
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
@@ -214,6 +213,7 @@ envelope = adsr(note_on_duration)
 print(envelope.shape)
 time_plot(envelope.clone().detach().cpu().T)
 
+#
 # We can also use an optimizer to match the parameters of the two ADSRs
 
 # optimizer = torch.optim.Adam(list(adsr2.parameters()), lr=0.01)
@@ -267,7 +267,9 @@ adsr = ADSR(
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
 
-# Create an envelope and upsample it
+# Create an envelope -- modulation signals are computed at a lower
+# sampling rate and must be upsampled prior to feeding into audio
+# rate modules
 envelope = adsr(duration)
 upsample = ControlRateUpsample(synthglobals)
 envelope = upsample(envelope)
@@ -451,7 +453,6 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-# Reset envelope -- No upsampling
 adsr = ADSR(synthglobals=synthglobals, device=device)
 
 # Trigger the keyboard, which returns a midi_f0 and note duration

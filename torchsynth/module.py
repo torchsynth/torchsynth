@@ -301,9 +301,10 @@ class ADSR(ControlRateModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
+        device: Optional[torch.device] = None,
         **kwargs: Dict[str, T],
     ):
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals, device=device, **kwargs)
 
         # Create some values that will be automatically loaded on device
         self.register_buffer("zero", T(0.0, device=self.device))
