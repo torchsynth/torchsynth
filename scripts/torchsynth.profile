@@ -23,6 +23,10 @@ import torch.tensor as T
 import pytorch_lightning as pl
 import multiprocessing
 
+# Turn off torchsynth debug mode before importing anything else
+import torchsynth.config
+torchsynth.config.DEBUG = False
+
 import torchsynth.synth
 from torchsynth.synth import AbstractSynth
 from torchsynth.globals import SynthGlobals
