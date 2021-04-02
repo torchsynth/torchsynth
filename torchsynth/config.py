@@ -2,4 +2,4 @@
 torchsynth configuration
 """
 
-DEBUG = False
+DEBUG = True
