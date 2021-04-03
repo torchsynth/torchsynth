@@ -58,7 +58,6 @@ name: modules
 caption: Torchsynth Packages
 ---
 defaults
-filter
 module
 parameter
 signal
