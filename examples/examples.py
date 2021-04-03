@@ -170,10 +170,18 @@ note_on_duration = T([0.5, 1.5], device=device)
 
 # Envelope test
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
-).to(device)
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    synthglobals=synthglobals,
+    device=device,
+)
+
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
+print(adsr)
 # -
 
 # Here's the l1 error between the two envelopes
@@ -193,9 +201,9 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals=synthglobals).to(device)
+adsr = ADSR(synthglobals, device)
 envelope = adsr(note_on_duration)
-time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
+time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate.item())
 
 # We can also use an optimizer to match the parameters of the two ADSRs
 
@@ -233,23 +241,33 @@ time_plot(envelope.clone().detach().cpu().T, adsr.sample_rate)
 
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
-    synthglobals, midi_f0=T([69.0, 50.0]), duration=note_on_duration
-).to(device)
+    synthglobals, device, midi_f0=T([69.0, 50.0]), duration=note_on_duration
+)
 
 # Reset envelope
 adsr = ADSR(
-    attack=a, decay=d, sustain=s, release=r, alpha=alpha, synthglobals=synthglobals
-).to(device)
+    attack=a,
+    decay=d,
+    sustain=s,
+    release=r,
+    alpha=alpha,
+    synthglobals=synthglobals,
+    device=device,
+)
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
 
 envelope = adsr(duration)
 
-# SineVCO test
+# SineVCO test -- call to(device) instead of passing in device to constructor also works
 sine_vco = SineVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([-12.0, 12.0]), synthglobals=synthglobals
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([-12.0, 12.0]),
+    synthglobals=synthglobals,
 ).to(device)
+
+
 sine_out = sine_vco(midi_f0, envelope)
 
 stft_plot(sine_out[0].detach().cpu().numpy())
@@ -284,14 +302,15 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([30.0, 30.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device, midi_f0=T([30.0, 30.0])).to(device)
 
 square_saw = SquareSawVCO(
     tuning=T([0.0, 0.0]),
     mod_depth=T([0.0, 0.0]),
     shape=T([0.0, 1.0]),
     synthglobals=synthglobals,
-).to(device)
+    device=device,
+)
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
 
 square_saw_out = square_saw(keyboard.p("midi_f0"), env2)
@@ -321,7 +340,7 @@ print(err)
 # amplitude to smooth it out.
 
 # +
-vca = VCA(synthglobals)
+vca = VCA(synthglobals, device=device)
 test_output = vca(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
@@ -337,12 +356,17 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
-keyboard = MonophonicKeyboard(synthglobals, midi_f0=T([50.0, 50.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device=device, midi_f0=T([50.0, 50.0])).to(
+    device
+)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([0.0, 5.0]), synthglobals=synthglobals
-).to(device)
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([0.0, 5.0]),
+    synthglobals=synthglobals,
+    device=device,
+)
 operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 
 # Shape the modulation depth.
@@ -350,8 +374,11 @@ operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
-    tuning=T([0.0, 0.0]), mod_depth=T([2.0, 5.0]), synthglobals=synthglobals
-).to(device)
+    tuning=T([0.0, 0.0]),
+    mod_depth=T([2.0, 5.0]),
+    synthglobals=synthglobals,
+    device=device,
+)
 fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
 
 stft_plot(fm_out[0].cpu().detach().numpy())
@@ -366,11 +393,8 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-noise = Noise(synthglobals)
-
-# Optionally can pass in the device to make sure the noise gets created
-# on the current device.
-out = noise(device)
+noise = Noise(synthglobals, device=device)
+out = noise()
 
 stft_plot(out[0].detach().cpu().numpy())
 ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
@@ -383,15 +407,15 @@ from torchsynth.module import AudioMixer
 
 env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=device)
 
-keyboard = MonophonicKeyboard(synthglobals).to(device)
-sine = SineVCO(synthglobals).to(device)
-square_saw = SquareSawVCO(synthglobals).to(device)
-noise = Noise(synthglobals)
+keyboard = MonophonicKeyboard(synthglobals, device=device)
+sine = SineVCO(synthglobals, device=device)
+square_saw = SquareSawVCO(synthglobals, device=device)
+noise = Noise(synthglobals, device=device)
 
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
-noise_out = noise(device)
+noise_out = noise()
 
 mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25]).to(device)
 output = mixer(sine_out, sqr_out, noise_out)
@@ -418,12 +442,12 @@ from torchsynth.module import LFO, ModulationMixer
 # Envelope to be applied to LFO rate
 time_plot(envelope[0].cpu().detach().numpy())
 
-lfo = LFO(synthglobals).to(device)
-lfo.set_parameter("mod_depth", T([10.0, 0.0], device=device))
-lfo.set_parameter("frequency", T([1.0, 1.0], device=device))
+lfo = LFO(synthglobals, device=device)
+lfo.set_parameter("mod_depth", T([10.0, 0.0]))
+lfo.set_parameter("frequency", T([1.0, 1.0]))
 out = lfo(envelope)
 
-lfo2 = LFO(synthglobals).to(device)
+lfo2 = LFO(synthglobals, device=device)
 out2 = lfo2(envelope)
 
 print(out.shape)
@@ -433,7 +457,7 @@ time_plot(out2[0].detach().cpu().numpy())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals, 2, 1).to(device)
+mixer = ModulationMixer(synthglobals=synthglobals, device=device, n_input=2, n_output=1)
 mods_mixed = mixer(out, out2)
 
 print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
@@ -524,13 +548,12 @@ for i in range(synthglobals16.batch_size):
     ipd.display(
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
     )
-# -
 
+# +
 # ### Parameters
 
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Voice we just created.
-
 for n, p in voice1.named_parameters():
     print(f"{n:40}")
 
@@ -599,186 +622,13 @@ if isnotebook():
     axes[1].set_title("Logarithmic Scaling")
 # -
 
-# ### Filters
-
-# +
-from torchsynth.filter import FIRLowPass, MovingAverage
-
-# GPU not working for filters yet
-device = "cpu"
-
-# Create some noise to filter
-duration = 2
-noise = torch.rand(2 * 44100, device=device) * 2 - 1
-stft_plot(noise.cpu().detach().numpy())
-# -
-
-# **Moving Average Filter**
+# ### Hyperparameters
 #
-# A moving average filter is a simple finite impulse response (FIR) filter that calculates that value of a sample by taking the average of M input samples at a time. The filter_length defines how many samples M to include in the average.
+# ParameterRanges are considered hyperparameters in torchsynth and can be viewed and modified through a Synth
 
-# +
-ma_filter = MovingAverage(filter_length=T(32.0)).to(device)
-filtered = ma_filter(noise)
+# View all hyperparameters
+voice1.hyperparameters
 
-stft_plot(filtered.cpu().detach().numpy())
-ipd.Audio(filtered.cpu().detach().numpy(), rate=44100)
-
-# +
-# Second example with a longer filter -- notice that the filter length can be fractional
-ma_filter2 = MovingAverage(filter_length=T(64.25)).to(device)
-filtered2 = ma_filter2(noise)
-
-stft_plot(filtered2.cpu().detach().numpy())
-ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
-# -
-
-# Compute the error between the two examples and get the gradient for the filter length
-
-# +
-fft1 = torch.abs(torch.fft.fft(filtered))
-fft2 = torch.abs(torch.fft.fft(filtered2))
-
-err = torch.mean(torch.abs(fft1 - fft2))
-print("Error =", err)
-
-err.backward(retain_graph=True)
-for p in ma_filter.torchparameters:
-    print(
-        f"{p} grad1={ma_filter.torchparameters[p].grad.item()} grad2={ma_filter2.torchparameters[p].grad.item()}"
-    )
-# -
-
-# **FIR Lowpass**
-#
-# The TorchFIR filter implements a low-pass filter by approximating the impulse response of an ideal lowpass filter, which is a windowed sinc function in the time domain. We can set the exact cut-off frequency for this filter, all frequencies above this point are attenuated. The quality of the approximation is determined by the length of the filter, choosing a larger filter length will result in a filter with a steeper slope at the cutoff and more attenuation of high frequencies.
-
-# +
-fir1 = FIRLowPass(cutoff=T(1024), filter_length=T(128.0)).to(device)
-filtered1 = fir1(noise)
-
-stft_plot(filtered1.cpu().detach().numpy())
-ipd.Audio(filtered1.cpu().detach().numpy(), rate=44100)
-
-# +
-# Second filter with a lower cutoff and a longer filter
-fir2 = FIRLowPass(cutoff=T(256.0), filter_length=T(1024)).to(device)
-filtered2 = fir2(noise)
-
-stft_plot(filtered2.cpu().detach().numpy())
-ipd.Audio(filtered2.cpu().detach().numpy(), rate=44100)
-# -
-
-# Compute the error between the two examples and check the gradient
-
-# +
-fft1 = torch.abs(torch.fft.fft(filtered1))
-fft2 = torch.abs(torch.fft.fft(filtered2))
-err = torch.mean(torch.abs(fft1 - fft2))
-print("Error =", err)
-
-err.backward(retain_graph=True)
-for p in fir1.torchparameters:
-    print(
-        f"{p} grad1={fir1.torchparameters[p].grad.item()} grad2={fir2.torchparameters[p].grad.item()}"
-    )
-# -
-# #### IIR Filters
-#
-# A set of IIR filters using a SVF filter design approach are shown here, included filters are a lowpass, highpass, bandpass, and bandstop (or notch).
-#
-# IIR filters are really slow in Torch, so we're only testing with a shorter buffer
-
-import torch.fft
-
-# +
-from torchsynth.filter import (
-    TorchBandPassSVF,
-    TorchBandStopSVF,
-    TorchHighPassSVF,
-    TorchLowPassSVF,
-)
-
-# Noise for testing
-noise = torch.tensor(
-    np.random.random(synthglobals1short.buffer_size) * 2 - 1, device=device
-).float()
-stft_plot(noise.cpu().numpy())
-# -
-
-# We'll create two lowpass filters with different cutoffs and filter resonance to compare. The second filter has higher resonance at the filter cutoff, this causes the filter to ring at that frequency. This can be seen in the spectrogram as a darker line at the cutoff.
-
-# +
-lpf1 = TorchLowPassSVF(
-    cutoff=T(500), resonance=T(1.0), buffer_size=T(synthglobals1short.buffer_size)
-).to(device)
-filtered1 = lpf1(noise)
-
-stft_plot(filtered1.cpu().detach().numpy())
-
-# +
-lpf2 = TorchLowPassSVF(
-    cutoff=T(1000), resonance=T(10), buffer_size=T(synthglobals1short.buffer_size)
-).to(device)
-filtered2 = lpf2(noise)
-
-stft_plot(filtered2.cpu().detach().numpy())
-# -
-
-# Error and gradients for the two lowpass filters
-
-# +
-spectrum1 = torch.abs(torch.fft.fft(filtered1))
-spectrum2 = torch.abs(torch.fft.fft(filtered2))
-
-err = torch.mean(torch.abs(spectrum1 - spectrum2))
-print(err)
-# -
-
-err.backward(retain_graph=True)
-for p in lpf1.torchparameters:
-    print(
-        f"{p} grad1={lpf1.torchparameters[p].grad.item()} grad2={lpf2.torchparameters[p].grad.item()}"
-    )
-
-# Let's checkout some other SVF filters
-
-"""
-# Highpass
-hpf = TorchHighPassSVF(cutoff=T(2048), buffer_size=T(synthglobals1.buffer_size))
-filtered = hpf(noise)
-
-stft_plot(filtered.cpu().detach().numpy())
-"""
-
-# We can also apply an envelope to the filter frequency. The mod_depth parameter determines how much effect the envelope will have on the cutoff. In this example a simple decay envelope is applied to the cutoff frequency, which has a base value of 20Hz, and has a duration of 100ms. The mod_depth is 10,000Hz, which means that as the envelope travels from 1 to 0, the cutoff will go from 10,020Hz down to 20Hz. The envelope is passed in as an extra argument to the call function on the filter.
-
-# +
-# Bandpass with envelope
-env = ADSR(
-    attack=T([0]),
-    decay=T([0.1]),
-    sustain=T([0.0]),
-    release=T([0.0]),
-    alpha=T([3.0]),
-    synthglobals=synthglobals1short,
-)(T([0.2]))
-bpf = TorchBandPassSVF(
-    cutoff=T(20),
-    resonance=T(30),
-    mod_depth=T(10000),
-    buffer_size=T(synthglobals1short.buffer_size),
-)
-
-filtered = bpf(noise, env[0])
-# ParameterError: Audio buffer is not finite everywhere ????
-# stft_plot(filtered.cpu().detach().numpy())
-
-# +
-# Bandstop
-bsf = TorchBandStopSVF(
-    cutoff=T(2000), resonance=T(0.05), buffer_size=T(synthglobals1short.buffer_size)
-)
-filtered = bsf(noise)
-
-stft_plot(filtered.cpu().detach().numpy())
+# Set a specific hyperparameter
+voice1.set_hyperparameter(("keyboard", "midi_f0", "curve"), 0.1)
+print(voice1.hyperparameters[("keyboard", "midi_f0", "curve")])

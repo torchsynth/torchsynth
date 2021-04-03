@@ -3,11 +3,12 @@ Synth modules in Torch.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+import copy
 
 import torch
 import torch.nn as nn
-import torch.tensor as T
 import torch.nn.functional as F
+import torch.tensor as T
 import torchcsprng as csprng
 
 import torchsynth.util as util
@@ -15,8 +16,6 @@ from torchsynth.default import EPS
 from torchsynth.globals import SynthGlobals
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
-
-torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 
 
 class SynthModule(nn.Module):
@@ -32,14 +31,22 @@ class SynthModule(nn.Module):
 
     # This outlines all the parameters available in this module
     # TODO: Make this non-optional
-    parameter_ranges: Optional[List[ModuleParameterRange]] = None
+    default_parameter_ranges: Optional[List[ModuleParameterRange]] = None
 
-    # TODO: have these already moved to cuda
-    def __init__(self, synthglobals: SynthGlobals, **kwargs: Dict[str, T]):
+    def __init__(
+        self,
+        synthglobals: SynthGlobals,
+        device: Optional[torch.device] = None,
+        **kwargs: Dict[str, T],
+    ):
         """
         Args:
-            synthglobals (:obj:`SynthGlobals`) :These are global settings
+            synthglobals (:obj:`SynthGlobals`): These are global settings
             shared across all modules in the same synth.
+
+            device (:obj:`torch.device`):
+            The device for creating all tensors.
+
         NOTE:
         __init__ should only set parameters.
         We shouldn't be doing computations in __init__ because
@@ -49,11 +56,18 @@ class SynthModule(nn.Module):
         """
         nn.Module.__init__(self)
         self.synthglobals = synthglobals
+        self.device = device
+        self.synthglobals.to(device)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
+        self.parameter_ranges = []
         # If this module needs a random seed, here it is
         self.seed: Optional[int] = None
 
-        if self.parameter_ranges:
+        if self.default_parameter_ranges is not None:
+            # We want to create copies of the parameter ranges otherwise each instance
+            # of the same module type (ex. ADSR) will reference the same param range
+            assert isinstance(self.default_parameter_ranges, list)
+            self.parameter_ranges = copy.deepcopy(self.default_parameter_ranges)
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
                 p.name: p for p in self.parameter_ranges
             }
@@ -63,14 +77,17 @@ class SynthModule(nn.Module):
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        data=torch.rand((self.synthglobals.batch_size,)),
+                        data=torch.rand((self.synthglobals.batch_size,), device=device),
                         parameter_range=parameter_range,
                     )
                     for parameter_range in self.parameter_ranges
                 ]
             )
             if kwargs:
+                # Parameter values can also be passed in as keyword args.
                 for name, data in kwargs.items():
+                    if data.device != self.device:
+                        data = data.to(self.device)
                     self.set_parameter(name, data)
 
     @property
@@ -85,7 +102,7 @@ class SynthModule(nn.Module):
 
     @property
     def nyquist(self):
-        return self.sample_rate // 2
+        return self.sample_rate / T(2, device=self.device)
 
     @property
     def buffer_size(self) -> T:
@@ -93,12 +110,14 @@ class SynthModule(nn.Module):
         return self.synthglobals.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
-        return util.fix_length2D(signal, self.buffer_size)
+        return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
-        # Do we want this?
-        # assert seconds.ndim == 1
-        return torch.round(seconds * self.sample_rate).int()
+        """
+        Converts a tensor of seconds to number of samples at the current sample rate.
+        Returns the number of samples as a float and can be fractional.
+        """
+        return seconds * self.sample_rate
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
@@ -111,7 +130,9 @@ class SynthModule(nn.Module):
         Wrapper for _forward that ensures a buffer_size length output.
         TODO: Make this forward0d() after everything is 1D
         """
-        return self.to_buffer_size(self._forward(*args, **kwargs))
+        signal = self._forward(*args, **kwargs)
+        buffered = self.to_buffer_size(signal)
+        return buffered
 
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
@@ -153,9 +174,12 @@ class SynthModule(nn.Module):
             parameter_id (str)  : Id of the parameter to update
             value (T)           : Value to update parameter with
         """
+        value = value.to(self.device)
         self.torchparameters[parameter_id].to_0to1(value)
         value = self.torchparameters[parameter_id].data
-        assert torch.all(0 <= value) and torch.all(value <= 1)
+        assert torch.all(T(0, device=self.device) <= value) and torch.all(
+            value <= T(1, device=self.device)
+        )
         assert value.shape == (self.batch_size,)
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
@@ -166,7 +190,10 @@ class SynthModule(nn.Module):
             parameter_id (str)  : Id of the parameter to update
             value (T)           : Value to update parameter with
         """
-        assert torch.all(0 <= value) and torch.all(value <= 1)
+        value = value.to(self.device)
+        assert torch.all(T(0, device=self.device) <= value) and torch.all(
+            value <= T(1, device=self.device)
+        )
         assert value.shape == (self.batch_size,)
         self.torchparameters[parameter_id].data = value
 
@@ -178,13 +205,34 @@ class SynthModule(nn.Module):
         assert value.shape == (self.batch_size,)
         return value
 
+    def to(self, device=None, **kwargs):
+        """
+        Overriding the to call for nn.Module to transfer this module to device. This
+        makes sure that the ParameterRanges for each ModuleParamter and the globals
+        are also transferred to the correct device.
+        """
+        self.update_device(device)
+        return super().to(device=device, **kwargs)
+
+    def update_device(self, device=None):
+        """
+        This handles the device transfer tasks that are not managed by PyTorch.
+        """
+        self.synthglobals.to(device)
+        self.device = device
+        # Currently the parameters ranges themselves are not move to a different
+        # device, but each ParameterRange object is device aware if it needs to be
+        # TODO: Do ParameterRanges need to be device aware? See issue #240
+        for name, parameter in self.torchparameters.items():
+            parameter.parameter_range.to(device)
+
 
 class ADSR(SynthModule):
     """
     Envelope class for building a control rate ADSR signal.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0, 2.0, curve=0.5, name="attack", description="attack time (sec)"
         ),
@@ -231,7 +279,7 @@ class ADSR(SynthModule):
         behind the scenes to make the playing experience feel natural.
         """
         assert note_on_duration.ndim == 1
-        assert torch.all(note_on_duration > 0)
+        assert torch.all(note_on_duration > T(0, device=self.device))
 
         # Calculations to accommodate attack/decay phase cut by note duration.
         attack = self.p("attack")
@@ -239,7 +287,7 @@ class ADSR(SynthModule):
 
         new_attack = torch.minimum(attack, note_on_duration)
         new_decay = torch.maximum(
-            note_on_duration - attack, T([0.0], device=attack.device)
+            note_on_duration - attack, T([0.0], device=self.device)
         )
         new_decay = torch.minimum(new_decay, decay)
 
@@ -247,7 +295,7 @@ class ADSR(SynthModule):
         decay_signal = self.make_decay(new_attack, new_decay)
         release_signal = self.make_release(note_on_duration)
 
-        return attack_signal * decay_signal * release_signal
+        return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
 
     def _ramp(self, start, duration: T, inverse: bool = False) -> Signal:
         """Makes a ramp of a given duration in seconds.
@@ -268,14 +316,14 @@ class ADSR(SynthModule):
         duration_ = self.seconds_to_samples(duration)
 
         # Build ramps template.
-        tmp = torch.arange(self.buffer_size, device=duration.device)
+        tmp = torch.arange(self.buffer_size, device=self.device)
         ramp = tmp.repeat([self.batch_size, 1])
 
         # Shape ramps.
         ramp = ramp - start_[:, None]
-        ramp = torch.maximum(ramp, T(0.0, device=duration.device))
+        ramp = torch.maximum(ramp, T(0.0, device=self.device))
         ramp = (ramp + EPS) / (duration_[:, None] + EPS)
-        ramp = torch.minimum(ramp, T(1.0, device=duration.device))
+        ramp = torch.minimum(ramp, T(1.0, device=self.device))
 
         """
         The following is a workaround. In inverse mode, a ramp with 0 duration
@@ -294,9 +342,7 @@ class ADSR(SynthModule):
         return ramp.as_subclass(Signal)
 
     def make_attack(self, attack_time) -> Signal:
-        return self._ramp(
-            torch.zeros(self.batch_size, device=attack_time.device), attack_time
-        )
+        return self._ramp(torch.zeros(self.batch_size, device=self.device), attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
         _a = 1.0 - self.p("sustain")[:, None]
@@ -330,7 +376,7 @@ class VCO(SynthModule):
         phase (:obj:'T',optional) :   initial phase values
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             -24.0,
             24.0,
@@ -456,7 +502,9 @@ class SquareSawVCO(VCO):
         virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = VCO.parameter_ranges + [
+    default_parameter_ranges: List[
+        ModuleParameterRange
+    ] = VCO.default_parameter_ranges + [
         ModuleParameterRange(
             0.0, 1.0, name="shape", description="Waveshape - square to saw [0,1]"
         )
@@ -496,15 +544,20 @@ class Noise(SynthModule):
     Generates white noise that is the same length as the buffer
     """
 
-    def _forward(self, device: Optional[torch.device] = None) -> Signal:
+    def __init__(self, synthglobals: SynthGlobals, **kwargs):
+        super().__init__(synthglobals, **kwargs)
+        self.register_buffer(
+            "noise",
+            torch.empty((self.batch_size, self.buffer_size), device=self.device),
+        )
+
+    def _forward(self) -> Signal:
         if self.seed is not None:
             mt19937_gen = csprng.create_mt19937_generator(self.seed)
-            noise = torch.empty((self.batch_size, self.buffer_size), device=device)
-            noise.data.uniform_(-1, 1, generator=mt19937_gen)
+            self.noise.data.uniform_(-1, 1, generator=mt19937_gen)
         else:
-            noise = torch.rand((self.batch_size, self.buffer_size), device=device)
-            noise = noise * 2 - 1
-        return noise.as_subclass(Signal)
+            self.noise.data.uniform_(-1, 1)
+        return self.noise.as_subclass(Signal)
 
 
 class LFO(VCO):
@@ -543,9 +596,9 @@ class LFO(VCO):
         **kwargs: Dict[str, T],
     ):
         self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
-        self.parameter_ranges = self.default_ranges.copy()
+        self.default_parameter_ranges = self.default_ranges.copy()
         for lfo in self.lfo_types:
-            self.parameter_ranges.append(
+            self.default_parameter_ranges.append(
                 ModuleParameterRange(
                     0.0,
                     1.0,
@@ -633,10 +686,10 @@ class ModulationMixer(SynthModule):
             curves = [0.5] * n_input
 
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = []
+        self.default_parameter_ranges = []
         for i in range(n_input):
             for j in range(n_output):
-                self.parameter_ranges.append(
+                self.default_parameter_ranges.append(
                     ModuleParameterRange(
                         0.0,
                         1.0,
@@ -688,9 +741,9 @@ class AudioMixer(SynthModule):
             curves = [1.0] * n_input
 
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = []
+        self.default_parameter_ranges = []
         for i in range(n_input):
-            self.parameter_ranges.append(
+            self.default_parameter_ranges.append(
                 ModuleParameterRange(
                     0.0,
                     1.0,
@@ -722,7 +775,7 @@ class CrossfadeKnob(SynthModule):
     Crossfade knob parameter with no signal generation
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0,
             1.0,
@@ -738,7 +791,7 @@ class MonophonicKeyboard(SynthModule):
     parameters that output a midi_f0 and note duration.
     """
 
-    parameter_ranges: List[ModuleParameterRange] = [
+    default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0,
             127.0,
@@ -747,7 +800,7 @@ class MonophonicKeyboard(SynthModule):
             description="pitch value in 'midi' (69 = 440Hz)",
         ),
         ModuleParameterRange(
-            0.0,
+            0.01,
             4.0,
             curve=0.5,
             name="duration",
@@ -781,7 +834,7 @@ class SoftModeSelector(SynthModule):
         https://github.com/turian/torchsynth/issues/165
         """
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = [
+        self.default_parameter_ranges = [
             ModuleParameterRange(
                 0.0,
                 1.0,
@@ -790,7 +843,7 @@ class SoftModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
         self.exponent = exponent
 
     def forward(self) -> Tuple[T, T]:
@@ -817,7 +870,7 @@ class HardModeSelector(SynthModule):
         **kwargs: Dict[str, T],
     ):
         # Need to create the parameter ranges before calling super().__init
-        self.parameter_ranges = [
+        self.default_parameter_ranges = [
             ModuleParameterRange(
                 0.0,
                 1.0,
@@ -826,7 +879,7 @@ class HardModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthglobals=synthglobals, **kwargs)
 
     def forward(self) -> Tuple[T, T]:
         # Is this tensor creation slow?

@@ -17,6 +17,7 @@ name: start
 caption: Getting started
 ---
 starter/starter
+starter/installation
 ```
 
 
@@ -26,8 +27,8 @@ maxdepth: 1
 name: modular_design
 caption: Modular Design
 ---
-mod/modular_principles
-mod/example
+modular-design/modular-principles
+modular-design/new-synths
 ```
 
 
@@ -37,7 +38,7 @@ maxdepth: 1
 name: reproducibility
 caption: Reproducibility
 ---
-rep/reproducibility
+reproducibility/reproducibility
 ```
 
 
@@ -47,7 +48,7 @@ maxdepth: 1
 name: contributing
 caption: Contributing
 ---
-contribute/dev_guidelines
+contributing/contributing
 ```
 
 
