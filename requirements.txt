@@ -22,7 +22,9 @@ pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
 https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme
 sphinxcontrib-napoleon
 mock
-recommonmark
+sphinx_rtd_theme
+myst_parser
+linkify-it-py
 sphinx>=3.0.4 # not directly required, pinned by Snyk to avoid a vulnerability
 myst-parser
 linkify-it-py

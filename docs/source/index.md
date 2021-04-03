@@ -56,9 +56,13 @@ contributing/contributing
 ---
 maxdepth: 3
 name: modules
-caption: Modules
+caption: Torchsynth Packages
 ---
-modules
+defaults
+module
+parameter
+signal
+util
 ```
 
 
