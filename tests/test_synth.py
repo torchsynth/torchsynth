@@ -5,7 +5,8 @@ Tests for torch synths
 
 import pytest
 import torch.nn
-import torch.tensor as T
+import torch.tensor as tensor
+from torch import Tensor as T
 
 import torchsynth.globals
 import torchsynth.module as synthmodule
@@ -24,22 +25,25 @@ class TestAbstractSynth:
     def test_construction(self):
         # Test empty construction
         synthglobals = torchsynth.globals.SynthGlobals(
-            sample_rate=T(16000), buffer_size=T(512), batch_size=T(2)
+            sample_rate=tensor(16000), buffer_size=tensor(512), batch_size=tensor(2)
         )
         # Test construction with args
         synth = torchsynth.synth.AbstractSynth(synthglobals)
-        assert synth.sample_rate == T(16000)
-        assert synth.buffer_size == T(512)
+        assert synth.sample_rate == tensor(16000)
+        assert synth.buffer_size == tensor(512)
 
     def test_add_synth_module(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.AbstractSynth(synthglobals).to(self.device)
         synth.add_synth_modules(
             [
                 (
                     "vco",
                     synthmodule.SineVCO,
-                    {"tuning": T([-12.0, 3.0]), "mod_depth": T([50.0, -50.0])},
+                    {
+                        "tuning": tensor([-12.0, 3.0]),
+                        "mod_depth": tensor([50.0, -50.0]),
+                    },
                 ),
                 ("noise", synthmodule.Noise, {"seed": 42}),
             ]
@@ -81,7 +85,7 @@ class TestAbstractSynth:
     def test_deterministic_noise(self):
         # This test confirms that randomizing a synth with the same
         # seed results in the same audio results.
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         cpusynth = torchsynth.synth.Voice(synthglobals)
 
         cpusynth.randomize(1)
@@ -128,11 +132,11 @@ class TestAbstractSynth:
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
 
     def test_randomize_parameter_freezing(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.Voice(synthglobals)
 
-        midi_val = T([69.0, 40.0])
-        dur_val = T([0.25, 3.0])
+        midi_val = tensor([69.0, 40.0])
+        dur_val = tensor([0.25, 3.0])
 
         # Tests the freezing parameters with current value
         synth.set_parameters(
@@ -190,7 +194,7 @@ class TestAbstractSynth:
         assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test randomization with synth with non-ModuleParameters raises error
-        synth.register_parameter("param", torch.nn.Parameter(T(0.0)))
+        synth.register_parameter("param", torch.nn.Parameter(tensor(0.0)))
         with pytest.raises(ValueError, match="Param 0.0 is not a ModuleParameter"):
             synth.randomize()
 
@@ -198,7 +202,7 @@ class TestAbstractSynth:
             synth.randomize(1)
 
     def test_freeze_parameters(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.Voice(synthglobals)
 
         for param in synth.parameters():
@@ -227,7 +231,7 @@ class TestAbstractSynth:
                 assert not param.frozen
 
     def test_set_frozen_parameters(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.Voice(synthglobals)
 
         synth.set_frozen_parameters(
@@ -239,22 +243,22 @@ class TestAbstractSynth:
 
         # Parameters should have been set with correct batch size
         assert synth.vco_1.p("tuning").shape == (synth.batch_size,)
-        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
+        assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
 
         assert synth.adsr_1.p("attack").shape == (synth.batch_size,)
-        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
 
         # Randomizing now shouldn't effect these parameters
         synth.randomize()
-        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
+        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
 
         synth.randomize(1)
-        assert torch.all(synth.vco_1.p("tuning").eq(T([0.0, 0.0])))
-        assert torch.all(synth.adsr_1.p("attack").eq(T([1.5, 1.5])))
+        assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
+        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
 
     def test_get_parameters(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.Voice(synthglobals)
         params = synth.get_parameters()
         assert len(params) > 0
@@ -274,7 +278,7 @@ class TestAbstractSynth:
         assert ("keyboard", "midi_f0") in synth.get_parameters()
 
     def test_set_hyperparameters(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=T(2))
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         synth = torchsynth.synth.Voice(synthglobals)
         hparams = synth.hyperparameters
         for (module_name, param_name, subname), value in hparams.items():

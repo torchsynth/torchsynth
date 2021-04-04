@@ -2,13 +2,14 @@
 Synth modules in Torch.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
 import copy
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.tensor as T
+import torch.tensor as tensor
+from torch import Tensor as T
 
 import torchsynth.util as util
 from torchsynth.config import DEBUG
@@ -303,8 +304,8 @@ class ADSR(ControlRateModule):
         super().__init__(synthglobals, device=device, **kwargs)
 
         # Create some values that will be automatically loaded on device
-        self.register_buffer("zero", T(0.0, device=self.device))
-        self.register_buffer("one", T(1.0, device=self.device))
+        self.register_buffer("zero", tensor(0.0, device=self.device))
+        self.register_buffer("one", tensor(1.0, device=self.device))
         self.register_buffer(
             "range", torch.arange(self.control_buffer_size, device=self.device)
         )
@@ -584,7 +585,7 @@ class SquareSawVCO(VCO):
         can safely have more partials without causing audible aliasing.
         """
         max_pitch = (
-            midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), T(0))
+            midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), tensor(0))
         )
         max_f0 = util.midi_to_hz(max_pitch)
         return 12000 / (max_f0 * torch.log10(max_f0))
@@ -690,7 +691,7 @@ class LFO(ControlRateModule):
     def __init__(
         self,
         synthglobals: SynthGlobals,
-        exponent: T = T(2.718281828),  # e
+        exponent: T = tensor(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
         self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
@@ -731,7 +732,7 @@ class LFO(ControlRateModule):
 
     def make_control(self, mod_signal: Signal) -> Signal:
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
-        return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, T(0.0))
+        return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, tensor(0.0))
 
     def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
         """
@@ -948,7 +949,7 @@ class SoftModeSelector(SynthModule):
         self,
         synthglobals: SynthGlobals,
         n_modes: int,
-        exponent: T = T(2.718281828),  # e
+        exponent: T = tensor(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
         """

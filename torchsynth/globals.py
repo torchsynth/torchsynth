@@ -1,12 +1,13 @@
 from typing import Optional
 
 import torch
-import torch.tensor as T
+import torch.tensor as tensor
+from torch import Tensor as T
 
 from torchsynth.default import (
     DEFAULT_BUFFER_SIZE,
-    DEFAULT_SAMPLE_RATE,
     DEFAULT_CONTROL_RATE,
+    DEFAULT_SAMPLE_RATE,
 )
 
 
@@ -21,9 +22,9 @@ class SynthGlobals:
     def __init__(
         self,
         batch_size: T,
-        sample_rate: Optional[T] = T(DEFAULT_SAMPLE_RATE),
-        buffer_size: Optional[T] = T(DEFAULT_BUFFER_SIZE),
-        control_rate: Optional[T] = T(DEFAULT_CONTROL_RATE),
+        sample_rate: Optional[T] = tensor(DEFAULT_SAMPLE_RATE),
+        buffer_size: Optional[T] = tensor(DEFAULT_BUFFER_SIZE),
+        control_rate: Optional[T] = tensor(DEFAULT_CONTROL_RATE),
     ):
         """
         Args:
