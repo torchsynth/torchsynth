@@ -5,7 +5,6 @@ TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import torch
-import torch.tensor as tensor
 from torch import Tensor as T
 
 from torchsynth.signal import Signal
@@ -139,5 +138,6 @@ def normalize(signal: Signal) -> Signal:
 #
 # def sinc(x: T) -> T:
 #     return torch.where(
-#         x == tensor(0, device=x.device), tensor(1.0, device=x.device), torch.sin(x) / x
+#         x == tensor(0, device=x.device), tensor(1.0, device=x.device),
+#               torch.sin(x) / x
 #     )
