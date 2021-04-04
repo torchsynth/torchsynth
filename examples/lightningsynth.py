@@ -26,19 +26,18 @@ If this hasn't been merged to master yet, run:
 
 from typing import Any
 
-import torch
-import torch.tensor as T
-from tqdm.auto import tqdm
-
+import pytorch_lightning as pl
 import torch
 
 # import torchvision.models as models
 import torch.autograd.profiler as profiler
-import pytorch_lightning as pl
+import torch.Tensor as T
+import torch.tensor as tensor
+from tqdm.auto import tqdm
 
+import torchsynth.module
 from torchsynth.globals import SynthGlobals
 from torchsynth.synth import Voice
-import torchsynth.module
 
 gpus = torch.cuda.device_count()
 print("Usings %d gpus" % gpus)
@@ -87,7 +86,7 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
-synthglobals = SynthGlobals(batch_size=T(BATCH_SIZE))
+synthglobals = SynthGlobals(batch_size=tensor(BATCH_SIZE))
 voice = Voice(synthglobals)
 
 accelerator = None

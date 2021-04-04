@@ -60,18 +60,19 @@ import random
 import numpy as np
 import numpy.random
 import torch.fft
-import torch.tensor as T
+import torch.Tensor as T
+import torch.tensor as tensor
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
     VCA,
-    Noise,
+    ControlRateUpsample,
     MonophonicKeyboard,
+    Noise,
     SineVCO,
     TorchFmVCO,
-    ControlRateUpsample,
 )
 from torchsynth.parameter import ModuleParameterRange
 
@@ -112,17 +113,17 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
 synthglobals = SynthGlobals(
-    batch_size=T(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
+    batch_size=tensor(2), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 
 # For a few examples, we'll only generate one sound
 synthglobals1 = SynthGlobals(
-    batch_size=T(1), sample_rate=T(44100), buffer_size=T(4 * 44100)
+    batch_size=tensor(1), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 
 # And a short one sound
 synthglobals1short = SynthGlobals(
-    batch_size=T(1), sample_rate=T(44100), buffer_size=T(4096)
+    batch_size=tensor(1), sample_rate=T(44100), buffer_size=T(4096)
 )
 
 # ## The Envelope
@@ -162,12 +163,12 @@ synthglobals1short = SynthGlobals(
 
 # +
 # Synthesis parameters.
-a = T([0.1, 0.2])
-d = T([0.1, 0.2])
-s = T([0.75, 0.8])
-r = T([0.5, 0.8])
-alpha = T([3.0, 4.0])
-note_on_duration = T([0.5, 1.5], device=device)
+a = tensor([0.1, 0.2])
+d = tensor([0.1, 0.2])
+s = tensor([0.75, 0.8])
+r = tensor([0.5, 0.8])
+alpha = tensor([3.0, 4.0])
+note_on_duration = tensor([0.5, 1.5], device=device)
 
 # Envelope test
 adsr = ADSR(
@@ -250,7 +251,7 @@ time_plot(envelope.clone().detach().cpu().T)
 
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
-    synthglobals, device, midi_f0=T([69.0, 50.0]), duration=note_on_duration
+    synthglobals, device, midi_f0=tensor([69.0, 50.0]), duration=note_on_duration
 )
 
 # Reset envelope
@@ -276,8 +277,8 @@ envelope = upsample(envelope)
 
 # SineVCO test -- call to(device) instead of passing in device to constructor also works
 sine_vco = SineVCO(
-    tuning=T([0.0, 0.0]),
-    mod_depth=T([-12.0, 12.0]),
+    tuning=tensor([0.0, 0.0]),
+    mod_depth=tensor([-12.0, 12.0]),
     synthglobals=synthglobals,
 ).to(device)
 
@@ -316,12 +317,14 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = MonophonicKeyboard(synthglobals, device, midi_f0=T([30.0, 30.0])).to(device)
+keyboard = MonophonicKeyboard(synthglobals, device, midi_f0=tensor([30.0, 30.0])).to(
+    device
+)
 
 square_saw = SquareSawVCO(
-    tuning=T([0.0, 0.0]),
-    mod_depth=T([0.0, 0.0]),
-    shape=T([0.0, 1.0]),
+    tuning=tensor([0.0, 0.0]),
+    mod_depth=tensor([0.0, 0.0]),
+    shape=tensor([0.0, 1.0]),
     synthglobals=synthglobals,
     device=device,
 )
@@ -370,14 +373,14 @@ time_plot(test_output[0].detach().cpu())
 
 # FmVCO test
 
-keyboard = MonophonicKeyboard(synthglobals, device=device, midi_f0=T([50.0, 50.0])).to(
-    device
-)
+keyboard = MonophonicKeyboard(
+    synthglobals, device=device, midi_f0=tensor([50.0, 50.0])
+).to(device)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
-    tuning=T([0.0, 0.0]),
-    mod_depth=T([0.0, 5.0]),
+    tuning=tensor([0.0, 0.0]),
+    mod_depth=tensor([0.0, 5.0]),
     synthglobals=synthglobals,
     device=device,
 )
@@ -388,8 +391,8 @@ operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
 fm_vco = TorchFmVCO(
-    tuning=T([0.0, 0.0]),
-    mod_depth=T([2.0, 5.0]),
+    tuning=tensor([0.0, 0.0]),
+    mod_depth=tensor([2.0, 5.0]),
     synthglobals=synthglobals,
     device=device,
 )
@@ -438,9 +441,9 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normaliz
 
 # +
 # Mixer params are set in dB
-mixer.set_parameter("level0", T([0.25, 0.25], device=device))
-mixer.set_parameter("level1", T([0.25, 0.25], device=device))
-mixer.set_parameter("level2", T([0.125, 0.125], device=device))
+mixer.set_parameter("level0", tensor([0.25, 0.25], device=device))
+mixer.set_parameter("level1", tensor([0.25, 0.25], device=device))
+mixer.set_parameter("level2", tensor([0.125, 0.125], device=device))
 
 out = mixer(sine_out, sqr_out, noise_out)
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
@@ -461,8 +464,8 @@ midi_f0, duration = keyboard()
 envelope = adsr(duration)
 
 lfo = LFO(synthglobals, device=device)
-lfo.set_parameter("mod_depth", T([10.0, 0.0]))
-lfo.set_parameter("frequency", T([1.0, 1.0]))
+lfo.set_parameter("mod_depth", tensor([10.0, 0.0]))
+lfo.set_parameter("frequency", tensor([1.0, 1.0]))
 out = lfo(envelope)
 
 lfo2 = LFO(synthglobals, device=device)
@@ -492,10 +495,10 @@ from torchsynth.synth import Voice
 voice1 = Voice(synthglobals=synthglobals1).to(device)
 voice1.set_parameters(
     {
-        ("keyboard", "midi_f0"): T([69.0]),
-        ("keyboard", "duration"): T([1.0]),
-        ("vco_1", "tuning"): T([0.0]),
-        ("vco_1", "mod_depth"): T([12.0]),
+        ("keyboard", "midi_f0"): tensor([69.0]),
+        ("keyboard", "duration"): tensor([1.0]),
+        ("vco_1", "tuning"): tensor([0.0]),
+        ("vco_1", "mod_depth"): tensor([12.0]),
     }
 )
 
@@ -511,13 +514,13 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 voice2 = Voice(synthglobals=synthglobals1).to(device)
 voice2.set_parameters(
     {
-        ("keyboard", "midi_f0"): T([40.0]),
-        ("keyboard", "duration"): T([3.0]),
-        ("vco_1", "tuning"): T([19.0]),
-        ("vco_1", "mod_depth"): T([24.0]),
-        ("vco_2", "tuning"): T([0.0]),
-        ("vco_2", "mod_depth"): T([12.0]),
-        ("vco_2", "shape"): T([1.0]),
+        ("keyboard", "midi_f0"): tensor([40.0]),
+        ("keyboard", "duration"): tensor([3.0]),
+        ("vco_1", "tuning"): tensor([19.0]),
+        ("vco_1", "mod_depth"): tensor([24.0]),
+        ("vco_2", "tuning"): tensor([0.0]),
+        ("vco_2", "mod_depth"): tensor([12.0]),
+        ("vco_2", "shape"): tensor([1.0]),
     }
 )
 
@@ -537,7 +540,7 @@ print(err)
 # Let's generate some random synths in batch
 
 synthglobals16 = SynthGlobals(
-    batch_size=T(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
+    batch_size=tensor(16), sample_rate=T(44100), buffer_size=T(4 * 44100)
 )
 voice = Voice(synthglobals=synthglobals16).to(device)
 voice_out = voice()
@@ -591,11 +594,11 @@ print(voice1.vco_1.get_parameter_0to1("tuning"))
 # Parameters of individual modules can also be set using the human range or a normalized range between 0 and 1
 
 # Set the vco pitch using the human range, which is MIDI note number
-voice1.vco_1.set_parameter("tuning", T([12.0]))
+voice1.vco_1.set_parameter("tuning", tensor([12.0]))
 print(voice1.vco_1.p("tuning"))
 
 # Set the vco pitch using a normalized range between 0 and 1
-voice1.vco_1.set_parameter_0to1("tuning", T([0.5]))
+voice1.vco_1.set_parameter_0to1("tuning", tensor([0.5]))
 print(voice1.vco_1.p("tuning"))
 
 # #### Parameter Ranges

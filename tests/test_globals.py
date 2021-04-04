@@ -4,18 +4,19 @@ Tests for torch synths
 
 
 import pytest
-import torch.tensor as T
+import torch.Tensor as T
+import torch.tensor as tensor
 
-from torchsynth.globals import SynthGlobals
 from torchsynth.default import (
-    DEFAULT_SAMPLE_RATE,
     DEFAULT_BUFFER_SIZE,
     DEFAULT_CONTROL_RATE,
+    DEFAULT_SAMPLE_RATE,
 )
+from torchsynth.globals import SynthGlobals
 
 
 def test_synth_globals():
-    synthglobals = SynthGlobals(T(64))
+    synthglobals = SynthGlobals(tensor(64))
     assert synthglobals.sample_rate == DEFAULT_SAMPLE_RATE
     assert synthglobals.batch_size == 64
     assert synthglobals.buffer_size == DEFAULT_BUFFER_SIZE
@@ -27,7 +28,10 @@ def test_synth_globals():
 
     # Test passing in specific values
     synthglobals = SynthGlobals(
-        T(65), sample_rate=T(16000), buffer_size=T(8000), control_rate=T(1000)
+        tensor(65),
+        sample_rate=tensor(16000),
+        buffer_size=tensor(8000),
+        control_rate=tensor(1000),
     )
     assert synthglobals.control_rate == 1000
     assert synthglobals.sample_rate == 16000
@@ -36,4 +40,4 @@ def test_synth_globals():
 
     # Control rate must be passed in as a tensor
     with pytest.raises(AttributeError):
-        SynthGlobals(T(16), control_rate=1000)
+        SynthGlobals(tensor(16), control_rate=1000)

@@ -1,17 +1,18 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
+import torch.Tensor as T
+import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
-from torch import tensor as T
 
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (
     ADSR,
-    ControlRateUpsample,
-    ControlRateVCA,
     LFO,
     VCA,
     AudioMixer,
+    ControlRateUpsample,
+    ControlRateVCA,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
@@ -127,7 +128,7 @@ class AbstractSynth(LightningModule):
         will be set to the same value and frozen to prevent further updates.
         """
         params = {
-            key: T([value] * self.batch_size, device=self.device)
+            key: tensor([value] * self.batch_size, device=self.device)
             for key, value in params.items()
         }
         self.set_parameters(params, freeze=True)
