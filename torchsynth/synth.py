@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import torch
-import torch.Tensor as T
 import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
+from torch import Tensor as T
 
 from torchsynth.globals import SynthGlobals
 from torchsynth.module import (

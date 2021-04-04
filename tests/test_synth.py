@@ -5,8 +5,8 @@ Tests for torch synths
 
 import pytest
 import torch.nn
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 
 import torchsynth.globals
 import torchsynth.module as synthmodule

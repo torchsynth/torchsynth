@@ -4,8 +4,8 @@ Tests for torch synths
 
 
 import pytest
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 
 from torchsynth.default import (
     DEFAULT_BUFFER_SIZE,

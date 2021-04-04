@@ -5,8 +5,8 @@ TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import torch
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 
 from torchsynth.signal import Signal
 

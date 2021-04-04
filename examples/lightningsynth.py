@@ -31,8 +31,8 @@ import torch
 
 # import torchvision.models as models
 import torch.autograd.profiler as profiler
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 from tqdm.auto import tqdm
 
 import torchsynth.module

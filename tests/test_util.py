@@ -4,8 +4,8 @@ Tests for torch DSP utils.
 
 import pytest
 import torch
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 
 import torchsynth.util as util
 from torchsynth.signal import Signal

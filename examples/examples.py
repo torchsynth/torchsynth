@@ -60,8 +60,8 @@ import random
 import numpy as np
 import numpy.random
 import torch.fft
-import torch.Tensor as T
 import torch.tensor as tensor
+from torch import Tensor as T
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.globals import SynthGlobals
