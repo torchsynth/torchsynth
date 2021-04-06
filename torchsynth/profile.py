@@ -16,7 +16,9 @@ Args:
 import sys
 import argparse
 from typing import Any
-import cProfile, pstats, io
+import cProfile
+import pstats
+import io
 
 import torch
 import torch.tensor as T
@@ -26,7 +28,7 @@ import multiprocessing
 # Turn off torchsynth debug mode before importing anything else
 import torchsynth.config
 
-torchsynth.config.DEBUG = False
+torchsynth.config.DEBUG = False  # noqa: E402
 
 import torchsynth.synth
 from torchsynth.synth import AbstractSynth
