@@ -31,11 +31,11 @@ import multiprocessing
 # TODO: https://github.com/turian/torchsynth/issues/259
 import torchsynth.config
 
-torchsynth.config.DEBUG = False  # noqa: E402
+torchsynth.config.DEBUG = False
 
-import torchsynth.synth
-from torchsynth.synth import AbstractSynth
-from torchsynth.globals import SynthGlobals
+import torchsynth.synth  # noqa: E402
+from torchsynth.synth import AbstractSynth  # noqa: E402
+from torchsynth.globals import SynthGlobals  # noqa: E402
 
 # Check for available GPUs and processing cores
 GPUS = torch.cuda.device_count()
