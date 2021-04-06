@@ -184,7 +184,7 @@ def main():
     args = parser.parse_args()
     if args.save is not None and not args.profile:
         raise SystemExit(
-            "Profile (-p) flag must be set in order for " "profile results to be saved"
+            "Profile (-p) flag must be set in order for profile results to be saved"
         )
 
     # Try to create the synth module that is being profiled
