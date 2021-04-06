@@ -77,17 +77,20 @@ def run_lightning_module(
     n_batches: int,
     output: str,
     profile: bool,
+    device: None,
 ):
     mock_dataset = BatchIDXDataset(batch_size * n_batches)
     dataloader = torch.utils.data.DataLoader(
         mock_dataset, num_workers=NCORES, batch_size=batch_size
     )
 
+    if GPUS == 0 and device == "cuda":
+        raise SystemExit("cuda specified but no gpus are avaiable")
+
     accelerator = None
-    if GPUS == 0:
+    if GPUS == 0 or device == "cpu":
         use_gpus = None
-        precision = 32
-    else:
+    else:  # pragma: no cover
         # specifies all available GPUs (if only one GPU is not occupied,
         # auto_select_gpus=True uses one gpu)
         use_gpus = -1
@@ -150,23 +153,43 @@ def main():
         "--num_batches", "-n", help="Number of batches to run", type=int, default=64
     )
     parser.add_argument(
-        "--save", "-s", help="File to save profiler results", type=str, default=None
+        "--profile",
+        "-p",
+        help="Whether to run cProfile",
+        action="store_true",
+        default=False,
     )
-    parser.add_argument("--profile", "-p", action="store_true", default=False)
+    parser.add_argument(
+        "--save",
+        "-s",
+        help="File to save profiler results. If this is left out then profiling "
+        "results are printed. ",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--device",
+        "-d",
+        help="Device to run. Default is None which will select cuda if available, "
+        "otherwise will run on cpu",
+        type=str,
+        default=None,
+    )
 
     args = parser.parse_args()
+    if args.save is not None and not args.profile:
+        raise SystemExit(
+            "Profile (-p) flag must be set in order for " "profile results to be saved"
+        )
 
     # Try to create the synth module that is being profiled
     synthglobals = SynthGlobals(T(args.batch_size))
     module = instantiate_module(args.module, synthglobals)
 
-    if isinstance(module, pl.LightningModule):
-        run_lightning_module(
-            module, args.batch_size, args.num_batches, args.save, args.profile
-        )
-    else:
-        print("Non-lightning module")
+    run_lightning_module(
+        module, args.batch_size, args.num_batches, args.save, args.profile, args.device
+    )
 
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())
