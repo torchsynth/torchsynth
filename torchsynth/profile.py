@@ -25,6 +25,7 @@ import multiprocessing
 
 # Turn off torchsynth debug mode before importing anything else
 import torchsynth.config
+
 torchsynth.config.DEBUG = False
 
 import torchsynth.synth
@@ -61,9 +62,7 @@ class TorchSynthCallback(pl.Callback):
 
 
 def instantiate_module(
-    name: str,
-    synthglobals: SynthGlobals,
-    **kwargs
+    name: str, synthglobals: SynthGlobals, **kwargs
 ) -> AbstractSynth:
     """
     Try to instantiate the module corresponding to the name providing
@@ -134,7 +133,7 @@ def run_lightning_module(
         trainer.test(module, test_dataloaders=dataloader)
 
 
-def main(arguments):
+def main():
 
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -153,9 +152,9 @@ def main(arguments):
     parser.add_argument(
         "--save", "-s", help="File to save profiler results", type=str, default=None
     )
-    parser.add_argument("--profile", "-p", action='store_true', default=False)
+    parser.add_argument("--profile", "-p", action="store_true", default=False)
 
-    args = parser.parse_args(arguments)
+    args = parser.parse_args()
 
     # Try to create the synth module that is being profiled
     synthglobals = SynthGlobals(T(args.batch_size))

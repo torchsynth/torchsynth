@@ -27,7 +27,7 @@ setup(
     # package_data={
     #    "": [],
     # },
-    scripts=["scripts/torchsynth.profile"],
+    entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
     python_requires=">=3.6",
     install_requires=[
         "numpy",
