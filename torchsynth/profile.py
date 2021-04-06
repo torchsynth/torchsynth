@@ -3,14 +3,16 @@
 Script for running profiles on specific synths in torchsynth
 
 usage: torchsynth.profile [-h] [--batch-size BATCH_SIZE] [--num_batches NUM_BATCHES]
-                          [--save SAVE] [--profile] module
+                          [--profile] [--save SAVE] [--device DEVICE] module
+
 
 Args:
+    module (required): Name of the synth class to profile (e.g. Voice)
     batch-size: size of batch-size to run module at, defaults to 64
     num-batches: number of batches to run, defaults to 64
     profile: whether to run cProfile, defaults to False
     save: file to save results as csv, defaults to None, which doesn't save file
-    module: Name of the synth class to profile (e.g. Voice)
+    device: Set to run on cuda or cpu. Defaults to None, selects cuda if available
 """
 
 import sys
