@@ -23,6 +23,7 @@ import pstats
 import io
 
 import torch
+import torch.tensor as tensor
 from torch import Tensor as T
 import pytorch_lightning as pl
 import multiprocessing
@@ -188,7 +189,7 @@ def main():
         )
 
     # Try to create the synth module that is being profiled
-    synthglobals = SynthGlobals(T(args.batch_size))
+    synthglobals = SynthGlobals(tensor(args.batch_size))
     module = instantiate_module(args.module, synthglobals)
 
     run_lightning_module(
