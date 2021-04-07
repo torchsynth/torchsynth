@@ -23,7 +23,7 @@ import pstats
 import io
 
 import torch
-import torch.tensor as T
+from torch import Tensor as T
 import pytorch_lightning as pl
 import multiprocessing
 
