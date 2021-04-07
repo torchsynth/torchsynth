@@ -20,11 +20,11 @@ import argparse
 from typing import Any
 import cProfile
 import pstats
+import time
 import io
 
 import torch
 import torch.tensor as tensor
-from torch import Tensor as T
 import pytorch_lightning as pl
 import multiprocessing
 
@@ -117,7 +117,9 @@ def run_lightning_module(
         # Run module with profiling
         pr = cProfile.Profile()
         pr.enable()
+        start_time = time.time()
         trainer.test(module, test_dataloaders=dataloader)
+        end_time = time.time()
         pr.disable()
 
         s = io.StringIO()
@@ -139,7 +141,11 @@ def run_lightning_module(
             print(s.getvalue())
 
     else:
+        start_time = time.time()
         trainer.test(module, test_dataloaders=dataloader)
+        end_time = time.time()
+
+    return end_time - start_time
 
 
 def main():
@@ -192,9 +198,10 @@ def main():
     synthglobals = SynthGlobals(tensor(args.batch_size))
     module = instantiate_module(args.module, synthglobals)
 
-    run_lightning_module(
+    run_time = run_lightning_module(
         module, args.batch_size, args.num_batches, args.save, args.profile, args.device
     )
+    print(f" --- {run_time} seconds ---")
 
 
 if __name__ == "__main__":  # pragma: no cover

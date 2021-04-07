@@ -6,7 +6,7 @@ as an integration test to make sure the PyTorch Lightning training stuff is work
 import os
 import sys
 import csv
-from torchsynth import profile
+from torchsynth import synth_profile
 import unittest.mock
 import pytest
 
@@ -27,7 +27,7 @@ class TestProfile:
 
         # This mocks arguments as if this was called from command line
         with unittest.mock.patch.object(sys, "argv", args):
-            profile.main()
+            synth_profile.main()
 
     def test_main(self):
         # Test run on Voice with batch size of 2 and 2 iterations
@@ -62,7 +62,7 @@ class TestProfile:
     def test_main_no_gpu(self):
         # Make running with no GPUs available (in case there are), and then
         # confirm that passing in the cuda device arg causes an error
-        with unittest.mock.patch.object(profile, "GPUS", 0):
+        with unittest.mock.patch.object(synth_profile, "GPUS", 0):
             with pytest.raises(SystemExit):
                 self.run_profile(device="cuda")
 
