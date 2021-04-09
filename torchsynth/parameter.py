@@ -77,11 +77,15 @@ class ModuleParameterRange:
         # assert torch.all(0.0 <= normalized)
         # assert torch.all(normalized <= 1.0)
 
+        normalized = torch.tensor(normalized, dtype=torch.float64)
         if not self.symmetric:
             if self.curve != 1.0:
                 normalized = torch.pow(normalized, 1 / self.curve)
 
-            return self.minimum + (self.maximum - self.minimum) * normalized
+            return torch.tensor(
+                self.minimum + (self.maximum - self.minimum) * normalized,
+                dtype=torch.float32,
+            )
 
         # Compute the curve for a symmetric curve
         dist = 2.0 * normalized - 1.0
@@ -92,7 +96,10 @@ class ModuleParameterRange:
                 torch.pow(torch.abs(dist), 1 / self.curve) * torch.sign(dist),
             )
 
-        return self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0)
+        return torch.tensor(
+            self.minimum + (self.maximum - self.minimum) / 2.0 * (normalized + 1.0),
+            dtype=torch.float32,
+        )
 
     def to_0to1(self, value: T) -> T:
         """

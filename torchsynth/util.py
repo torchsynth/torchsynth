@@ -16,8 +16,11 @@ def midi_to_hz(midi: T) -> T:
     """
     Convert from midi (linear pitch) to frequency in Hz.
     """
-    # return 440.0 * (torch.exp2((midi - 69.0) / 12.0))
-    return 440.0 * (torch.exp2(midi / 12.0) / torch.exp(69.0 / 12.0))
+    return torch.tensor(
+        440.0 * (torch.exp2((torch.tensor(midi, dtype=torch.float64) - 69.0) / 12.0)),
+        dtype=torch.float32,
+    )
+    # return 440.0 * (torch.exp2(midi / 12.0) / torch.exp(69.0 / 12.0))
 
 
 def fix_length(signal: Signal, length: T) -> Signal:
