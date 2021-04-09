@@ -9,7 +9,7 @@ from torch import Tensor as T
 
 import torchsynth
 import torchsynth.module as synthmodule
-from torchsynth.globals import SynthGlobals
+from torchsynth.config import SynthConfig
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
@@ -77,8 +77,8 @@ class TestSynthModule:
     """
 
     def test_set_parameter(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
-        module = synthmodule.ADSR(synthglobals, attack=tensor([0.5, 1.0]))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        module = synthmodule.ADSR(synthconfig, attack=tensor([0.5, 1.0]))
 
         # Confirm value set correctly from constructor
         assert torch.all(module.p("attack") == tensor([0.5, 1.0]))
@@ -93,17 +93,17 @@ class TestSynthModule:
             assert parameter.device.type == self.device
 
     def test_seconds_to_sample(self):
-        synthglobals = torchsynth.globals.SynthGlobals(
+        synthconfig = torchsynth.config.SynthConfig(
             batch_size=tensor(2), sample_rate=tensor(48000)
         )
-        module = synthmodule.SineVCO(synthglobals)
+        module = synthmodule.SineVCO(synthconfig)
         samples = module.seconds_to_samples(4.0)
         assert samples == 4 * 48000
 
     def test_softmodeselector(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
         mode_selector = synthmodule.SoftModeSelector(
-            synthglobals, device=self.device, n_modes=3
+            synthconfig, device=self.device, n_modes=3
         )
         mode_selector.set_parameter("mode0weight", tensor([0.8, 1.0]))
         mode_selector.set_parameter("mode1weight", tensor([0.8, 0.0]))
@@ -120,9 +120,9 @@ class TestSynthModule:
         )
 
     def test_hardmodeselector(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
         mode_selector = synthmodule.HardModeSelector(
-            synthglobals, device=self.device, n_modes=3
+            synthconfig, device=self.device, n_modes=3
         )
         mode_selector.set_parameter("mode0weight", tensor([0.8, 0.0]))
         mode_selector.set_parameter("mode1weight", tensor([0.7, 0.5]))
@@ -136,17 +136,17 @@ class TestSynthModule:
         )
 
     def test_audiomixer(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
 
         # Make sure parameters get setup correctly
-        mixer = synthmodule.AudioMixer(synthglobals, device=self.device, n_input=3)
+        mixer = synthmodule.AudioMixer(synthconfig, device=self.device, n_input=3)
         params = [p for p in mixer.parameters()]
         assert len(params) == 3
         for param in params:
             assert param.parameter_range.curve == 1.0
 
         mixer = synthmodule.AudioMixer(
-            synthglobals, device=self.device, n_input=2, curves=[0.75, 1.5]
+            synthconfig, device=self.device, n_input=2, curves=[0.75, 1.5]
         )
         params = [p for p in mixer.parameters()]
         assert len(params) == 2
@@ -156,14 +156,14 @@ class TestSynthModule:
         # if curves are passed in then the number of curves must equal n_input
         with pytest.raises(AssertionError):
             mixer = synthmodule.AudioMixer(
-                synthglobals, device=self.device, n_input=3, curves=[0.75, 1.5]
+                synthconfig, device=self.device, n_input=3, curves=[0.75, 1.5]
             )
 
     def test_modulationmixer(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
 
         mixer = synthmodule.ModulationMixer(
-            synthglobals, device=self.device, n_input=2, n_output=2
+            synthconfig, device=self.device, n_input=2, n_output=2
         )
         params = [p for p in mixer.parameters()]
         assert len(params) == 4
@@ -171,7 +171,7 @@ class TestSynthModule:
             assert param.parameter_range.curve == 0.5
 
         mixer = synthmodule.ModulationMixer(
-            synthglobals, device=self.device, n_input=1, n_output=2, curves=[1.0]
+            synthconfig, device=self.device, n_input=1, n_output=2, curves=[1.0]
         )
         params = [p for p in mixer.parameters()]
         assert len(params) == 2
@@ -181,7 +181,7 @@ class TestSynthModule:
         # if curves are passed in then the number of curves must equal n_input
         with pytest.raises(AssertionError):
             mixer = synthmodule.AudioMixer(
-                synthglobals,
+                synthconfig,
                 device=self.device,
                 n_input=5,
                 n_output=5,
@@ -194,15 +194,15 @@ class TestSynthModule:
         # of noise signals. All these noise samples should equal each other.
         # i.e., noise should be returned deterministically regardless of the
         # batch size.
-        synthglobals32 = SynthGlobals(tensor(32))
-        synthglobals64 = SynthGlobals(tensor(64))
-        synthglobals128 = SynthGlobals(tensor(128))
+        synthconfig32 = SynthConfig(tensor(32))
+        synthconfig64 = SynthConfig(tensor(64))
+        synthconfig128 = SynthConfig(tensor(128))
 
-        noise32 = synthmodule.Noise(synthglobals32, seed=0)
-        noise64 = synthmodule.Noise(synthglobals64, seed=0)
-        noise128 = synthmodule.Noise(synthglobals128, seed=0)
+        noise32 = synthmodule.Noise(synthconfig32, seed=0)
+        noise64 = synthmodule.Noise(synthconfig64, seed=0)
+        noise128 = synthmodule.Noise(synthconfig128, seed=0)
         # A different seed should give a different result
-        noise128_diff = synthmodule.Noise(synthglobals128, seed=42)
+        noise128_diff = synthmodule.Noise(synthconfig128, seed=42)
 
         out1 = torch.vstack((noise32(), noise32(), noise32(), noise32()))
         out2 = torch.vstack((noise64(), noise64()))
@@ -216,14 +216,14 @@ class TestSynthModule:
         with pytest.raises(ValueError):
             # If the batch size if larger than the default
             # of 64, then this should complain
-            synthglobals65 = SynthGlobals(tensor(65))
-            synthmodule.Noise(synthglobals65, seed=0)
+            synthconfig65 = SynthConfig(tensor(65))
+            synthmodule.Noise(synthconfig65, seed=0)
 
 
 class TestControlRateModule:
     def test_properties(self):
-        synthglobals = torchsynth.globals.SynthGlobals(tensor(2))
-        adsr = synthmodule.ADSR(synthglobals)
+        synthconfig = torchsynth.config.SynthConfig(tensor(2))
+        adsr = synthmodule.ADSR(synthconfig)
 
         # Sample rate and buffer size should raise errors
         with pytest.raises(NotImplementedError):
@@ -233,6 +233,6 @@ class TestControlRateModule:
             adsr.buffer_size
 
         assert adsr.control_rate == torchsynth.default.DEFAULT_CONTROL_RATE
-        expected_buffer = synthglobals.buffer_size / synthglobals.sample_rate
+        expected_buffer = synthconfig.buffer_size / synthconfig.sample_rate
         expected_buffer *= adsr.control_rate
         assert adsr.control_buffer_size == expected_buffer

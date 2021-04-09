@@ -36,7 +36,7 @@ from torch import Tensor as T
 from tqdm.auto import tqdm
 
 import torchsynth.module
-from torchsynth.globals import SynthGlobals
+from torchsynth.config import SynthConfig
 from torchsynth.synth import Voice
 
 gpus = torch.cuda.device_count()
@@ -86,8 +86,8 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
-synthglobals = SynthGlobals(batch_size=tensor(BATCH_SIZE))
-voice = Voice(synthglobals)
+synthconfig = SynthConfig(batch_size=tensor(BATCH_SIZE))
+voice = Voice(synthconfig)
 
 accelerator = None
 if gpus == 0:

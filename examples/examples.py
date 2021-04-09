@@ -64,7 +64,7 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
-from torchsynth.globals import SynthGlobals
+from torchsynth.config import SynthConfig
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -112,17 +112,17 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
-synthglobals = SynthGlobals(
+synthconfig = SynthConfig(
     batch_size=tensor(2), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
 )
 
 # For a few examples, we'll only generate one sound
-synthglobals1 = SynthGlobals(
+synthconfig1 = SynthConfig(
     batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
 )
 
 # And a short one sound
-synthglobals1short = SynthGlobals(
+synthconfig1short = SynthConfig(
     batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4096)
 )
 
@@ -177,7 +177,7 @@ adsr = ADSR(
     sustain=s,
     release=r,
     alpha=alpha,
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
     device=device,
 )
 
@@ -209,7 +209,7 @@ time_plot(torch.abs(envelope[0, :] - envelope[1, :]).detach().cpu().T)
 
 # Note that module parameters are optional. If they are not provided,
 # they will be randomly initialized (like a typical neural network module)
-adsr = ADSR(synthglobals, device=device)
+adsr = ADSR(synthconfig, device=device)
 envelope = adsr(note_on_duration)
 print(envelope.shape)
 time_plot(envelope.clone().detach().cpu().T)
@@ -251,7 +251,7 @@ time_plot(envelope.clone().detach().cpu().T)
 
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
-    synthglobals, device, midi_f0=tensor([69.0, 50.0]), duration=note_on_duration
+    synthconfig, device, midi_f0=tensor([69.0, 50.0]), duration=note_on_duration
 )
 
 # Reset envelope
@@ -261,7 +261,7 @@ adsr = ADSR(
     sustain=s,
     release=r,
     alpha=alpha,
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
     device=device,
 )
 
@@ -272,14 +272,14 @@ midi_f0, duration = keyboard()
 # sampling rate and must be upsampled prior to feeding into audio
 # rate modules
 envelope = adsr(duration)
-upsample = ControlRateUpsample(synthglobals)
+upsample = ControlRateUpsample(synthconfig)
 envelope = upsample(envelope)
 
 # SineVCO test -- call to(device) instead of passing in device to constructor also works
 sine_vco = SineVCO(
     tuning=tensor([0.0, 0.0]),
     mod_depth=tensor([-12.0, 12.0]),
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
 ).to(device)
 
 
@@ -317,7 +317,7 @@ time_plot(torch.abs(sine_out[0] - sine_out[1]).detach().cpu())
 # +
 from torchsynth.module import SquareSawVCO
 
-keyboard = MonophonicKeyboard(synthglobals, device, midi_f0=tensor([30.0, 30.0])).to(
+keyboard = MonophonicKeyboard(synthconfig, device, midi_f0=tensor([30.0, 30.0])).to(
     device
 )
 
@@ -325,7 +325,7 @@ square_saw = SquareSawVCO(
     tuning=tensor([0.0, 0.0]),
     mod_depth=tensor([0.0, 0.0]),
     shape=tensor([0.0, 1.0]),
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
     device=device,
 )
 env2 = torch.zeros([2, square_saw.buffer_size], device=device)
@@ -357,7 +357,7 @@ print(err)
 # amplitude to smooth it out.
 
 # +
-vca = VCA(synthglobals, device=device)
+vca = VCA(synthconfig, device=device)
 test_output = vca(envelope, sine_out)
 
 time_plot(test_output[0].detach().cpu())
@@ -374,14 +374,14 @@ time_plot(test_output[0].detach().cpu())
 # FmVCO test
 
 keyboard = MonophonicKeyboard(
-    synthglobals, device=device, midi_f0=tensor([50.0, 50.0])
+    synthconfig, device=device, midi_f0=tensor([50.0, 50.0])
 ).to(device)
 
 # Make steady-pitched sine (no pitch modulation).
 sine_operator = SineVCO(
     tuning=tensor([0.0, 0.0]),
     mod_depth=tensor([0.0, 5.0]),
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
     device=device,
 )
 operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
@@ -393,7 +393,7 @@ operator_out = vca(envelope, operator_out)
 fm_vco = TorchFmVCO(
     tuning=tensor([0.0, 0.0]),
     mod_depth=tensor([2.0, 5.0]),
-    synthglobals=synthglobals,
+    synthconfig=synthconfig,
     device=device,
 )
 fm_out = fm_vco(keyboard.p("midi_f0"), operator_out)
@@ -410,7 +410,7 @@ ipd.display(ipd.Audio(fm_out[1].cpu().detach().numpy(), rate=fm_vco.sample_rate.
 # The noise generator creates white noise the same length as the SynthModule buffer length
 
 # +
-noise = Noise(synthglobals, seed=42, device=device)
+noise = Noise(synthconfig, seed=42, device=device)
 out = noise()
 
 stft_plot(out[0].detach().cpu().numpy())
@@ -422,19 +422,19 @@ ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # +
 from torchsynth.module import AudioMixer
 
-env = torch.zeros((synthglobals.batch_size, synthglobals.buffer_size), device=device)
+env = torch.zeros((synthconfig.batch_size, synthconfig.buffer_size), device=device)
 
-keyboard = MonophonicKeyboard(synthglobals, device=device)
-sine = SineVCO(synthglobals, device=device)
-square_saw = SquareSawVCO(synthglobals, device=device)
-noise = Noise(synthglobals, seed=123, device=device)
+keyboard = MonophonicKeyboard(synthconfig, device=device)
+sine = SineVCO(synthconfig, device=device)
+square_saw = SquareSawVCO(synthconfig, device=device)
+noise = Noise(synthconfig, seed=123, device=device)
 
 midi_f0, note_on_duration = keyboard()
 sine_out = sine(midi_f0, env)
 sqr_out = square_saw(midi_f0, env)
 noise_out = noise()
 
-mixer = AudioMixer(synthglobals, 3, curves=[1.0, 1.0, 0.25]).to(device)
+mixer = AudioMixer(synthconfig, 3, curves=[1.0, 1.0, 0.25]).to(device)
 output = mixer(sine_out, sqr_out, noise_out)
 
 ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item(), normalize=False)
@@ -456,19 +456,19 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-adsr = ADSR(synthglobals=synthglobals, device=device)
+adsr = ADSR(synthconfig=synthconfig, device=device)
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
 
 envelope = adsr(duration)
 
-lfo = LFO(synthglobals, device=device)
+lfo = LFO(synthconfig, device=device)
 lfo.set_parameter("mod_depth", tensor([10.0, 0.0]))
 lfo.set_parameter("frequency", tensor([1.0, 1.0]))
 out = lfo(envelope)
 
-lfo2 = LFO(synthglobals, device=device)
+lfo2 = LFO(synthconfig, device=device)
 out2 = lfo2(envelope)
 
 print(out.shape)
@@ -478,7 +478,7 @@ time_plot(out2[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 
 # A modulation mixer can be used to mix a modulation sources together
 # and maintain a 0 to 1 amplitude range
-mixer = ModulationMixer(synthglobals=synthglobals, device=device, n_input=2, n_output=1)
+mixer = ModulationMixer(synthconfig=synthconfig, device=device, n_input=2, n_output=1)
 mods_mixed = mixer(out, out2)
 
 print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
@@ -492,7 +492,7 @@ time_plot(mods_mixed[0][0].detach().cpu().numpy(), sample_rate=lfo.control_rate.
 
 from torchsynth.synth import Voice
 
-voice1 = Voice(synthglobals=synthglobals1).to(device)
+voice1 = Voice(synthconfig=synthconfig1).to(device)
 voice1.set_parameters(
     {
         ("keyboard", "midi_f0"): tensor([69.0]),
@@ -511,7 +511,7 @@ ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
 
 
 # +
-voice2 = Voice(synthglobals=synthglobals1).to(device)
+voice2 = Voice(synthconfig=synthconfig1).to(device)
 voice2.set_parameters(
     {
         ("keyboard", "midi_f0"): tensor([40.0]),
@@ -539,12 +539,12 @@ print(err)
 #
 # Let's generate some random synths in batch
 
-synthglobals16 = SynthGlobals(
+synthconfig16 = SynthConfig(
     batch_size=tensor(16), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
 )
-voice = Voice(synthglobals=synthglobals16).to(device)
+voice = Voice(synthconfig=synthconfig16).to(device)
 voice_out = voice()
-for i in range(synthglobals16.batch_size):
+for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())
@@ -564,7 +564,7 @@ voice.set_frozen_parameters(
 )
 
 voice_out = voice()
-for i in range(synthglobals16.batch_size):
+for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
         ipd.Audio(voice_out[i].cpu().detach().numpy(), rate=voice.sample_rate.item())

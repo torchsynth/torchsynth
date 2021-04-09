@@ -5,7 +5,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.globals import SynthGlobals
+from torchsynth.config import SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -38,24 +38,24 @@ class AbstractSynth(LightningModule):
         buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
+    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.synthglobals = synthglobals
+        self.synthconfig = synthconfig
 
     @property
     def batch_size(self) -> T:
-        assert self.synthglobals.batch_size.ndim == 0
-        return self.synthglobals.batch_size
+        assert self.synthconfig.batch_size.ndim == 0
+        return self.synthconfig.batch_size
 
     @property
     def sample_rate(self) -> T:
-        assert self.synthglobals.sample_rate.ndim == 0
-        return self.synthglobals.sample_rate
+        assert self.synthconfig.sample_rate.ndim == 0
+        return self.synthconfig.sample_rate
 
     @property
     def buffer_size(self) -> T:
-        assert self.synthglobals.buffer_size.ndim == 0
-        return self.synthglobals.buffer_size
+        assert self.synthconfig.buffer_size.ndim == 0
+        return self.synthconfig.buffer_size
 
     def add_synth_modules(
         self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]
@@ -81,7 +81,7 @@ class AbstractSynth(LightningModule):
                 raise TypeError(f"{module} is not a SynthModule")
 
             self.add_module(
-                name, module(self.synthglobals, device=self.device, **params)
+                name, module(self.synthconfig, device=self.device, **params)
             )
 
     def get_parameters(
@@ -245,7 +245,7 @@ class AbstractSynth(LightningModule):
         LightningModule trigger after this Synth has been moved to a different device.
         Use this to update children SynthModules device settings
         """
-        self.synthglobals.to(self.device)
+        self.synthconfig.to(self.device)
         for module in self.modules():
             if isinstance(module, SynthModule):
                 # TODO look into performance of calling to instead
@@ -257,8 +257,8 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthglobals: SynthGlobals, *args, **kwargs):
-        AbstractSynth.__init__(self, synthglobals=synthglobals, *args, **kwargs)
+    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+        AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
         self.add_synth_modules(
