@@ -499,7 +499,7 @@ class VCO(SynthModule):
                 torch.tensor(cosine_argument, dtype=torch.float64),
                 torch.tensor(midi_f0, dtype=torch.float64),
             ),
-            dtype=float32,
+            dtype=torch.float32,
         )
         return output.as_subclass(Signal)
 
