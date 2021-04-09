@@ -1,5 +1,0 @@
-"""
-torchsynth configuration
-"""
-
-DEBUG = True

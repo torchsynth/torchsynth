@@ -13,6 +13,7 @@ torch>=1.7
 pytorch-lightning
 pytest
 pytest-cov
+pytest-env
 ipython
 librosa
 matplotlib
