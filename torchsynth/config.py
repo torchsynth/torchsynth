@@ -1,8 +1,7 @@
 from typing import Optional
 
 import torch
-import torch.tensor as tensor
-from torch import Tensor as T
+
 
 class SynthConfig:
     """
@@ -18,7 +17,7 @@ class SynthConfig:
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
-        debug: bool = False
+        debug: bool = False,
     ):
         """
         Args:
@@ -39,7 +38,9 @@ class SynthConfig:
         # Buffer size for control signals -- this is calculated to have the
         # same duration in seconds as that buffer size for the audio rate
         # signals. Rounded to the nearest integer number of samples.
-        self.control_buffer_size = torch.tensor(int(torch.round((self.buffer_size / sample_rate * control_rate))))
+        self.control_buffer_size = torch.tensor(
+            int(torch.round((self.buffer_size / sample_rate * control_rate)))
+        )
 
     def to(self, device: torch.device):
         # Only helpful to have sample and control rates on device, and as a float

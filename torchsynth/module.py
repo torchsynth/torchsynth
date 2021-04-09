@@ -13,9 +13,9 @@ from torch import Tensor as T
 
 import torchsynth.util as util
 from torchsynth.config import SynthConfig
+from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
-from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 
 
 class SynthModule(nn.Module):

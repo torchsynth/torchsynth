@@ -63,8 +63,8 @@ import torch.fft
 import torch.tensor as tensor
 from torch import Tensor as T
 
-from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.config import SynthConfig
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -112,18 +112,14 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
-synthconfig = SynthConfig(
-    batch_size=2, sample_rate=44100, buffer_size_seconds=4.0
-)
+synthconfig = SynthConfig(batch_size=2, sample_rate=44100, buffer_size_seconds=4.0)
 
 # For a few examples, we'll only generate one sound
-synthconfig1 = SynthConfig(
-    batch_size=1, sample_rate=44100, buffer_size_seconds=4.0
-)
+synthconfig1 = SynthConfig(batch_size=1, sample_rate=44100, buffer_size_seconds=4.0)
 
 # And a short one sound
 synthconfig1short = SynthConfig(
-    batch_size=1, sample_rate=44100, buffer_size_seconds = 0.1
+    batch_size=1, sample_rate=44100, buffer_size_seconds=0.1
 )
 
 # ## The Envelope
@@ -539,9 +535,7 @@ print(err)
 #
 # Let's generate some random synths in batch
 
-synthconfig16 = SynthConfig(
-    batch_size=16, sample_rate=44100, buffer_size_seconds=4
-)
+synthconfig16 = SynthConfig(batch_size=16, sample_rate=44100, buffer_size_seconds=4)
 voice = Voice(synthconfig=synthconfig16).to(device)
 voice_out = voice()
 for i in range(synthconfig16.batch_size):

@@ -3,12 +3,14 @@ Tests for the profile script - hard to capture the output, but this also serves
 as an integration test to make sure the PyTorch Lightning training stuff is working.
 """
 
+import csv
 import os
 import sys
-import csv
-from torchsynth import profile
 import unittest.mock
+
 import pytest
+
+from torchsynth import profile
 
 
 class TestProfile:

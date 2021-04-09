@@ -91,9 +91,7 @@ class TestSynthModule:
             assert parameter.device.type == self.device
 
     def test_seconds_to_sample(self):
-        synthconfig = torchsynth.config.SynthConfig(
-            batch_size=2, sample_rate=48000
-        )
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, sample_rate=48000)
         module = synthmodule.SineVCO(synthconfig)
         samples = module.seconds_to_samples(4.0)
         assert samples == 4 * 48000
