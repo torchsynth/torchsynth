@@ -64,7 +64,6 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 from torchsynth.config import SynthConfig
-from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -91,7 +90,7 @@ else:
     device = "cpu"
 
 
-def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
+def time_plot(signal, sample_rate=44100, show=True):
     if isnotebook():  # pragma: no cover
         t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
         plt.plot(t, signal)
@@ -101,7 +100,7 @@ def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
             plt.show()
 
 
-def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
+def stft_plot(signal, sample_rate=44100):
     if isnotebook():  # pragma: no cover
         X = librosa.stft(signal)
         Xdb = librosa.amplitude_to_db(abs(X))
