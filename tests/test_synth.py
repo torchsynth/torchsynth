@@ -88,11 +88,11 @@ class TestAbstractSynth:
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
         cpusynth = torchsynth.synth.Voice(synthglobals)
 
-        cpusynth.randomize(1)
+        cpusynth.randomize(4)
         x11 = cpusynth()
         cpusynth.randomize(2)
         x2 = cpusynth()
-        cpusynth.randomize(1)
+        cpusynth.randomize(4)
         x12 = cpusynth()
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
@@ -130,6 +130,19 @@ class TestAbstractSynth:
             # TODO https://github.com/turian/torchsynth/issues/256
             assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-3
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
+
+    def test_parameter_randomization(self):
+        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
+        cpusynth1 = torchsynth.synth.Voice(synthglobals)
+        cpusynth2 = torchsynth.synth.Voice(synthglobals)
+
+        cpusynth1.randomize(1)
+        cpusynth2.randomize(1)
+
+        params_1 = cpusynth1.get_parameters()
+        params_2 = cpusynth2.get_parameters()
+        for name, param in params_1.items():
+            assert torch.all(param.data.detach().cpu() == params_2[name].data)
 
     def test_randomize_parameter_freezing(self):
         synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
