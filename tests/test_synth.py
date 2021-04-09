@@ -87,11 +87,11 @@ class TestAbstractSynth:
         synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
         cpusynth = torchsynth.synth.Voice(synthconfig)
         x11 = torchsynth.synth.Voice(synthconfig)
-        x11 = x11(4)
+        x11 = x11(1)
         x2 = torchsynth.synth.Voice(synthconfig)
         x2 = x2(2)
         x12 = torchsynth.synth.Voice(synthconfig)
-        x12 = x12(4)
+        x12 = x12(1)
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
