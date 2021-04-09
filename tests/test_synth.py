@@ -113,12 +113,9 @@ class TestAbstractSynth:
 
             # Confirm that we get deterministic results when
             # randomizing the cuda synth with the same seed
-            cudasynth.randomize(1)
-            cuda11 = cudasynth()
-            cudasynth.randomize(2)
-            cuda2 = cudasynth()
-            cudasynth.randomize(1)
-            cuda12 = cudasynth()
+            cuda11 = cudasynth(1)
+            cuda2 = cudasynth(2)
+            cuda12 = cudasynth(1)
 
             assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
             assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6
