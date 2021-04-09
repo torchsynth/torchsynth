@@ -5,12 +5,10 @@ Tests for torch synth modules.
 import pytest
 import torch
 import torch.tensor as tensor
-from torch import Tensor as T
 
 import torchsynth
 import torchsynth.module as synthmodule
 from torchsynth.config import SynthConfig
-from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 
 
 class TestSynthModule:
@@ -77,7 +75,7 @@ class TestSynthModule:
     """
 
     def test_set_parameter(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
         module = synthmodule.ADSR(synthconfig, attack=tensor([0.5, 1.0]))
 
         # Confirm value set correctly from constructor
@@ -93,15 +91,13 @@ class TestSynthModule:
             assert parameter.device.type == self.device
 
     def test_seconds_to_sample(self):
-        synthconfig = torchsynth.config.SynthConfig(
-            batch_size=tensor(2), sample_rate=tensor(48000)
-        )
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, sample_rate=48000)
         module = synthmodule.SineVCO(synthconfig)
         samples = module.seconds_to_samples(4.0)
         assert samples == 4 * 48000
 
     def test_softmodeselector(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
         mode_selector = synthmodule.SoftModeSelector(
             synthconfig, device=self.device, n_modes=3
         )
@@ -120,7 +116,7 @@ class TestSynthModule:
         )
 
     def test_hardmodeselector(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
         mode_selector = synthmodule.HardModeSelector(
             synthconfig, device=self.device, n_modes=3
         )
@@ -136,7 +132,7 @@ class TestSynthModule:
         )
 
     def test_audiomixer(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
 
         # Make sure parameters get setup correctly
         mixer = synthmodule.AudioMixer(synthconfig, device=self.device, n_input=3)
@@ -160,7 +156,7 @@ class TestSynthModule:
             )
 
     def test_modulationmixer(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
 
         mixer = synthmodule.ModulationMixer(
             synthconfig, device=self.device, n_input=2, n_output=2
@@ -194,9 +190,9 @@ class TestSynthModule:
         # of noise signals. All these noise samples should equal each other.
         # i.e., noise should be returned deterministically regardless of the
         # batch size.
-        synthconfig32 = SynthConfig(tensor(32))
-        synthconfig64 = SynthConfig(tensor(64))
-        synthconfig128 = SynthConfig(tensor(128))
+        synthconfig32 = SynthConfig(32)
+        synthconfig64 = SynthConfig(64)
+        synthconfig128 = SynthConfig(128)
 
         noise32 = synthmodule.Noise(synthconfig32, seed=0)
         noise64 = synthmodule.Noise(synthconfig64, seed=0)
@@ -216,13 +212,13 @@ class TestSynthModule:
         with pytest.raises(ValueError):
             # If the batch size if larger than the default
             # of 64, then this should complain
-            synthconfig65 = SynthConfig(tensor(65))
+            synthconfig65 = SynthConfig(65)
             synthmodule.Noise(synthconfig65, seed=0)
 
 
 class TestControlRateModule:
     def test_properties(self):
-        synthconfig = torchsynth.config.SynthConfig(tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(2)
         adsr = synthmodule.ADSR(synthconfig)
 
         # Sample rate and buffer size should raise errors
@@ -232,7 +228,6 @@ class TestControlRateModule:
         with pytest.raises(NotImplementedError):
             adsr.buffer_size
 
-        assert adsr.control_rate == torchsynth.default.DEFAULT_CONTROL_RATE
         expected_buffer = synthconfig.buffer_size / synthconfig.sample_rate
         expected_buffer *= adsr.control_rate
         assert adsr.control_buffer_size == expected_buffer

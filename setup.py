@@ -40,6 +40,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "pytest-env",
         ],
         "dev": [
             "pre-commit",
@@ -53,6 +54,7 @@ setup(
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "pytest-env",
             "sphinx>=3.0.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",

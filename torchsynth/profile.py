@@ -25,17 +25,13 @@ from typing import Any
 
 import pytorch_lightning as pl
 import torch
-import torch.tensor as T
-
-# Turn off torchsynth debug mode before importing anything else
-# TODO: https://github.com/turian/torchsynth/issues/259
-import torchsynth.oldconfig
-
-torchsynth.oldconfig.DEBUG = False
 
 import torchsynth.synth  # noqa: E402
 from torchsynth.config import SynthConfig  # noqa: E402
-from torchsynth.synth import AbstractSynth  # noqa: E402
+from torchsynth.synth import AbstractSynth
+
+# TODO: Disable DEBUG
+
 
 # Check for available GPUs and processing cores
 GPUS = torch.cuda.device_count()
@@ -186,7 +182,7 @@ def main():
         )
 
     # Try to create the synth module that is being profiled
-    synthconfig = SynthConfig(T(args.batch_size))
+    synthconfig = SynthConfig(args.batch_size)
     module = instantiate_module(args.module, synthconfig)
 
     run_lightning_module(
