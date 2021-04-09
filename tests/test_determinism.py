@@ -1,34 +1,39 @@
+"""
+Runs tests to make sure results in Synths are deterministic
+"""
+
 import pytest
 import torch
-import torchsynth.module as module
 from torchsynth.synth import Voice
 from torchsynth.config import SynthConfig
 
 
 class TestDeterminism:
     def test_voice_determinism(self):
-
-        synthconfig = SynthConfig(torch.tensor(64))
+        # TODO make this work with different batch sizes
+        synthconfig = SynthConfig(64)
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
 
         # Randomly initialized voices will have different results
         with pytest.raises(AssertionError):
-            self.run_voice(voice_1, voice_2)
+            self.compare_voices(voice_1, voice_2)
 
+        # Seeding only one voice will also have different results
         voice_1.randomize(1)
         with pytest.raises(AssertionError):
-            self.run_voice(voice_1, voice_2)
+            self.compare_voices(voice_1, voice_2)
 
+        # Now seeding the second voice the same should be the same
         voice_2.randomize(1)
-        self.run_voice(voice_1, voice_2)
+        self.compare_voices(voice_1, voice_2)
 
+        # Running voice twice in a row with the same parameters should
+        # lead to the same results
         voice_1.randomize(234)
-        voice_1.randomize(234)
-        self.run_voice(voice_1, voice_1)
+        self.compare_voices(voice_1, voice_1)
 
-    def run_voice(self, voice_1, voice_2):
-
+    def compare_voices(self, voice_1, voice_2):
         # Test keyboard determinism
         (midi_f0_1, duration_1) = voice_1.keyboard()
         (midi_f0_2, duration_2) = voice_2.keyboard()
@@ -118,6 +123,7 @@ class TestDeterminism:
         assert torch.all(vco_2_amp_1 == vco_2_amp_2)
         assert torch.all(noise_amp_1 == noise_amp_2)
 
+        # Check VCOs and noise
         vco_1_1 = voice_1.vco_1(midi_f0_1, vco_1_pitch_1)
         vco_1_2 = voice_2.vco_1(midi_f0_2, vco_1_pitch_2)
         assert torch.all(vco_1_1 == vco_1_2)
