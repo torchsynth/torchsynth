@@ -494,7 +494,13 @@ class VCO(SynthModule):
 
         cosine_argument = self.make_argument(control_as_frequency)
         cosine_argument += self.p("initial_phase").unsqueeze(1)
-        output = self.oscillator(cosine_argument, midi_f0)
+        output = torch.tensor(
+            self.oscillator(
+                torch.tensor(cosine_argument, dtype=torch.float64),
+                torch.tensor(midi_f0, dtype=torch.float64),
+            ),
+            dtype=float32,
+        )
         return output.as_subclass(Signal)
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
