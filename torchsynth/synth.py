@@ -36,9 +36,13 @@ class AbstractSynth(LightningModule):
         buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.synthconfig = synthconfig
+        if synthconfig:
+            self.synthconfig = synthconfig
+        else:
+            # Use the default
+            self.synthconfig = SynthConfig()
 
     @property
     def batch_size(self) -> T:
@@ -270,7 +274,7 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
