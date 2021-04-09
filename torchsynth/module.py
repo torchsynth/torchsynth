@@ -12,11 +12,10 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 import torchsynth.util as util
-from torchsynth.oldconfig import DEBUG
-from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.config import SynthConfig
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
+from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 
 
 class SynthModule(nn.Module):
@@ -332,7 +331,7 @@ class ADSR(ControlRateModule):
         behind the scenes to make the playing experience feel natural.
         """
 
-        if DEBUG:
+        if self.synthconfig.debug:
             assert note_on_duration.ndim == 1
             assert torch.all(note_on_duration > 0.0)
 
@@ -485,7 +484,7 @@ class VCO(SynthModule):
 
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
 
-        if DEBUG:
+        if self.synthconfig.debug:
             assert (control_as_frequency >= 0).all() and (
                 control_as_frequency <= self.nyquist
             ).all()

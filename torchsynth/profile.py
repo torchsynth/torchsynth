@@ -27,11 +27,7 @@ import torch.tensor as T
 import pytorch_lightning as pl
 import multiprocessing
 
-# Turn off torchsynth debug mode before importing anything else
-# TODO: https://github.com/turian/torchsynth/issues/259
-import torchsynth.oldconfig
-
-torchsynth.oldconfig.DEBUG = False
+# TODO: Disable DEBUG
 
 import torchsynth.synth  # noqa: E402
 from torchsynth.synth import AbstractSynth  # noqa: E402

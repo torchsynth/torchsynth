@@ -113,17 +113,17 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
 synthconfig = SynthConfig(
-    batch_size=tensor(2), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
+    batch_size=2, sample_rate=44100, buffer_size_seconds=4.0
 )
 
 # For a few examples, we'll only generate one sound
 synthconfig1 = SynthConfig(
-    batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
+    batch_size=1, sample_rate=44100, buffer_size_seconds=4.0
 )
 
 # And a short one sound
 synthconfig1short = SynthConfig(
-    batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4096)
+    batch_size=1, sample_rate=44100, buffer_size_seconds = 0.1
 )
 
 # ## The Envelope
@@ -540,7 +540,7 @@ print(err)
 # Let's generate some random synths in batch
 
 synthconfig16 = SynthConfig(
-    batch_size=tensor(16), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
+    batch_size=16, sample_rate=44100, buffer_size_seconds=4
 )
 voice = Voice(synthconfig=synthconfig16).to(device)
 voice_out = voice()
