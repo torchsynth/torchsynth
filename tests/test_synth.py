@@ -86,17 +86,16 @@ class TestAbstractSynth:
         # This test confirms that randomizing a synth with the same
         # seed results in the same audio results.
         synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
-        cpusynth = torchsynth.synth.Voice(synthconfig)
 
-        cpusynth.randomize(4)
-        x11 = cpusynth()
-        cpusynth.randomize(2)
-        x2 = cpusynth()
-        cpusynth.randomize(4)
-        x12 = cpusynth()
+        x11 = torchsynth.synth.Voice(synthconfig)
+        x11.randomize(4)
+        x2 = torchsynth.synth.Voice(synthconfig)
+        x2.randomize(2)
+        x12 = torchsynth.synth.Voice(synthconfig)
+        x12.randomize(4)
 
-        assert torch.mean(torch.abs(x11 - x2)) > 1e-6
-        assert torch.mean(torch.abs(x11 - x12)) < 1e-6
+        assert torch.mean(torch.abs(x11() - x2())) > 1e-6
+        assert torch.mean(torch.abs(x11() - x12())) < 1e-6
 
         # If a GPU is available then make sure the same
         # tests as above are also deterministic on the GPU.
@@ -132,9 +131,9 @@ class TestAbstractSynth:
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
 
     def test_parameter_randomization(self):
-        synthglobals = torchsynth.globals.SynthGlobals(batch_size=tensor(2))
-        cpusynth1 = torchsynth.synth.Voice(synthglobals)
-        cpusynth2 = torchsynth.synth.Voice(synthglobals)
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        cpusynth1 = torchsynth.synth.Voice(synthconfig)
+        cpusynth2 = torchsynth.synth.Voice(synthconfig)
 
         cpusynth1.randomize(1)
         cpusynth2.randomize(1)
