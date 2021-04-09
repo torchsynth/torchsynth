@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Final, Optional
 
 import torch
 import os
