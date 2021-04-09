@@ -6,7 +6,6 @@ Tests for torch synths
 import pytest
 import torch.nn
 import torch.tensor as tensor
-from torch import Tensor as T
 
 import torchsynth.config
 import torchsynth.module as synthmodule
@@ -85,15 +84,15 @@ class TestAbstractSynth:
     def test_deterministic_noise(self):
         # This test confirms that randomizing a synth with the same
         # seed results in the same audio results.
+
         synthconfig = torchsynth.config.SynthConfig(batch_size=2)
         cpusynth = torchsynth.synth.Voice(synthconfig)
-
-        cpusynth.randomize(1)
-        x11 = cpusynth()
-        cpusynth.randomize(2)
-        x2 = cpusynth()
-        cpusynth.randomize(1)
-        x12 = cpusynth()
+        x11 = torchsynth.synth.Voice(synthconfig)
+        x11 = x11(1)
+        x2 = torchsynth.synth.Voice(synthconfig)
+        x2 = x2(2)
+        x12 = torchsynth.synth.Voice(synthconfig)
+        x12 = x12(1)
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
@@ -114,12 +113,12 @@ class TestAbstractSynth:
 
             # Confirm that we get deterministic results when
             # randomizing the cuda synth with the same seed
-            cudasynth.randomize(1)
-            cuda11 = cudasynth()
-            cudasynth.randomize(2)
-            cuda2 = cudasynth()
-            cudasynth.randomize(1)
-            cuda12 = cudasynth()
+            cuda11 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda11 = cuda11(1)
+            cuda2 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda2 = cuda2(2)
+            cuda12 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda12 = cuda12(1)
 
             assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
             assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6
@@ -130,6 +129,19 @@ class TestAbstractSynth:
             # TODO https://github.com/turian/torchsynth/issues/256
             assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-3
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
+
+    def test_parameter_randomization(self):
+        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        cpusynth1 = torchsynth.synth.Voice(synthconfig)
+        cpusynth2 = torchsynth.synth.Voice(synthconfig)
+
+        cpusynth1.randomize(1)
+        cpusynth2.randomize(1)
+
+        params_1 = cpusynth1.get_parameters()
+        params_2 = cpusynth2.get_parameters()
+        for name, param in params_1.items():
+            assert torch.all(param.data.detach().cpu() == params_2[name].data)
 
     def test_randomize_parameter_freezing(self):
         synthconfig = torchsynth.config.SynthConfig(batch_size=2)

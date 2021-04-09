@@ -218,24 +218,29 @@ class AbstractSynth(LightningModule):
         """
         Randomize all parameters
         """
+        parameters = [param for _, param in sorted(self.named_parameters())]
         if seed is not None:
-            cpu_rng = torch.Generator(device="cpu").manual_seed(seed)
-            for parameter in self.parameters():
+            # Generate batch_size x parameter number of random values
+            # Reseed the random number generator for every item in the batch
+            cpu_rng = torch.Generator(device="cpu")
+            new_values = []
+            for i in range(self.batch_size):
+                cpu_rng.manual_seed(seed * self.batch_size.numpy().item() + i)
+                new_values.append(
+                    torch.rand((len(parameters),), device="cpu", generator=cpu_rng)
+                )
+
+            # Move to device if necessary
+            new_values = torch.stack(new_values, dim=1)
+            if self.device.type != "cpu":
+                new_values = new_values.pin_memory().to(self.device, non_blocking=True)
+
+            # Set parameter data
+            for i, parameter in enumerate(parameters):
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    # TODO reproducibility with different batch sizes
-                    # See https://github.com/turian/torchsynth/issues/253
-                    if self.device.type != "cpu":  # pragma: no cover
-                        new_params = torch.rand(
-                            (self.batch_size,),
-                            device="cpu",
-                            pin_memory=True,
-                            generator=cpu_rng,
-                        )
-                        parameter.data = new_params.to(self.device, non_blocking=True)
-                    else:
-                        parameter.data.uniform_(0, 1, generator=cpu_rng)
+                    parameter.data = new_values[i]
         else:
-            for parameter in self.parameters():
+            for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1)
 
