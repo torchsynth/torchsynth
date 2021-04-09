@@ -86,7 +86,7 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
-synthconfig = SynthConfig(batch_size=tensor(BATCH_SIZE))
+synthconfig = SynthConfig(batch_size=BATCH_SIZE)
 voice = Voice(synthconfig)
 
 accelerator = None
@@ -97,8 +97,9 @@ else:
     # specifies all available GPUs (if only one GPU is not occupied,
     # auto_select_gpus=True uses one gpu)
     use_gpus = -1
-    # TODO: Change precision?
-    precision = 16
+    # Golden cables
+    #    # TODO: Change precision?
+    #    precision = 16
     if gpus > 1:
         accelerator = "ddp"
 
@@ -108,7 +109,7 @@ trainer = pl.Trainer(
     gpus=use_gpus,
     auto_select_gpus=True,
     accelerator=accelerator,
-    deterministic=True,
+    deterministic=synthconfig.reproducible,
     max_epochs=0,
     callbacks=[TorchSynthCallback()],
 )
