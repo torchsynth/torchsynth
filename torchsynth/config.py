@@ -31,7 +31,7 @@ class SynthConfig:
         """
         Args:
             batch_size (T)  : Scalar that indicates how many parameter settings
-            there are, i.e. how many different sounds to generate.
+            there are, i.e. how many different sounds to generate at once.
             sample_rate (T) : Scalar sample rate for audio generation.
             buffer_size (T) : Duration of the output, 4 seconds by default.
             control_rate (T) : Scalar sample rate for control signal generation.

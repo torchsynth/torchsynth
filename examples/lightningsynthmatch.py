@@ -34,6 +34,7 @@ import torch.autograd.profiler as profiler
 import torch.tensor as tensor
 from torch import Tensor as T
 from tqdm.auto import tqdm
+import soundfile as sf
 
 import torchsynth.module
 from torchsynth.config import SynthConfig
@@ -41,6 +42,8 @@ from torchsynth.synth import Voice
 
 gpus = torch.cuda.device_count()
 print("Usings %d gpus" % gpus)
+
+target_sound, sr = sf.read("909-snare-4sec.ogg")
 
 import multiprocessing
 
@@ -79,7 +82,6 @@ class TorchSynthCallback(pl.Callback):
 
 synthconfig = SynthConfig()
 voice = Voice(synthconfig)
-
 synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
