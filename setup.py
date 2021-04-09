@@ -56,6 +56,7 @@ setup(
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pytest-env",
             "sphinx>=3.0.4",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "unofficial-pt-lightning-sphinx-theme",
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
             "sphinxcontrib-napoleon",
