@@ -25,10 +25,6 @@ from torchsynth.module import (
 from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
 
-# https://github.com/turian/torchsynth/issues/131
-# Lightning already handles this for us
-# torch.use_deterministic_algorithms(True)
-
 
 class AbstractSynth(LightningModule):
     """
