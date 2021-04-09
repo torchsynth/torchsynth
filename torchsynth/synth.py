@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional, Tuple
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional, OrderedDict, Tuple
 
 import torch
 import torch.tensor as tensor
@@ -86,7 +87,7 @@ class AbstractSynth(LightningModule):
 
     def get_parameters(
         self, include_frozen: bool = False
-    ) -> Dict[Tuple[str, str], ModuleParameter]:
+    ) -> OrderedDict[Tuple[str, str], ModuleParameter]:
         """
         Returns a dictionary of ModuleParameters for this synth keyed
         on a tuple of the SynthModule name and the parameter name
@@ -95,7 +96,7 @@ class AbstractSynth(LightningModule):
 
         # Each parameter in this synth will have a unique combination of module name
         # and parameter name -- create a dictionary keyed on that.
-        for module_name, module in self.named_modules():
+        for module_name, module in sorted(self.named_modules()):
             # Make sure this is a SynthModule, b/c we are using ParameterDict
             # and ParameterDict is a module, we get those returned as well
             # TODO: see https://github.com/turian/torchsynth/issues/213
@@ -108,7 +109,7 @@ class AbstractSynth(LightningModule):
                             ((module_name, parameter.parameter_name), parameter)
                         )
 
-        return dict(parameters)
+        return OrderedDict(parameters)
 
     def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """

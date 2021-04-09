@@ -12,9 +12,9 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 import torchsynth.util as util
-from torchsynth.oldconfig import DEBUG
-from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.config import SynthConfig
+from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
+from torchsynth.oldconfig import DEBUG
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
