@@ -29,6 +29,7 @@ from typing import Any
 import pytorch_lightning as pl
 import soundfile as sf
 import torch
+import auraloss
 
 # import torchvision.models as models
 import torch.autograd.profiler as profiler
@@ -65,13 +66,28 @@ synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
 target_sound, sr = sf.read("909-snare-4sec.ogg")
+# This won't work with multi-GPU :(
+device = "cuda" if torch.cuda.is_available() else "cpu"
+target_sound = torch.tensor(target_sound, device=device)
+# Normalize, but not entirely sure this is necessary
+target_sound_max = torch.max(torch.abs(target_sound))
+print("Normalizing target sound by", target_sound_max)
+target_sound /= target_sound_max
 assert sr == synthconfig.sample_rate
 assert target_sound.ndim == 1
 assert target_sound.shape[0] == synthconfig.buffer_size
 
+
 # TODO Add this to torchsynth API
 # see https://github.com/turian/torchsynth/issues/154
 class TorchSynthCallback(pl.Callback):
+    def __init__(self, target_sound, sr, **kwargs):
+        super().__init__(**kwargs)
+        self.target_sound = target_sound
+        self.sr = sr
+        self.best_distance = 1e10
+        self.mrstft = auraloss.freq.MultiResolutionSTFTLoss()
+
     def on_test_batch_end(
         self,
         trainer,
@@ -82,9 +98,14 @@ class TorchSynthCallback(pl.Callback):
         dataloader_idx: int,
     ) -> None:
         assert batch.ndim == 1
-        _ = pl_module(batch_idx)
-        # I don't think the following is correct
-        # _ = torch.stack([pl_module(i) for i in batch])
+        batchsounds = pl_module(batch_idx)
+        for i, sound in enumerate(batchsounds):
+            assert sound.shape == self.target_sound.shape
+            loss = self.mrstft(self.target_sound, sound)
+            if loss < self.best_distance:
+                print(f"New best loss {loss} for {batch_idx}-{i}")
+                sf.write(f"predicted_sound-{loss}-{batch_idx}-{i}.wav", sound, self.sr)
+                self.best_distance = loss
 
 
 accelerator = None
@@ -108,7 +129,7 @@ trainer = pl.Trainer(
     accelerator=accelerator,
     deterministic=True,
     max_epochs=0,
-    callbacks=[TorchSynthCallback()],
+    callbacks=[TorchSynthCallback(target_sound, synthconfig.sample_rate)],
 )
 
 trainer.test(voice, test_dataloaders=test_dataloader)
