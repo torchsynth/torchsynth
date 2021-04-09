@@ -29,7 +29,7 @@ import torch.tensor as T
 
 import torchsynth.synth  # noqa: E402
 from torchsynth.config import SynthConfig  # noqa: E402
-from torchsynth.synth import AbstractSynth  # noqa: E402
+from torchsynth.synth import AbstractSynth
 
 # TODO: Disable DEBUG
 
