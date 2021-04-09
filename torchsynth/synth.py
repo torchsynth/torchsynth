@@ -1,6 +1,11 @@
+import sys
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
-from typing import OrderedDict as OrderedDictType
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+    from typing import OrderedDict as OrderedDictType
+else:
+    from typing_extensions import OrderedDict as OrderedDictType
 
 import torch
 import torch.tensor as tensor

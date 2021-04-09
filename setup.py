@@ -34,6 +34,7 @@ setup(
         "scipy",
         "torch>=1.8",
         "pytorch-lightning",
+        "typing-extensions",
     ],
     extras_require={
         "test": [
