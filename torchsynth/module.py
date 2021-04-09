@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Final, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -13,7 +13,6 @@ from torch import Tensor as T
 
 import torchsynth.util as util
 from torchsynth.config import SynthConfig
-from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -103,6 +102,10 @@ class SynthModule(nn.Module):
     @property
     def nyquist(self):
         return self.sample_rate / 2.0
+
+    @property
+    def eps(self) -> float:
+        return self.synthconfig.eps
 
     @property
     def buffer_size(self) -> T:
@@ -382,7 +385,7 @@ class ADSR(ControlRateModule):
         # Shape ramps.
         ramp = ramp - start
         ramp = torch.maximum(ramp, self.zero)
-        ramp = (ramp + EPS) / duration + EPS
+        ramp = (ramp + self.eps) / duration + self.eps
         ramp = torch.minimum(ramp, self.one)
 
         """
@@ -617,23 +620,25 @@ class Noise(SynthModule):
     these in a synth then choose different seeds for each instance.
     """
 
+    noise_batch_size: Final[int] = 64
+
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
 
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)
-        noise = torch.empty((DEFAULT_BATCH_SIZE, self.buffer_size), device="cpu")
+        noise = torch.empty((self.noise_batch_size, self.buffer_size), device="cpu")
         noise.data.uniform_(-1.0, 1.0, generator=generator)
 
         # Repeat the noise batches if the current batch size is larger than the default
-        if self.batch_size > DEFAULT_BATCH_SIZE:
-            if self.batch_size % DEFAULT_BATCH_SIZE != 0:
+        if self.batch_size > self.noise_batch_size:
+            if self.batch_size % self.noise_batch_size!= 0:
                 raise ValueError(
                     "Batch size is not divisible by the default "
-                    f"batch size of {DEFAULT_BATCH_SIZE}"
+                    f"batch size of {self.noise_batch_size}"
                 )
 
-            noise = noise.repeat(self.batch_size // DEFAULT_BATCH_SIZE, 1)
+            noise = noise.repeat(self.batch_size // self.noise_batch_size, 1)
 
         self.register_buffer("noise", noise.to(self.device))
         self.offset = 0
@@ -641,7 +646,8 @@ class Noise(SynthModule):
     def _forward(self) -> Signal:
         # Return noise quickly if we are returning the whole batch
         # and don't need to offset at all.
-        if self.batch_size >= DEFAULT_BATCH_SIZE and self.offset == 0:
+        # TODO: Is this actually correct?
+        if self.batch_size >= self.noise_batch_size and self.offset == 0:
             return self.noise.as_subclass(Signal)
 
         # If the batch size is smaller than the default batch size then
@@ -654,7 +660,7 @@ class Noise(SynthModule):
         else:
             noise = torch.roll(self.noise, (-self.offset, 0), dims=(0, 1))
 
-        self.offset = (self.offset + self.batch_size) % DEFAULT_BATCH_SIZE
+        self.offset = (self.offset + self.batch_size) % self.noise_batch_size
         return noise[: self.batch_size].as_subclass(Signal)
 
 

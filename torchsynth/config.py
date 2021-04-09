@@ -19,6 +19,7 @@ class SynthConfig:
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
         debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
+        eps: Final[float] = 1e-6
     ):
         """
         Args:
@@ -29,6 +30,8 @@ class SynthConfig:
             control_rate (int) : Scalar sample rate for control signal generation.
             debug (bool) : Run slow assertion tests. (Default: False, unless
                     environment variable TORCHSYNTH_DEBUG exists.)
+            eps (float) : Epsilon to avoid log underrun and divide by
+                          zero.
         """
         self.batch_size = torch.tensor(batch_size)
         self.sample_rate = torch.tensor(sample_rate)
@@ -36,6 +39,7 @@ class SynthConfig:
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
         self.debug = debug
+        self.eps = eps
 
         # Buffer size for control signals -- this is calculated to have the
         # same duration in seconds as that buffer size for the audio rate
