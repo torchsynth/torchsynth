@@ -80,7 +80,9 @@ class ModuleParameterRange:
         normalized = torch.tensor(normalized, dtype=torch.float64)
         if not self.symmetric:
             if self.curve != 1.0:
-                normalized = torch.pow(normalized, 1 / self.curve)
+                normalized = torch.pow(
+                    normalized, 1 / torch.tensor(self.curve, dtype=torch.float64)
+                )
 
             return torch.tensor(
                 self.minimum + (self.maximum - self.minimum) * normalized,
@@ -93,7 +95,10 @@ class ModuleParameterRange:
             normalized = torch.where(
                 dist == 0.0,
                 dist,
-                torch.pow(torch.abs(dist), 1 / self.curve) * torch.sign(dist),
+                torch.pow(
+                    torch.abs(dist), 1 / torch.tensor(self.curve, dtype=torch.float64)
+                )
+                * torch.sign(dist),
             )
 
         return torch.tensor(
