@@ -27,18 +27,17 @@ If this hasn't been merged to master yet, run:
 from typing import Any
 
 import pytorch_lightning as pl
+import soundfile as sf
 import torch
 
 # import torchvision.models as models
 import torch.autograd.profiler as profiler
 import torch.tensor as tensor
-from torch import Tensor as T
-from tqdm.auto import tqdm
-import soundfile as sf
-
 import torchsynth.module
+from torch import Tensor as T
 from torchsynth.config import SynthConfig
 from torchsynth.synth import Voice
+from tqdm.auto import tqdm
 
 gpus = torch.cuda.device_count()
 print("Usings %d gpus" % gpus)
