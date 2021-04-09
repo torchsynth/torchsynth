@@ -18,7 +18,7 @@ class SynthConfig:
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
-        deterministic: bool = True,
+        reproducible: bool = True,
         debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
         eps: float = 1e-6,
         # Unfortunately, Final is not supported until Python 3.8
@@ -31,7 +31,7 @@ class SynthConfig:
             sample_rate (int) : Scalar sample rate for audio generation.
             buffer_size (float) : Duration of the output in seconds [default: 4.0]
             control_rate (int) : Scalar sample rate for control signal generation.
-            deterministic (bool) : Deterministic (reproduucible) results, with a
+            reproducible (bool) : Reproducible results, with a
                     small performance impact. (Default: True)
             debug (bool) : Run slow assertion tests. (Default: False, unless
                     environment variable TORCHSYNTH_DEBUG exists.)
@@ -43,11 +43,10 @@ class SynthConfig:
         self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
-        self.deterministic = deterministic
-        if self.deterministic:
-            check_for_determinism()
-            # https://github.com/turian/torchsynth/issues/131
-            torch.use_deterministic_algorithms(True)
+        self.reproducible = reproducible
+        if self.reproducible:
+            check_for_reproducibility()
+
         self.debug = debug
         self.eps = eps
 
@@ -75,7 +74,7 @@ class SynthConfig:
         )
 
 
-def check_for_determinism():
+def check_for_reproducibility():
     """
     Reproducible results are important to torchsynth and Synth1B1, so we are testing
     to make sure that the expected random results are produced by torch.rand when

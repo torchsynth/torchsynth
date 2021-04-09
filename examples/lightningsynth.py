@@ -109,7 +109,7 @@ trainer = pl.Trainer(
     gpus=use_gpus,
     auto_select_gpus=True,
     accelerator=accelerator,
-    deterministic=synthconfig.deterministic,
+    deterministic=synthconfig.reproducible,
     max_epochs=0,
     callbacks=[TorchSynthCallback()],
 )
