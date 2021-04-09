@@ -98,8 +98,8 @@ else:
     # auto_select_gpus=True uses one gpu)
     use_gpus = -1
     # Golden cables
-#    # TODO: Change precision?
-#    precision = 16
+    #    # TODO: Change precision?
+    #    precision = 16
     if gpus > 1:
         accelerator = "ddp"
 
