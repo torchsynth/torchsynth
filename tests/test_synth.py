@@ -84,7 +84,8 @@ class TestAbstractSynth:
     def test_deterministic_noise(self):
         # This test confirms that randomizing a synth with the same
         # seed results in the same audio results.
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
         cpusynth = torchsynth.synth.Voice(synthconfig)
         x11 = torchsynth.synth.Voice(synthconfig)
         x11 = x11(1)
