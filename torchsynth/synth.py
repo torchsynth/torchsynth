@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, OrderedDict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.tensor as tensor
@@ -87,7 +87,9 @@ class AbstractSynth(LightningModule):
 
     def get_parameters(
         self, include_frozen: bool = False
-    ) -> OrderedDict[Tuple[str, str], ModuleParameter]:
+    ) -> Dict[Tuple[str, str], ModuleParameter]:
+        # Doesn't work for Python 3.6
+        # ) -> OrderedDict[Tuple[str, str], ModuleParameter]:
         """
         Returns a dictionary of ModuleParameters for this synth keyed
         on a tuple of the SynthModule name and the parameter name
@@ -180,7 +182,9 @@ class AbstractSynth(LightningModule):
         return 0.0
 
     @property
-    def hyperparameters(self) -> OrderedDict[Tuple[str, str, str], Any]:
+    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+        # Doesn't work for Python 3.6
+        # def hyperparameters(self) -> OrderedDict[Tuple[str, str, str], Any]:
         """
         Returns a dictionary of curve and symmetry hyperparameter values keyed
         on a tuple of the module name, parameter name, and hyperparameter name
