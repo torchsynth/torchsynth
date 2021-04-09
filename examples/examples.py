@@ -62,8 +62,8 @@ import numpy.random
 import torch.fft
 import torch.tensor as tensor
 from torch import Tensor as T
+
 from torchsynth.config import SynthConfig
-from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     ADSR,
     VCA,
@@ -90,7 +90,7 @@ else:
     device = "cpu"
 
 
-def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
+def time_plot(signal, sample_rate=44100, show=True):
     if isnotebook():  # pragma: no cover
         t = np.linspace(0, len(signal) / sample_rate, len(signal), endpoint=False)
         plt.plot(t, signal)
@@ -100,7 +100,7 @@ def time_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE, show=True):
             plt.show()
 
 
-def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
+def stft_plot(signal, sample_rate=44100):
     if isnotebook():  # pragma: no cover
         X = librosa.stft(signal)
         Xdb = librosa.amplitude_to_db(abs(X))
@@ -111,18 +111,14 @@ def stft_plot(signal, sample_rate=DEFAULT_SAMPLE_RATE):
 
 # ## Globals
 # We'll generate 2 sounds at once, 4 seconds each
-synthconfig = SynthConfig(
-    batch_size=tensor(2), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
-)
+synthconfig = SynthConfig(batch_size=2, sample_rate=44100, buffer_size_seconds=4.0)
 
 # For a few examples, we'll only generate one sound
-synthconfig1 = SynthConfig(
-    batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
-)
+synthconfig1 = SynthConfig(batch_size=1, sample_rate=44100, buffer_size_seconds=4.0)
 
 # And a short one sound
 synthconfig1short = SynthConfig(
-    batch_size=tensor(1), sample_rate=tensor(44100), buffer_size=tensor(4096)
+    batch_size=1, sample_rate=44100, buffer_size_seconds=0.1
 )
 
 # ## The Envelope
@@ -538,9 +534,7 @@ print(err)
 #
 # Let's generate some random synths in batch
 
-synthconfig16 = SynthConfig(
-    batch_size=tensor(16), sample_rate=tensor(44100), buffer_size=tensor(4 * 44100)
-)
+synthconfig16 = SynthConfig(batch_size=16, sample_rate=44100, buffer_size_seconds=4)
 voice = Voice(synthconfig=synthconfig16).to(device)
 voice_out = voice()
 for i in range(synthconfig16.batch_size):

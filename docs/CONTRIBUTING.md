@@ -35,7 +35,7 @@ Unit testing is performed using `pytest`.
 
 To run tests, run `pytest` from the project root:
 ```
-pytest
+TORCHSYNTH_DEBUG=True pytest
 ```
 
 To run tests with a coverage report:

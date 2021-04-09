@@ -15,27 +15,24 @@ Args:
     device: Set to run on cuda or cpu. Defaults to None, selects cuda if available
 """
 
-import sys
 import argparse
-from typing import Any
 import cProfile
-import pstats
 import io
+import multiprocessing
+import pstats
+import sys
+from typing import Any
 
+import pytorch_lightning as pl
 import torch
 import torch.tensor as T
-import pytorch_lightning as pl
-import multiprocessing
-
-# Turn off torchsynth debug mode before importing anything else
-# TODO: https://github.com/turian/torchsynth/issues/259
-import torchsynth.oldconfig
-
-torchsynth.oldconfig.DEBUG = False
 
 import torchsynth.synth  # noqa: E402
-from torchsynth.synth import AbstractSynth  # noqa: E402
 from torchsynth.config import SynthConfig  # noqa: E402
+from torchsynth.synth import AbstractSynth  # noqa: E402
+
+# TODO: Disable DEBUG
+
 
 # Check for available GPUs and processing cores
 GPUS = torch.cuda.device_count()
@@ -66,9 +63,7 @@ class TorchSynthCallback(pl.Callback):
         _ = pl_module(batch_idx)
 
 
-def instantiate_module(
-    name: str, synthconfig: SynthConfig, **kwargs
-) -> AbstractSynth:
+def instantiate_module(name: str, synthconfig: SynthConfig, **kwargs) -> AbstractSynth:
     """
     Try to instantiate the module corresponding to the name providing
     """

@@ -90,8 +90,9 @@ else:
     # specifies all available GPUs (if only one GPU is not occupied,
     # auto_select_gpus=True uses one gpu)
     use_gpus = -1
-    # TODO: Change precision?
-    precision = 16
+    # Golden cables
+    #    # TODO: Change precision?
+    #    precision = 16
     if gpus > 1:
         accelerator = "ddp"
 
@@ -101,7 +102,7 @@ trainer = pl.Trainer(
     gpus=use_gpus,
     auto_select_gpus=True,
     accelerator=accelerator,
-    deterministic=True,
+    deterministic=synthconfig.deterministic,
     max_epochs=0,
     callbacks=[TorchSynthCallback()],
 )

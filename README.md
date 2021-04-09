@@ -26,6 +26,3 @@ in terms of throughput.
 [![Travis CI build status](https://travis-ci.com/turian/torchsynth.png)](https://travis-ci.com/turian/torchsynth)
 
 [Homepage](https://torchsynth.rtfd.io/en/latest/).
-
-
-## Development Installation

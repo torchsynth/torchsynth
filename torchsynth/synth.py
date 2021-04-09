@@ -23,10 +23,6 @@ from torchsynth.module import (
 from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
 
-# https://github.com/turian/torchsynth/issues/131
-# Lightning already handles this for us
-# torch.use_deterministic_algorithms(True)
-
 
 class AbstractSynth(LightningModule):
     """
@@ -56,6 +52,11 @@ class AbstractSynth(LightningModule):
     def buffer_size(self) -> T:
         assert self.synthconfig.buffer_size.ndim == 0
         return self.synthconfig.buffer_size
+
+    @property
+    def buffer_size_seconds(self) -> T:
+        assert self.synthconfig.buffer_size_seconds.ndim == 0
+        return self.synthconfig.buffer_size_seconds
 
     def add_synth_modules(
         self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]

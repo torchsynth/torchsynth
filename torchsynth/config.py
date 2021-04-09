@@ -1,14 +1,7 @@
 from typing import Optional
 
 import torch
-import torch.tensor as tensor
-from torch import Tensor as T
-
-from torchsynth.default import (
-    DEFAULT_BUFFER_SIZE,
-    DEFAULT_CONTROL_RATE,
-    DEFAULT_SAMPLE_RATE,
-)
+import os
 
 
 class SynthConfig:
@@ -17,42 +10,52 @@ class SynthConfig:
     these global configuration values.
     Every SynthModule in the same AbstractSynth
     should have the save SynthConfig.
-
-    # TODO batch size and buffer size should not be tensors
     """
 
     def __init__(
         self,
-        batch_size: T,
-        sample_rate: Optional[T] = tensor(DEFAULT_SAMPLE_RATE),
-        buffer_size: Optional[T] = tensor(DEFAULT_BUFFER_SIZE),
-        control_rate: Optional[T] = tensor(DEFAULT_CONTROL_RATE),
+        batch_size: int,
+        sample_rate: Optional[int] = 44100,
+        buffer_size_seconds: Optional[float] = 4.0,
+        control_rate: Optional[int] = 441,
+        deterministic: bool = True,
+        debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
+        eps: float = 1e-6,
+        # Unfortunately, Final is not supported until Python 3.8
+        # eps: Final[float] = 1e-6,
     ):
         """
         Args:
-            batch_size (T)  : Scalar that indicates how many parameter settings
+            batch_size (int)  : Scalar that indicates how many parameter settings
             there are, i.e. how many different sounds to generate at once.
-            sample_rate (T) : Scalar sample rate for audio generation.
-            buffer_size (T) : Duration of the output, 4 seconds by default.
-            control_rate (T) : Scalar sample rate for control signal generation.
+            sample_rate (int) : Scalar sample rate for audio generation.
+            buffer_size (float) : Duration of the output in seconds [default: 4.0]
+            control_rate (int) : Scalar sample rate for control signal generation.
+            deterministic (bool) : Deterministic (reproduucible) results, with a
+                    small performance impact. (Default: True)
+            debug (bool) : Run slow assertion tests. (Default: False, unless
+                    environment variable TORCHSYNTH_DEBUG exists.)
+            eps (float) : Epsilon to avoid log underrun and divide by
+                          zero.
         """
-        assert batch_size.ndim == 0
-        assert sample_rate.ndim == 0
-        assert buffer_size.ndim == 0
-        assert control_rate.ndim == 0
-        self.batch_size = batch_size
-        self.sample_rate = sample_rate
-        self.buffer_size = buffer_size
-        self.control_rate = control_rate
+        self.batch_size = torch.tensor(batch_size)
+        self.sample_rate = torch.tensor(sample_rate)
+        self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
+        self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
+        self.control_rate = torch.tensor(control_rate)
+        self.deterministic = deterministic
+        if self.deterministic:
+            check_for_determinism()
+            # https://github.com/turian/torchsynth/issues/131
+            torch.use_deterministic_algorithms(True)
+        self.debug = debug
+        self.eps = eps
 
         # Buffer size for control signals -- this is calculated to have the
         # same duration in seconds as that buffer size for the audio rate
         # signals. Rounded to the nearest integer number of samples.
-        self.control_buffer_size = (
-            torch.round((buffer_size / sample_rate * control_rate))
-            .clone()
-            .detach()
-            .int()
+        self.control_buffer_size = torch.tensor(
+            int(torch.round((self.buffer_size / sample_rate * control_rate)))
         )
 
     def to(self, device: torch.device):
@@ -66,4 +69,52 @@ class SynthConfig:
             + f"sample_rate={self.sample_rate}, buffer_size={self.buffer_size}, "
             + f"control_rate={self.control_rate}, "
             + f"control_buffer_size={self.control_buffer_size})"
+        )
+
+
+def check_for_determinism():
+    """
+    Reproducible results are important to torchsynth and Synth1B1, so we are testing
+    to make sure that the expected random results are produced by torch.rand when
+    seeded. This raises an error indicating if reproducibility is not guaranteed.
+
+    Running torch.rand on CPU and GPU give different results, so all seeded
+    randomization where determinism is important occurs on the CPU and then is
+    transferred over to the GPU, if one is being used.
+    See https://discuss.pytorch.org/t/deterministic-prng-across-cpu-cuda/116275
+
+    torchcsprng allowed for determinism between the CPU and GPU, however
+    profiling indicated that torch.rand on CPU was more efficient.
+    See https://github.com/pytorch/csprng/issues/126
+    """
+    expected = torch.tensor(
+        [
+            [
+                4.962565898895263672e-01,
+                7.682217955589294434e-01,
+                8.847743272781372070e-02,
+            ],
+            [
+                1.320304870605468750e-01,
+                3.074228167533874512e-01,
+                6.340786814689636230e-01,
+            ],
+            [
+                4.900934100151062012e-01,
+                8.964447379112243652e-01,
+                4.556279778480529785e-01,
+            ],
+        ]
+    )
+
+    generator = torch.Generator(device="cpu").manual_seed(0)
+    sample = torch.rand((3, 3), device="cpu", dtype=torch.float, generator=generator)
+    if not torch.all(sample.eq(expected)):  # pragma: no cover
+        # TODO Make this a warning before we release v1
+        raise EnvironmentError(
+            "Random number generator produced unexpected results. "
+            "Reproducible dataset generation is not supported on your system."
+            "Please file an issue on github, see: "
+            "https://github.com/turian/torchsynth/issues/248 with details about your "
+            f"CPU architecture and what random results you get:\n {sample}"
         )
