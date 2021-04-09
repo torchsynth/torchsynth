@@ -223,10 +223,12 @@ class AbstractSynth(LightningModule):
             cpu_rng = torch.Generator(device="cpu")
             new_values = []
             for i in range(self.batch_size):
-                cpu_rng.manual_seed(seed * (i + 1))
+                cpu_rng.manual_seed(seed * self.batch_size.numpy().item() + i)
                 new_values.append(
                     torch.rand((len(parameters),), device="cpu", generator=cpu_rng)
                 )
+            print(parameters)
+            print(new_values)
 
             # Move to device if necessary
             new_values = torch.stack(new_values, dim=1)

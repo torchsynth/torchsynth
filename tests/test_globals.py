@@ -7,12 +7,12 @@ import pytest
 import torch.tensor as tensor
 from torch import Tensor as T
 
+from torchsynth.config import SynthConfig
 from torchsynth.default import (
     DEFAULT_BUFFER_SIZE,
     DEFAULT_CONTROL_RATE,
     DEFAULT_SAMPLE_RATE,
 )
-from torchsynth.config import SynthConfig
 
 
 def test_synth_globals():

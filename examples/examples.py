@@ -63,8 +63,8 @@ import torch.fft
 import torch.tensor as tensor
 from torch import Tensor as T
 
-from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.config import SynthConfig
+from torchsynth.default import DEFAULT_BUFFER_SIZE, DEFAULT_SAMPLE_RATE
 from torchsynth.module import (
     ADSR,
     VCA,

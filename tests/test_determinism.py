@@ -1,15 +1,16 @@
 import torch
+
 import torchsynth.module as module
-from torchsynth.synth import Voice
 from torchsynth.config import SynthConfig
+from torchsynth.synth import Voice
 
 
 class TestDeterminism:
     def test_voice_determinism(self):
 
-        synthglobals = SynthConfig(torch.tensor(8))
-        voice_1 = Voice(synthglobals=synthglobals)
-        voice_2 = Voice(synthglobals=synthglobals)
+        synthconfig = SynthConfig(torch.tensor(8))
+        voice_1 = Voice(synthconfig=synthconfig)
+        voice_2 = Voice(synthconfig=synthconfig)
 
         voice_1.randomize(50390)
         voice_2.randomize(50390)
