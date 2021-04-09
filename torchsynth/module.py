@@ -632,7 +632,7 @@ class Noise(SynthModule):
 
         # Repeat the noise batches if the current batch size is larger than the default
         if self.batch_size > self.noise_batch_size:
-            if self.batch_size % self.noise_batch_size!= 0:
+            if self.batch_size % self.noise_batch_size != 0:
                 raise ValueError(
                     "Batch size is not divisible by the default "
                     f"batch size of {self.noise_batch_size}"

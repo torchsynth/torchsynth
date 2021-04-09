@@ -14,6 +14,7 @@ def test_synth_config_debug():
     synthconfig = SynthConfig(64)
     assert synthconfig.debug
 
+
 def test_synth_config():
     synthconfig = SynthConfig(64)
     assert synthconfig.batch_size == 64

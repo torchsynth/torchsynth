@@ -19,7 +19,7 @@ class SynthConfig:
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
         debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
-        eps: Final[float] = 1e-6
+        eps: Final[float] = 1e-6,
     ):
         """
         Args:
