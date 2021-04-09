@@ -105,7 +105,11 @@ class TorchSynthCallback(pl.Callback):
             loss = self.mrstft(self.target_sound, sound)
             if loss < self.best_distance:
                 print(f"New best loss {loss} for {batch_idx}-{i}")
-                sf.write(f"predicted_sound-{loss}-{batch_idx}-{i}.wav", sound, self.sr)
+                sf.write(
+                    f"predicted_sound-{loss}-{batch_idx}-{i}.wav",
+                    sound.cpu().detach().numpy(),
+                    self.sr,
+                )
                 self.best_distance = loss
 
 
