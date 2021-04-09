@@ -45,6 +45,10 @@ class SynthConfig:
         self.control_rate = torch.tensor(control_rate)
         self.reproducible = reproducible
         if self.reproducible:
+            # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
+            # and abstract synth parameter randomization (https://github.com/turian/torchsynth/issues/253)
+            # are non-deterministic unless batch_size == 64.
+            assert batch_size == 64
             check_for_reproducibility()
 
         self.debug = debug

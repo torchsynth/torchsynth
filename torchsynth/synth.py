@@ -219,6 +219,10 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
+
+        # https://github.com/turian/torchsynth/issues/253
+        assert self.batch_size == 64 or not self.synthconfig.reproducible
+
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch
@@ -240,6 +244,7 @@ class AbstractSynth(LightningModule):
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = new_values[i]
         else:
+            assert not self.synthconfig.reproducible
             for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1)
