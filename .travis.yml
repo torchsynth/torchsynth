@@ -3,90 +3,10 @@ language:
 
 matrix:
   include:
-    - os: linux
-      dist: focal
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.6.0"
-    - os: linux
-      dist: focal
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.7.0"
-    - os: linux
-      dist: focal
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.8.1"
-    - os: linux
-      dist: focal
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.6.0"
-    - os: linux
-      dist: focal
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.7.0"
-    - os: linux
-      dist: focal
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.8.1"
-    - os: linux
-      dist: focal
-      python: 3.9
-      env: TORCH_PIP_PACKAGE="torch==1.6.0"
-    - os: linux
-      dist: focal
-      python: 3.9
-      env: TORCH_PIP_PACKAGE="torch==1.7.0"
-    - os: linux
-      dist: focal
-      python: 3.9
-      env: TORCH_PIP_PACKAGE="torch==1.8.1"
-    - os: linux
-      dist: bionic
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.6.0"
-    - os: linux
-      dist: bionic
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.7.0"
-    - os: linux
-      dist: bionic
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch==1.8.1"
-    - os: linux
-      dist: bionic
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.6.0"
-    - os: linux
-      dist: bionic
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.7.0"
-    - os: linux
-      dist: bionic
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     # Do they have it?
     #- os: linux
     #  dist: bionic
     #  python: 3.9
-    - os: linux
-      dist: groovy
-      python: 3.7
-      env: TORCH_PIP_PACKAGE="torch"
-    - os: linux
-      dist: groovy
-      python: 3.8
-      env: TORCH_PIP_PACKAGE="torch"
-    - os: linux
-      dist: groovy
-      python: 3.9
-      env: TORCH_PIP_PACKAGE="torch"
-    - os: linux
-      dist: focal
-      python: 3.6
-      env: TORCH_PIP_PACKAGE="torch"
-    - os: linux
-      dist: bionic
-      python: 3.6
-      env: TORCH_PIP_PACKAGE="torch"
     # https://travis-ci.community/t/how-to-skip-python-download-to-osx-image-and-avoid-download-unavailable-error/9554/2
     #- os: osx
     #  # Would be nice to try different python versions :(
@@ -96,6 +16,846 @@ matrix:
     #  # Would be nice to try different python versions :(
     #  #python: 3.7
     #  osx_image: xcode12.4
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: groovy
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: bionic
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: xenial
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.1"
+              
+
+    - os: linux
+      dist: trusty
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.5.0"
+              
 
 before_install:
   - python --version
