@@ -46,8 +46,11 @@ class SynthConfig:
         # Buffer size for control signals -- this is calculated to have the
         # same duration in seconds as that buffer size for the audio rate
         # signals. Rounded to the nearest integer number of samples.
-        self.control_buffer_size = torch.tensor(
-            int(torch.round((self.buffer_size / sample_rate * control_rate)))
+        self.control_buffer_size = (
+            torch.round((self.buffer_size / sample_rate * control_rate))
+            .clone()
+            .detach()
+            .int()
         )
 
     def to(self, device: torch.device):
