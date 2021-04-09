@@ -32,7 +32,7 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "torch>=1.7",
+        "torch>=1.8",
         "pytorch-lightning",
     ],
     extras_require={
