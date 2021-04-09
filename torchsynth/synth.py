@@ -231,8 +231,6 @@ class AbstractSynth(LightningModule):
                 new_values.append(
                     torch.rand((len(parameters),), device="cpu", generator=cpu_rng)
                 )
-            print("old", parameters)
-            print("vals", new_values)
 
             # Move to device if necessary
             new_values = torch.stack(new_values, dim=1)
@@ -243,7 +241,6 @@ class AbstractSynth(LightningModule):
             for i, parameter in enumerate(parameters):
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = new_values[i]
-            print("new", parameters)
         else:
             for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):

@@ -6,7 +6,6 @@ Tests for torch synths
 import pytest
 import torch.nn
 import torch.tensor as tensor
-from torch import Tensor as T
 
 import torchsynth.config
 import torchsynth.module as synthmodule
@@ -87,15 +86,16 @@ class TestAbstractSynth:
         # seed results in the same audio results.
         synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
 
+        cpusynth = torchsynth.synth.Voice(synthconfig)
         x11 = torchsynth.synth.Voice(synthconfig)
-        x11.randomize(4)
+        x11 = x11(4)
         x2 = torchsynth.synth.Voice(synthconfig)
-        x2.randomize(2)
+        x2 = x2(2)
         x12 = torchsynth.synth.Voice(synthconfig)
-        x12.randomize(4)
+        x12 = x12(4)
 
-        assert torch.mean(torch.abs(x11() - x2())) > 1e-6
-        assert torch.mean(torch.abs(x11() - x12())) < 1e-6
+        assert torch.mean(torch.abs(x11 - x2)) > 1e-6
+        assert torch.mean(torch.abs(x11 - x12)) < 1e-6
 
         # If a GPU is available then make sure the same
         # tests as above are also deterministic on the GPU.
