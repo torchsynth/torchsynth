@@ -27,6 +27,7 @@ class SynthConfig:
         sample_rate: Optional[T] = tensor(DEFAULT_SAMPLE_RATE),
         buffer_size: Optional[T] = tensor(DEFAULT_BUFFER_SIZE),
         control_rate: Optional[T] = tensor(DEFAULT_CONTROL_RATE),
+        debug: bool = False
     ):
         """
         Args:
@@ -35,6 +36,7 @@ class SynthConfig:
             sample_rate (T) : Scalar sample rate for audio generation.
             buffer_size (T) : Duration of the output, 4 seconds by default.
             control_rate (T) : Scalar sample rate for control signal generation.
+            debug (bool) : Run slow assertion tests. (Default: False)
         """
         assert batch_size.ndim == 0
         assert sample_rate.ndim == 0
