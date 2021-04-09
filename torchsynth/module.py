@@ -3,7 +3,7 @@ Synth modules in Torch.
 """
 
 import copy
-from typing import Any, Dict, Final, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -620,7 +620,9 @@ class Noise(SynthModule):
     these in a synth then choose different seeds for each instance.
     """
 
-    noise_batch_size: Final[int] = 64
+    noise_batch_size: int = 64
+    # Unfortunately, Final is not supported until Python 3.8
+    # noise_batch_size: Final[int] = 64
 
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
