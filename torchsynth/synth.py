@@ -57,6 +57,11 @@ class AbstractSynth(LightningModule):
         assert self.synthconfig.buffer_size.ndim == 0
         return self.synthconfig.buffer_size
 
+    @property
+    def buffer_size_seconds(self) -> T:
+        assert self.synthconfig.buffer_size_seconds.ndim == 0
+        return self.synthconfig.buffer_size_seconds
+
     def add_synth_modules(
         self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]
     ):

@@ -28,7 +28,7 @@ jobs:
         pip install pytest
     - name: Test with pytest
       run: |
-        pytest
+        TORCHSYNTH_DEBUG=True pytest
     - name: Run integration test
       run: |
         python examples/examples.py
