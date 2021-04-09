@@ -6,18 +6,63 @@ matrix:
     - os: linux
       dist: focal
       python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+    - os: linux
+      dist: focal
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     - os: linux
       dist: focal
       python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+    - os: linux
+      dist: focal
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     - os: linux
       dist: focal
       python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+    - os: linux
+      dist: focal
+      python: 3.9
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     - os: linux
       dist: bionic
       python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+    - os: linux
+      dist: bionic
+      python: 3.7
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     - os: linux
       dist: bionic
       python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.6.0"
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.7.0"
+    - os: linux
+      dist: bionic
+      python: 3.8
+      env: TORCH_PIP_PACKAGE="torch==1.8.1"
     # Do they have it?
     #- os: linux
     #  dist: bionic
@@ -25,12 +70,23 @@ matrix:
     - os: linux
       dist: groovy
       python: 3.7
+      env: TORCH_PIP_PACKAGE="torch"
     - os: linux
       dist: groovy
       python: 3.8
+      env: TORCH_PIP_PACKAGE="torch"
     - os: linux
       dist: groovy
       python: 3.9
+      env: TORCH_PIP_PACKAGE="torch"
+    - os: linux
+      dist: focal
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch"
+    - os: linux
+      dist: bionic
+      python: 3.6
+      env: TORCH_PIP_PACKAGE="torch"
     # https://travis-ci.community/t/how-to-skip-python-download-to-osx-image-and-avoid-download-unavailable-error/9554/2
     #- os: osx
     #  # Would be nice to try different python versions :(
@@ -45,6 +101,7 @@ before_install:
   - python --version
   - pip install -U pip
   - pip install -U pytest
+  - pip install $TORCH_PIP_PACKAGE --progress-bar off
 install:
   - pip install ".[test]" . # install package + test dependencies
 script:
