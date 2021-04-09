@@ -102,7 +102,7 @@ def run_lightning_module(
         gpus=use_gpus,
         auto_select_gpus=True,
         accelerator=accelerator,
-        deterministic=True,
+        deterministic=synthglobals.deterministic,
         max_epochs=0,
         callbacks=[TorchSynthCallback()],
     )
