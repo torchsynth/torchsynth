@@ -1,7 +1,7 @@
 from typing import Optional
 
 import torch
-
+import os
 
 class SynthConfig:
     """
@@ -17,7 +17,7 @@ class SynthConfig:
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
-        debug: bool = False,
+        debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
     ):
         """
         Args:
@@ -26,7 +26,8 @@ class SynthConfig:
             sample_rate (int) : Scalar sample rate for audio generation.
             buffer_size (float) : Duration of the output in seconds [default: 4.0]
             control_rate (int) : Scalar sample rate for control signal generation.
-            debug (bool) : Run slow assertion tests. (Default: False)
+            debug (bool) : Run slow assertion tests. (Default: False, unless
+                    environment variable TORCHSYNTH_DEBUG exists.)
         """
         self.batch_size = torch.tensor(batch_size)
         self.sample_rate = torch.tensor(sample_rate)
