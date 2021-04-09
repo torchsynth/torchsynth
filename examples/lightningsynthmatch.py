@@ -42,8 +42,6 @@ from tqdm.auto import tqdm
 gpus = torch.cuda.device_count()
 print("Usings %d gpus" % gpus)
 
-target_sound, sr = sf.read("909-snare-4sec.ogg")
-
 import multiprocessing
 
 ncores = multiprocessing.cpu_count()
@@ -60,6 +58,16 @@ class batch_idx_dataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.num_batches
 
+
+synthconfig = SynthConfig()
+voice = Voice(synthconfig)
+synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
+test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
+
+target_sound, sr = sf.read("909-snare-4sec.ogg")
+assert sr == synthconfig.sample_rate
+assert target_sound.ndim == 1
+assert target_sound.shape[0] == synthconfig.buffer_size
 
 # TODO Add this to torchsynth API
 # see https://github.com/turian/torchsynth/issues/154
@@ -78,11 +86,6 @@ class TorchSynthCallback(pl.Callback):
         # I don't think the following is correct
         # _ = torch.stack([pl_module(i) for i in batch])
 
-
-synthconfig = SynthConfig()
-voice = Voice(synthconfig)
-synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
-test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
 accelerator = None
 if gpus == 0:
