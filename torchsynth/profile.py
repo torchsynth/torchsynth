@@ -29,13 +29,13 @@ import multiprocessing
 
 # Turn off torchsynth debug mode before importing anything else
 # TODO: https://github.com/turian/torchsynth/issues/259
-import torchsynth.config
+import torchsynth.oldconfig
 
-torchsynth.config.DEBUG = False
+torchsynth.oldconfig.DEBUG = False
 
 import torchsynth.synth  # noqa: E402
 from torchsynth.synth import AbstractSynth  # noqa: E402
-from torchsynth.globals import SynthGlobals  # noqa: E402
+from torchsynth.config import SynthConfig  # noqa: E402
 
 # Check for available GPUs and processing cores
 GPUS = torch.cuda.device_count()
@@ -67,13 +67,13 @@ class TorchSynthCallback(pl.Callback):
 
 
 def instantiate_module(
-    name: str, synthglobals: SynthGlobals, **kwargs
+    name: str, synthconfig: SynthConfig, **kwargs
 ) -> AbstractSynth:
     """
     Try to instantiate the module corresponding to the name providing
     """
     module = getattr(torchsynth.synth, name)
-    return module(synthglobals, **kwargs)
+    return module(synthconfig, **kwargs)
 
 
 def run_lightning_module(
@@ -188,8 +188,8 @@ def main():
         )
 
     # Try to create the synth module that is being profiled
-    synthglobals = SynthGlobals(T(args.batch_size))
-    module = instantiate_module(args.module, synthglobals)
+    synthconfig = SynthConfig(T(args.batch_size))
+    module = instantiate_module(args.module, synthconfig)
 
     run_lightning_module(
         module, args.batch_size, args.num_batches, args.save, args.profile, args.device
