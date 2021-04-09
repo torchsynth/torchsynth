@@ -12,9 +12,9 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 import torchsynth.util as util
-from torchsynth.config import DEBUG
+from torchsynth.config import SynthConfig
 from torchsynth.default import DEFAULT_BATCH_SIZE, EPS
-from torchsynth.globals import SynthGlobals
+from torchsynth.oldconfig import DEBUG
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -36,13 +36,13 @@ class SynthModule(nn.Module):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T],
     ):
         """
         Args:
-            synthglobals (:obj:`SynthGlobals`): These are global settings
+            synthconfig (:obj:`SynthGlobals`): These are global settings
             shared across all modules in the same synth.
 
             device (:obj:`torch.device`):
@@ -56,9 +56,9 @@ class SynthModule(nn.Module):
         batch_size is the number of settings we are rendering at once.
         """
         nn.Module.__init__(self)
-        self.synthglobals = synthglobals
+        self.synthconfig = synthconfig
         self.device = device
-        self.synthglobals.to(device)
+        self.synthconfig.to(device)
         self.torchparameters: nn.ParameterDict = nn.ParameterDict()
         self.parameter_ranges = []
         # If this module needs a random seed, here it is
@@ -78,7 +78,7 @@ class SynthModule(nn.Module):
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        data=torch.rand((self.synthglobals.batch_size,), device=device),
+                        data=torch.rand((self.synthconfig.batch_size,), device=device),
                         parameter_range=parameter_range,
                     )
                     for parameter_range in self.parameter_ranges
@@ -93,13 +93,13 @@ class SynthModule(nn.Module):
 
     @property
     def batch_size(self) -> T:
-        assert self.synthglobals.batch_size.ndim == 0
-        return self.synthglobals.batch_size
+        assert self.synthconfig.batch_size.ndim == 0
+        return self.synthconfig.batch_size
 
     @property
     def sample_rate(self) -> T:
-        assert self.synthglobals.sample_rate.ndim == 0
-        return self.synthglobals.sample_rate
+        assert self.synthconfig.sample_rate.ndim == 0
+        return self.synthconfig.sample_rate
 
     @property
     def nyquist(self):
@@ -107,8 +107,8 @@ class SynthModule(nn.Module):
 
     @property
     def buffer_size(self) -> T:
-        assert self.synthglobals.buffer_size.ndim == 0
-        return self.synthglobals.buffer_size
+        assert self.synthconfig.buffer_size.ndim == 0
+        return self.synthconfig.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
         return util.fix_length(signal, self.buffer_size)
@@ -215,7 +215,7 @@ class SynthModule(nn.Module):
         """
         This handles the device transfer tasks that are not managed by PyTorch.
         """
-        self.synthglobals.to(device)
+        self.synthconfig.to(device)
         self.device = device
         # Currently the parameters ranges themselves are not move to a different
         # device, but each ParameterRange object is device aware if it needs to be
@@ -240,13 +240,13 @@ class ControlRateModule(SynthModule):
 
     @property
     def control_rate(self) -> T:
-        assert self.synthglobals.control_rate.ndim == 0
-        return self.synthglobals.control_rate
+        assert self.synthconfig.control_rate.ndim == 0
+        return self.synthconfig.control_rate
 
     @property
     def control_buffer_size(self) -> T:
-        assert self.synthglobals.control_buffer_size.ndim == 0
-        return self.synthglobals.control_buffer_size
+        assert self.synthconfig.control_buffer_size.ndim == 0
+        return self.synthconfig.control_buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
         return util.fix_length(signal, self.control_buffer_size)
@@ -297,11 +297,11 @@ class ADSR(ControlRateModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T],
     ):
-        super().__init__(synthglobals, device=device, **kwargs)
+        super().__init__(synthconfig, device=device, **kwargs)
 
         # Create some values that will be automatically loaded on device
         self.register_buffer("zero", tensor(0.0, device=self.device))
@@ -431,7 +431,7 @@ class VCO(SynthModule):
     stationary audio signal at its base pitch.
 
     Args:
-        synthglobals (SynthGlobals) : global args, see SynthModule
+        synthconfig (SynthConfig) : global args, see SynthModule
         phase (:obj:'T',optional) :   initial phase values
     """
 
@@ -618,8 +618,8 @@ class Noise(SynthModule):
     these in a synth then choose different seeds for each instance.
     """
 
-    def __init__(self, synthglobals: SynthGlobals, seed: int, **kwargs):
-        super().__init__(synthglobals, **kwargs)
+    def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
+        super().__init__(synthconfig, **kwargs)
 
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)
@@ -690,7 +690,7 @@ class LFO(ControlRateModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         exponent: T = tensor(2.718281828),  # e
         **kwargs: Dict[str, T],
     ):
@@ -705,7 +705,7 @@ class LFO(ControlRateModule):
                     description=f"Selection parameter for {lfo} LFO",
                 )
             )
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthconfig, **kwargs)
         self.exponent = exponent
 
     def _forward(self, mod_signal: Signal) -> Signal:
@@ -763,7 +763,7 @@ class ModulationMixer(SynthModule):
 
     Parameters
     ----------
-    synthglobals (SynthGlobals) :   Synth config settings
+    synthconfig (SynthGlobals) :   Synth config settings
     n_input     (int)           :   Number of signals this module will mix
     n_output    (int)           :   Number of output signals
     curves  (optional, list)    :   A list of curve values to use for underlying
@@ -773,7 +773,7 @@ class ModulationMixer(SynthModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         n_input: int,
         n_output: int,
         curves: Optional[List[float]] = None,
@@ -800,7 +800,7 @@ class ModulationMixer(SynthModule):
                     )
                 )
 
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthconfig, **kwargs)
         self.n_input = n_input
         self.n_output = n_output
 
@@ -829,7 +829,7 @@ class AudioMixer(SynthModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         n_input: int,
         curves: Optional[List[float]] = None,
         **kwargs: Dict[str, T],
@@ -854,7 +854,7 @@ class AudioMixer(SynthModule):
                 )
             )
 
-        super().__init__(synthglobals, **kwargs)
+        super().__init__(synthconfig, **kwargs)
         self.n_input = n_input
 
     def _forward(self, *signals: Signal) -> Signal:
@@ -876,18 +876,18 @@ class ControlRateUpsample(SynthModule):
     Upsample control signals to the global sampling rate
 
     Uses linear interpolation to resample an input control signal to the
-    audio buffer size set in synthglobals.
+    audio buffer size set in synthconfig.
     """
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T],
     ):
-        super().__init__(synthglobals, device, **kwargs)
+        super().__init__(synthconfig, device, **kwargs)
         self.upsample = torch.nn.Upsample(
-            self.synthglobals.buffer_size, mode="linear", align_corners=True
+            self.synthconfig.buffer_size, mode="linear", align_corners=True
         )
 
     def _forward(self, signal: Signal) -> Signal:
@@ -947,7 +947,7 @@ class SoftModeSelector(SynthModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         n_modes: int,
         exponent: T = tensor(2.718281828),  # e
         **kwargs: Dict[str, T],
@@ -967,7 +967,7 @@ class SoftModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals=synthglobals, **kwargs)
+        super().__init__(synthconfig=synthconfig, **kwargs)
         self.exponent = exponent
 
     def forward(self) -> Tuple[T, T]:
@@ -989,7 +989,7 @@ class HardModeSelector(SynthModule):
 
     def __init__(
         self,
-        synthglobals: SynthGlobals,
+        synthconfig: SynthConfig,
         n_modes: int,
         **kwargs: Dict[str, T],
     ):
@@ -1003,7 +1003,7 @@ class HardModeSelector(SynthModule):
             )
             for i in range(n_modes)
         ]
-        super().__init__(synthglobals=synthglobals, **kwargs)
+        super().__init__(synthconfig=synthconfig, **kwargs)
 
     def forward(self) -> Tuple[T, T]:
         # Is this tensor creation slow?
