@@ -180,7 +180,7 @@ class AbstractSynth(LightningModule):
         return 0.0
 
     @property
-    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+    def hyperparameters(self) -> OrderedDict[Tuple[str, str, str], Any]:
         """
         Returns a dictionary of curve and symmetry hyperparameter values keyed
         on a tuple of the module name, parameter name, and hyperparameter name
@@ -200,7 +200,7 @@ class AbstractSynth(LightningModule):
                 )
             )
 
-        return dict(hparams)
+        return OrderedDict(hparams)
 
     def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
         """
