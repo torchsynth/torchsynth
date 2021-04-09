@@ -216,11 +216,11 @@ class AbstractSynth(LightningModule):
         """
         Randomize all parameters
         """
+        parameters = [param for _, param in sorted(self.named_parameters())]
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch
             cpu_rng = torch.Generator(device="cpu")
-            parameters = [param for param in self.parameters()]
             new_values = []
             for i in range(self.batch_size):
                 cpu_rng.manual_seed(seed * (i + 1))
@@ -238,7 +238,7 @@ class AbstractSynth(LightningModule):
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = new_values[i]
         else:
-            for parameter in self.parameters():
+            for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1)
 
