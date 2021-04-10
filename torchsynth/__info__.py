@@ -6,8 +6,8 @@ PATH_ROOT = os.path.join(PATH_HERE, "..")
 
 _this_year = time.strftime("%Y")
 __version__ = "0.9.1"
-__author__ = "Joseph Turian, Jordie Shier, Max Henry"
-__author_email__ = "lastname@gmail.com"
+__author__ = "Jordie Shier, Joseph Turian, Max Henry"
+__author_email__ = "firstnamelastname@gmail.com"
 # __contact__ = ""
 __license__ = "Apache-2.0"
 __copyright__ = f"Copyright (c) 2020-{_this_year}, {__author__}."
