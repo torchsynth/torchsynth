@@ -62,7 +62,8 @@ class SynthConfig:
             )
         self.reproducible = reproducible
         if self.reproducible:
-            # Currently, noise module (https://github.com/torchsynth/torchsynth/issues/255)
+            # Currently, noise module
+            # (https://github.com/torchsynth/torchsynth/issues/255)
             # and abstract synth parameter randomization
             # (https://github.com/torchsynth/torchsynth/issues/253)
             # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
