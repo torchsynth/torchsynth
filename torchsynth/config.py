@@ -19,6 +19,7 @@ class SynthConfig:
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
         reproducible: bool = True,
+        no_grad: bool = True,
         debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
         eps: float = 1e-6,
         # Unfortunately, Final is not supported until Python 3.8
@@ -33,6 +34,7 @@ class SynthConfig:
             control_rate (int) : Scalar sample rate for control signal generation.
             reproducible (bool) : Reproducible results, with a
                     small performance impact. (Default: True)
+            no_grad (bool) : Disables gradient computations. (Default: True)
             debug (bool) : Run slow assertion tests. (Default: False, unless
                     environment variable TORCHSYNTH_DEBUG exists.)
             eps (float) : Epsilon to avoid log underrun and divide by
@@ -43,6 +45,12 @@ class SynthConfig:
         self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
+        self.no_grad = no_grad
+        if self.no_grad:
+            raise ValueError(
+                "Gradients have not been explicitly tested in 1.0."
+                "Disable this exception at your own risk"
+            )
         self.reproducible = reproducible
         if self.reproducible:
             check_for_reproducibility()
