@@ -181,7 +181,7 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        assert batch_idx or not self.synthconfig.reproducible
+        assert not (batch_idx is None and self.synthconfig.reproducible)
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:

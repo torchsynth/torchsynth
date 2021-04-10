@@ -11,7 +11,7 @@ from torchsynth.config import SynthConfig
 
 
 def test_synth_config_debug():
-    synthconfig = SynthConfig(64)
+    synthconfig = SynthConfig()
     assert synthconfig.debug
 
 
