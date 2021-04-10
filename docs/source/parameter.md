@@ -1,4 +1,4 @@
-Torchsynth.parameter
+torchsynth.parameter
 ====================
 
 ```{eval-rst}

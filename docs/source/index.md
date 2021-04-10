@@ -56,7 +56,7 @@ contributing/contributing
 ---
 maxdepth: 3
 name: modules
-caption: Torchsynth Packages
+caption: API
 ---
 config
 module

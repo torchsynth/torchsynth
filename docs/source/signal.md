@@ -1,4 +1,4 @@
-Torchsynth.signal
+torchsynth.signal
 =================
 
 ```{eval-rst}

@@ -1,4 +1,4 @@
-Torchsynth.config
+torchsynth.config
 ===================
 
 ```{eval-rst}
