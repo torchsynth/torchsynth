@@ -4,8 +4,9 @@ Runs tests to make sure results in Synths are deterministic
 
 import pytest
 import torch
-from torchsynth.synth import Voice
+
 from torchsynth.config import SynthConfig
+from torchsynth.synth import Voice
 
 
 class TestDeterminism:

@@ -12,7 +12,7 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 import torchsynth.util as util
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -622,15 +622,18 @@ class Noise(SynthModule):
 
     # Do we really want deterministic noise within each batch?
     # https://github.com/turian/torchsynth/issues/250
-    noise_batch_size: int = 128
+    noise_batch_size: int = BATCH_SIZE_FOR_REPRODUCIBILITY
     # Unfortunately, Final is not supported until Python 3.8
-    # noise_batch_size: Final[int] = 128
+    # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
 
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
 
         # https://github.com/turian/torchsynth/issues/255
-        assert self.batch_size == 128 or not self.synthconfig.reproducible
+        assert (
+            self.batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY
+            or not self.synthconfig.reproducible
+        )
 
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)

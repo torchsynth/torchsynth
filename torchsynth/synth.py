@@ -14,7 +14,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -243,7 +243,10 @@ class AbstractSynth(LightningModule):
         parameters = [param for _, param in sorted(self.named_parameters())]
 
         # https://github.com/turian/torchsynth/issues/253
-        assert self.batch_size == 64 or not self.synthconfig.reproducible
+        assert (
+            self.batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY
+            or not self.synthconfig.reproducible
+        )
 
         if seed is not None:
             # Generate batch_size x parameter number of random values
