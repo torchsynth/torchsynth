@@ -11,7 +11,7 @@ from torchsynth.config import SynthConfig
 class TestDeterminism:
     def test_voice_determinism(self):
         # TODO make this work with different batch sizes
-        synthconfig = SynthConfig(64)
+        synthconfig = SynthConfig(64, reproducible=True)
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
 

@@ -195,9 +195,9 @@ class TestSynthModule:
         # of noise signals. All these noise samples should equal each other.
         # i.e., noise should be returned deterministically regardless of the
         # batch size.
-        synthconfig32 = SynthConfig(32)
-        synthconfig64 = SynthConfig(64)
-        synthconfig128 = SynthConfig(128)
+        synthconfig32 = SynthConfig(32, reproducible=False)
+        synthconfig64 = SynthConfig(64, reproducible=False)
+        synthconfig128 = SynthConfig(128, reproducible=False)
 
         noise32 = synthmodule.Noise(synthconfig32, seed=0)
         noise64 = synthmodule.Noise(synthconfig64, seed=0)
@@ -217,13 +217,13 @@ class TestSynthModule:
         with pytest.raises(ValueError):
             # If the batch size if larger than the default
             # of 64, then this should complain
-            synthconfig65 = SynthConfig(65)
+            synthconfig65 = SynthConfig(65, reproducible=False)
             synthmodule.Noise(synthconfig65, seed=0)
 
 
 class TestControlRateModule:
     def test_properties(self):
-        synthconfig = torchsynth.config.SynthConfig(2)
+        synthconfig = SynthConfig(2, reproducible=False)
         adsr = synthmodule.ADSR(synthconfig)
 
         # Sample rate and buffer size should raise errors
