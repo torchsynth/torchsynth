@@ -6,7 +6,7 @@ import torch
 # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
 # and abstract synth parameter randomization
 # (https://github.com/turian/torchsynth/issues/253)
-# are non-deterministic unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
+# are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
 BATCH_SIZE_FOR_REPRODUCIBILITY = 128
 
 
@@ -65,7 +65,7 @@ class SynthConfig:
             # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
             # and abstract synth parameter randomization
             # (https://github.com/turian/torchsynth/issues/253)
-            # are non-deterministic unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
+            # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
             if batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY:
                 raise ValueError(
                     "Reproducibility currently only supported "
@@ -104,13 +104,15 @@ class SynthConfig:
 
 def check_for_reproducibility():
     """
-    Reproducible results are important to torchsynth and Synth1B1, so we are testing
-    to make sure that the expected random results are produced by torch.rand when
-    seeded. This raises an error indicating if reproducibility is not guaranteed.
+    Reproducible results are important to torchsynth and synth1B1,
+    so we are testing to make sure that the expected random results
+    are produced by torch.rand when seeded. This raises an error
+    indicating if reproducibility is not guaranteed.
 
-    Running torch.rand on CPU and GPU give different results, so all seeded
-    randomization where determinism is important occurs on the CPU and then is
-    transferred over to the GPU, if one is being used.
+    Running torch.rand on CPU and GPU give different results, so
+    all seeded randomization where reproducibility is important
+    occurs on the CPU and then is transferred over to the GPU, if
+    one is being used.
     See https://discuss.pytorch.org/t/deterministic-prng-across-cpu-cuda/116275
 
     torchcsprng allowed for determinism between the CPU and GPU, however
