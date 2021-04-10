@@ -72,12 +72,12 @@ maxdepth: 3
 name: modules
 caption: API
 ---
-config
-module
-parameter
-signal
-synth
-util
+api/config
+api/module
+api/parameter
+api/signal
+api/synth
+api/util
 ```
 
 
