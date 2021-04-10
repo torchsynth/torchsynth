@@ -11,7 +11,7 @@ from torchsynth.config import SynthConfig
 
 
 def test_synth_config_debug():
-    synthconfig = SynthConfig(64)
+    synthconfig = SynthConfig()
     assert synthconfig.debug
 
 
@@ -25,6 +25,7 @@ def test_synth_config():
         sample_rate=16000,
         buffer_size_seconds=0.5,
         control_rate=1000,
+        reproducible=False,
     )
     assert synthconfig.control_rate == 1000
     assert synthconfig.sample_rate == 16000

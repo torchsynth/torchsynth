@@ -182,7 +182,7 @@ def main():
         )
 
     # Try to create the synth module that is being profiled
-    synthconfig = SynthConfig(args.batch_size)
+    synthconfig = SynthConfig(args.batch_size, reproducible=False)
     module = instantiate_module(args.module, synthconfig)
 
     run_lightning_module(

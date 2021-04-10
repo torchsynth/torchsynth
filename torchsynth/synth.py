@@ -36,9 +36,13 @@ class AbstractSynth(LightningModule):
         buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.synthconfig = synthconfig
+        if synthconfig is not None:
+            self.synthconfig = synthconfig
+        else:
+            # Use the default
+            self.synthconfig = SynthConfig()
 
     @property
     def batch_size(self) -> T:
@@ -170,6 +174,11 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
+        if self.synthconfig.reproducible and batch_idx is None:
+            raise ValueError(
+                "Reproducible mode is on, you must "
+                "pass a batch index when calling this synth"
+            )
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:
@@ -225,6 +234,10 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
+
+        # https://github.com/turian/torchsynth/issues/253
+        assert self.batch_size == 64 or not self.synthconfig.reproducible
+
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch
@@ -246,6 +259,7 @@ class AbstractSynth(LightningModule):
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data = new_values[i]
         else:
+            assert not self.synthconfig.reproducible
             for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1)
@@ -271,7 +285,7 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children

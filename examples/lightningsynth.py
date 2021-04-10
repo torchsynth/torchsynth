@@ -86,8 +86,7 @@ synth1B = batch_idx_dataset(1024 * 1024 * 1024 // BATCH_SIZE)
 
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
-synthconfig = SynthConfig(batch_size=BATCH_SIZE)
-voice = Voice(synthconfig)
+voice = Voice()
 
 accelerator = None
 if gpus == 0:
