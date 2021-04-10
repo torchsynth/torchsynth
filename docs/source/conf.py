@@ -17,9 +17,16 @@ import torch
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
 sys.path.insert(0, os.path.abspath(PATH_ROOT))
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath("../.."))
 
 sys.path.insert(0, os.path.abspath("torchsynth"))
+
+try:
+    from torchsynth import __info__ as info
+except ImportError:
+    # alternative https://stackoverflow.com/a/67692/4521646
+    sys.path.append(os.path.join(PATH_ROOT, "torchsynth"))
+    import __info__ as info
 
 # sys.path.insert(0, os.path.abspath("torchsynth"))
 
@@ -30,12 +37,14 @@ import mock
 
 # -- Project information -----------------------------------------------------
 
-project = "torchsynth"
-copyright = "2021, Joseph Turian, Jordie Schier, Max Henry"
-author = "Joseph Turian, Jordie Schier, Max Henry"
+project = "PyTorch Lightning"
+copyright = info.__copyright__
+author = info.__author__
 
+# The short X.Y version
+version = info.__version__
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = info.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -92,7 +101,7 @@ intersphinx_mapping = {
 html_theme = "pt_lightning_sphinx_theme"
 html_theme_path = [pt_lightning_sphinx_theme.get_html_theme_path()]
 
-html_logo = '../../assets/torchsynth-logotype.svg'
+html_logo = "../../assets/torchsynth-logotype.svg"
 
 # html_favicon = '_static/images/favicon.svg'
 
@@ -121,5 +130,5 @@ panels_add_bootstrap_css = False
 
 # Include all CSS style in the default theme settings
 html_css_files = [
-    'css/custom.css',
+    "css/custom.css",
 ]

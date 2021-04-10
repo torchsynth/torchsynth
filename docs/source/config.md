@@ -1,8 +1,8 @@
-Torchsynth.defaults
+Torchsynth.config
 ===================
 
 ```{eval-rst}
-.. automodule:: torchsynth.default
+.. automodule:: torchsynth.config
    :members:
    :undoc-members:
    :show-inheritance:

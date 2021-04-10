@@ -58,10 +58,11 @@ maxdepth: 3
 name: modules
 caption: Torchsynth Packages
 ---
-defaults
+config
 module
 parameter
 signal
+synth
 util
 ```
 
