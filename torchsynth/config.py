@@ -144,7 +144,7 @@ def check_for_reproducibility():
         raise EnvironmentError(
             "Random number generator produced unexpected results. "
             "Reproducible dataset generation is not supported on your system."
-            "Please file an issue on github, see: "
-            "https://github.com/turian/torchsynth/issues/248 with details about your "
-            f"CPU architecture and what random results you get:\n {sample}"
+            "Please comment on the discussion board: "
+            "https://github.com/turian/torchsynth/discussions/293 with details about your "
+            f"GPU/CPU architecture and what random results you get:\n {sample}"
         )
