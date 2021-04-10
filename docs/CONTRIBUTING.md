@@ -16,9 +16,14 @@ pre-commit install
 This helps us avoid checking dirty jupyter notebook cells into the
 repo.
 
-## `examples/`
+## Examples
 
-Unfortunately, Python 3.9 (e.g. OSX Big Sur) won't work, because
+In Python or Jupyter Notebook (if you want to see pretty plots),
+run `examples/examples.py`.
+
+### Python 3.9 on OSX
+
+Unfortunately, Python 3.9 on OSX Big Sur won't work, because
 librosa repends upon numba which isn't packaged for 3.9 yet. In
 which case you'll have to create a Python 3.7 conda environment.
 (You might also need to downgrade LLVM to 10 or 9.):
@@ -41,4 +46,9 @@ TORCHSYNTH_DEBUG=True pytest
 To run tests with a coverage report:
 ```
 pytest --cov=./torchsynth
+```
+
+Examples also serves as an integration test:
+```
+python examples/examples.py
 ```
