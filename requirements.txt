@@ -11,6 +11,8 @@ numpy
 scipy
 torch>=1.8
 pytorch-lightning
+# Doesn't support OrderedDict yet
+#typing-extensions
 pytest
 pytest-cov
 pytest-env
