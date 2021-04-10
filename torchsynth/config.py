@@ -43,6 +43,9 @@ class SynthConfig:
         self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
+        self.control_buffer_size = torch.tensor(
+            int(round(buffer_size_seconds * control_rate))
+        )
         self.reproducible = reproducible
         if self.reproducible:
             # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
