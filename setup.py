@@ -24,10 +24,15 @@ setup(
     license=__license__,
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
-    # package_data={
-    #    "": [],
-    # },
-    entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
+    package_data={
+        "": ["static/*"],
+    },
+    entry_points={
+        "console_scripts": [
+            "torchsynth.profile=torchsynth.profile:main",
+            "torchsynth.websynth=torchsynth.ui.websynth:main",
+        ]
+    },
     python_requires=">=3.7",
     install_requires=[
         "numpy",

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+	<link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.deep_purple-blue.min.css" />
+    <div class="mdl-grid">
+        <div class="mdl-cell mdl-cell--4-col"></div>
+        <div class="mdl-cell mdl-cell--4-col">
+            <div id="audio-player" style="height: 50px;">
+                <audio controls autoplay>
+                    <source src="random_synth" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            <div style="width=100%; margin=auto; padding: 10px; padding-top: 25px;">
+                <button id="render-patch" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">
+                    Render Patch
+                </button>
+            </div>
+            <div id="controls" style="margin-top: 25px;">
+            </div>
+        </div>
+        <div class="mdl-cell mdl-cell--4-col"></div>
+    </div>
+
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js"
+            integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+            crossorigin="anonymous"></script>
+    <script src="/js/torchsynth-websynth.js"></script>
+</body>
+</html>
