@@ -174,9 +174,10 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        assert batch_idx or not self.synthconfig.reproducible
         if batch_idx is not None:
             self.randomize(seed=batch_idx)
+        else:
+            assert not self.synthconfig.reproducible
         return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
