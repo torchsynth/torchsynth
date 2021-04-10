@@ -20,7 +20,7 @@ class TestProfile:
     def run_profile(
         module="Voice",
         batch_size=2,
-        reproducibility=False,
+        reproducible=False,
         n_iters=1,
         device=None,
         cprofile=False,
