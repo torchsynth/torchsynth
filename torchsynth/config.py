@@ -49,9 +49,15 @@ class SynthConfig:
         self.reproducible = reproducible
         if self.reproducible:
             # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
-            # and abstract synth parameter randomization (https://github.com/turian/torchsynth/issues/253)
+            # and abstract synth parameter randomization
+            # (https://github.com/turian/torchsynth/issues/253)
             # are non-deterministic unless batch_size == 64.
-            assert batch_size == 64
+            if batch_size != 64:
+                raise ValueError(
+                    "Reproducibility currently only supported "
+                    "with batch_size = 64. If you want a different batch_size, "
+                    "initialize SynthConfig with reproducible=False"
+                )
             check_for_reproducibility()
 
         self.debug = debug
