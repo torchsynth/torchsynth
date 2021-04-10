@@ -630,10 +630,16 @@ class Noise(SynthModule):
         super().__init__(synthconfig, **kwargs)
 
         # https://github.com/turian/torchsynth/issues/255
-        assert (
-            self.batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY
-            or not self.synthconfig.reproducible
-        )
+        if (
+            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
+            and self.synthconfig.reproducible
+        ):
+            raise ValueError(
+                "Reproducibility currently only supported "
+                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
+                "If you want a different batch_size, "
+                "initialize SynthConfig with reproducible=False"
+            )
 
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)

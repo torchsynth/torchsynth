@@ -243,10 +243,16 @@ class AbstractSynth(LightningModule):
         parameters = [param for _, param in sorted(self.named_parameters())]
 
         # https://github.com/turian/torchsynth/issues/253
-        assert (
-            self.batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY
-            or not self.synthconfig.reproducible
-        )
+        if (
+            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
+            and self.synthconfig.reproducible
+        ):
+            raise ValueError(
+                "Reproducibility currently only supported "
+                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
+                "If you want a different batch_size, "
+                "initialize SynthConfig with reproducible=False"
+            )
 
         if seed is not None:
             # Generate batch_size x parameter number of random values
