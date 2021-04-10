@@ -622,15 +622,15 @@ class Noise(SynthModule):
 
     # Do we really want deterministic noise within each batch?
     # https://github.com/turian/torchsynth/issues/250
-    noise_batch_size: int = 64
+    noise_batch_size: int = 128
     # Unfortunately, Final is not supported until Python 3.8
-    # noise_batch_size: Final[int] = 64
+    # noise_batch_size: Final[int] = 128
 
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
 
         # https://github.com/turian/torchsynth/issues/255
-        assert self.batch_size == 64 or not self.synthconfig.reproducible
+        assert self.batch_size == 128 or not self.synthconfig.reproducible
 
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)

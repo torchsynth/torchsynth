@@ -14,7 +14,7 @@ class SynthConfig:
 
     def __init__(
         self,
-        batch_size: int = 64,
+        batch_size: int = 128,
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
