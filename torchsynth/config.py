@@ -91,7 +91,7 @@ def check_for_reproducibility():
     """
     Reproducible results are important to torchsynth and Synth1B1, so we are testing
     to make sure that the expected random results are produced by torch.rand when
-    seeded. This raises an error indicating if reproducibilty is not guaranteed.
+    seeded. This raises an error indicating if reproducibility is not guaranteed.
 
     Running torch.rand on CPU and GPU give different results, so all seeded
     randomization where determinism is important occurs on the CPU and then is

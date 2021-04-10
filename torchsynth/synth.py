@@ -38,7 +38,7 @@ class AbstractSynth(LightningModule):
 
     def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if synthconfig:
+        if synthconfig is not None:
             self.synthconfig = synthconfig
         else:
             # Use the default
@@ -177,7 +177,11 @@ class AbstractSynth(LightningModule):
         if batch_idx is not None:
             self.randomize(seed=batch_idx)
         else:
-            assert not self.synthconfig.reproducible
+            if self.synthconfig.reproducible:
+                raise ValueError(
+                    "Reproducible mode is on, you must "
+                    "pass a batch index when calling this synth"
+                )
         return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
