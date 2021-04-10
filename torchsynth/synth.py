@@ -182,9 +182,15 @@ class AbstractSynth(LightningModule):
                                     the current module parameter settings.
         """
         assert batch_idx or not self.synthconfig.reproducible
-        if batch_idx is not None:
-            self.randomize(seed=batch_idx)
-        return self._forward(*args, **kwargs)
+        if self.synthconfig.no_grad:
+            with torch.no_grad():
+                if batch_idx is not None:
+                    self.randomize(seed=batch_idx)
+                return self._forward(*args, **kwargs)
+        else:
+            if batch_idx is not None:
+                self.randomize(seed=batch_idx)
+            return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
         """
