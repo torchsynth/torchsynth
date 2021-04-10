@@ -5,14 +5,14 @@ Runs tests to make sure results in Synths are deterministic
 import pytest
 import torch
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 from torchsynth.synth import Voice
 
 
 class TestDeterminism:
     def test_voice_determinism(self):
         # TODO make this work with different batch sizes
-        synthconfig = SynthConfig(64, reproducible=True)
+        synthconfig = SynthConfig(BATCH_SIZE_FOR_REPRODUCIBILITY, reproducible=True)
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
 
