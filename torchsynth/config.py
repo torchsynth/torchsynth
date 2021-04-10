@@ -145,6 +145,7 @@ def check_for_reproducibility():
             "Random number generator produced unexpected results. "
             "Reproducible dataset generation is not supported on your system."
             "Please comment on the discussion board: "
-            "https://github.com/turian/torchsynth/discussions/293 with details about your "
+            "https://github.com/turian/torchsynth/discussions/293 "
+            "with details about your "
             f"GPU/CPU architecture and what random results you get:\n {sample}"
         )
