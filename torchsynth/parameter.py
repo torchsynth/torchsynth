@@ -116,6 +116,7 @@ class ModuleParameterRange:
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
 
+        value = torch.tensor(value, dtype=torch.float64)
         normalized = (value - self.minimum) / (self.maximum - self.minimum)
 
         if not self.symmetric:
@@ -124,7 +125,10 @@ class ModuleParameterRange:
             return normalized
 
         dist = 2.0 * normalized - 1.0
-        return (1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist)) / 2.0
+        return torch.tensor(
+            (1.0 + torch.pow(torch.abs(dist), self.curve) * torch.sign(dist)) / 2.0,
+            dtype=torch.float32,
+        )
 
 
 class ModuleParameter(nn.Parameter):
