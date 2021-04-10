@@ -338,16 +338,15 @@ class Voice(AbstractSynth):
             adsr_1, adsr_2, lfo_1, lfo_2
         )
 
-        # Upsample all the control signals
-        vco_1_pitch = self.control_upsample(vco_1_pitch)
-        vco_1_amp = self.control_upsample(vco_1_amp)
-        vco_2_pitch = self.control_upsample(vco_2_pitch)
-        vco_2_amp = self.control_upsample(vco_2_amp)
-        noise_amp = self.control_upsample(noise_amp)
-
         # Create signal and with modulations and mix together
-        vco_1_out = self.vca(self.vco_1(midi_f0, vco_1_pitch), vco_1_amp)
-        vco_2_out = self.vca(self.vco_2(midi_f0, vco_2_pitch), vco_2_amp)
-        noise_out = self.vca(self.noise(), noise_amp)
+        vco_1_out = self.vca(
+            self.vco_1(midi_f0, self.control_upsample(vco_1_pitch)),
+            self.control_upsample(vco_1_amp),
+        )
+        vco_2_out = self.vca(
+            self.vco_2(midi_f0, self.control_upsample(vco_2_pitch)),
+            self.control_upsample(vco_2_amp),
+        )
+        noise_out = self.vca(self.noise(), self.control_upsample(noise_amp))
 
         return self.mixer(vco_1_out, vco_2_out, noise_out)
