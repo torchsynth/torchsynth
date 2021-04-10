@@ -5,7 +5,9 @@ from typing import Any, Dict, List, Optional, Tuple
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import OrderedDict as OrderedDictType
 else:
-    from typing_extensions import OrderedDict as OrderedDictType
+    # pypi version typing_extensions doesn't yet supports OrderedDict (only master)
+    # from typing_extensions import OrderedDict as OrderedDictType
+    from typing import Dict as OrderedDictType
 
 import torch
 import torch.tensor as tensor

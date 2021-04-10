@@ -34,7 +34,8 @@ setup(
         "scipy",
         "torch>=1.8",
         "pytorch-lightning",
-        "typing-extensions",
+        # pypi release (only master) doesn't support OrderedDict typing
+        # "typing-extensions",
     ],
     extras_require={
         "test": [
