@@ -181,15 +181,20 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        if batch_idx is not None:
-            self.randomize(seed=batch_idx)
+        if self.synthconfig.reproducible and batch_idx is None:
+            raise ValueError(
+                "Reproducible mode is on, you must "
+                "pass a batch index when calling this synth"
+            )
+        if self.synthconfig.no_grad:
+            with torch.no_grad():
+                if batch_idx is not None:
+                    self.randomize(seed=batch_idx)
+                return self._forward(*args, **kwargs)
         else:
-            if self.synthconfig.reproducible:
-                raise ValueError(
-                    "Reproducible mode is on, you must "
-                    "pass a batch index when calling this synth"
-                )
-        return self._forward(*args, **kwargs)
+            if batch_idx is not None:
+                self.randomize(seed=batch_idx)
+            return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
         """
