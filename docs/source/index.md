@@ -12,7 +12,7 @@
 
 The fastest synth in the universe.
 
-<img width="450px" src="https://raw.githubusercontent.com/turian/torchsynth/main/assets/logo-with-caption.jpg">
+<img width="450px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/assets/logo-with-caption.jpg">
 
 </div>
 

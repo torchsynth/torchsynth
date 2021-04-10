@@ -531,7 +531,7 @@ class SineVCO(VCO):
 class TorchFmVCO(VCO):
     """
     # TODO Turn this into its own voice so we can be a bit smarter about aliasing
-    # See https://github.com/turian/torchsynth/issues/145
+    # See https://github.com/torchsynth/torchsynth/issues/145
     Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
 
     Typical modulation is calculated in pitch-space (midi). For FM to work,
@@ -621,7 +621,7 @@ class Noise(SynthModule):
     """
 
     # Do we really want deterministic noise within each batch?
-    # https://github.com/turian/torchsynth/issues/250
+    # https://github.com/torchsynth/torchsynth/issues/250
     noise_batch_size: int = BATCH_SIZE_FOR_REPRODUCIBILITY
     # Unfortunately, Final is not supported until Python 3.8
     # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
@@ -629,7 +629,7 @@ class Noise(SynthModule):
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
 
-        # https://github.com/turian/torchsynth/issues/255
+        # https://github.com/torchsynth/torchsynth/issues/255
         if (
             self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
             and self.synthconfig.reproducible
@@ -670,7 +670,7 @@ class Noise(SynthModule):
         # we need to select a portion of the noise samples. Offset
         # is used to cycle through all the noise in the default batch size
         # or select the correct noise sample from the default batch
-        # TODO https://github.com/turian/torchsynth/issues/255
+        # TODO https://github.com/torchsynth/torchsynth/issues/255
         if self.offset == 0:
             noise = self.noise[: self.batch_size].as_subclass(Signal)
         else:
@@ -963,7 +963,7 @@ class SoftModeSelector(SynthModule):
     If there are n different modes, return a probability distribution over them.
 
     TODO: Would be nice to sample in a way that maximizes
-    KL-divergence from uniform: https://github.com/turian/torchsynth/issues/165
+    KL-divergence from uniform: https://github.com/torchsynth/torchsynth/issues/165
     """
 
     def __init__(
@@ -976,7 +976,7 @@ class SoftModeSelector(SynthModule):
         """
         exponent determines how strongly to scale each [0,1] value prior
         to normalization. We should probably tune this:
-        https://github.com/turian/torchsynth/issues/165
+        https://github.com/torchsynth/torchsynth/issues/165
         """
         # Need to create the parameter ranges before calling super().__init
         self.default_parameter_ranges = [

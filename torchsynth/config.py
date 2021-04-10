@@ -3,9 +3,9 @@ from typing import Optional
 
 import torch
 
-# Currently, noise module (https://github.com/turian/torchsynth/issues/255)
+# Currently, noise module (https://github.com/torchsynth/torchsynth/issues/255)
 # and abstract synth parameter randomization
-# (https://github.com/turian/torchsynth/issues/253)
+# (https://github.com/torchsynth/torchsynth/issues/253)
 # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
 BATCH_SIZE_FOR_REPRODUCIBILITY = 128
 
@@ -62,9 +62,9 @@ class SynthConfig:
             )
         self.reproducible = reproducible
         if self.reproducible:
-            # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
+            # Currently, noise module (https://github.com/torchsynth/torchsynth/issues/255)
             # and abstract synth parameter randomization
-            # (https://github.com/turian/torchsynth/issues/253)
+            # (https://github.com/torchsynth/torchsynth/issues/253)
             # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
             if batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY:
                 raise ValueError(
@@ -147,7 +147,7 @@ def check_for_reproducibility():
             "Random number generator produced unexpected results. "
             "Reproducible dataset generation is not supported on your system."
             "Please comment on the discussion board: "
-            "https://github.com/turian/torchsynth/discussions/293 "
+            "https://github.com/torchsynth/torchsynth/discussions/293 "
             "with details about your "
             f"GPU/CPU architecture and what random results you get:\n {sample}"
         )

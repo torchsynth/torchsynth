@@ -19,14 +19,12 @@ or `audio` or whatever.
 
 * Classes should be written in functional ways, without side effects.
 
+* Please use [Google doc-string
+style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
+
 * Please add type annotations when possible, so people know if something
 is `float` or `nd.array` or whatever.
 
 * Prefer module names that are singular (`util`) not plural (`utils`)
 
 * Avoid short cryptic names.
-
-* @turian will occasionally run `black` and `isort` and `flake8`
-to enforce code style conventions. You are welcome to do this
-yourself.  We may try to add a github action that PRs will get
-annotated complaints that we can ignore if we like.

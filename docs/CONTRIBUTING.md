@@ -4,7 +4,7 @@ Developer guidelines
 ## Initial developer setup
 
 ```
-git clone https://github.com/turian/torchsynth
+git clone https://github.com/torchsynth/torchsynth
 cd torchsynth
 pip3 install -e ".[dev]"
 ```
