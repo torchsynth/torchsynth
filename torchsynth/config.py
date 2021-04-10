@@ -46,7 +46,7 @@ class SynthConfig:
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
         self.no_grad = no_grad
-        if self.no_grad:
+        if not self.no_grad:
             raise ValueError(
                 "Gradients have not been explicitly tested in 1.0."
                 "Disable this exception at your own risk"
