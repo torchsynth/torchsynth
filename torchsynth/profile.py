@@ -25,11 +25,10 @@ from typing import Any
 
 import pytorch_lightning as pl
 import torch
-import torch.tensor as T
 
 import torchsynth.synth  # noqa: E402
 from torchsynth.config import SynthConfig  # noqa: E402
-from torchsynth.synth import AbstractSynth  # noqa: E402
+from torchsynth.synth import AbstractSynth
 
 # TODO: Disable DEBUG
 
@@ -183,7 +182,7 @@ def main():
         )
 
     # Try to create the synth module that is being profiled
-    synthconfig = SynthConfig(T(args.batch_size))
+    synthconfig = SynthConfig(args.batch_size, reproducible=False)
     module = instantiate_module(args.module, synthconfig)
 
     run_lightning_module(

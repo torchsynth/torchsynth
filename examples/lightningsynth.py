@@ -77,11 +77,10 @@ class TorchSynthCallback(pl.Callback):
         # _ = torch.stack([pl_module(i) for i in batch])
 
 
-synthconfig = SynthConfig()
-voice = Voice(synthconfig)
-
 synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
 test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
+
+voice = Voice()
 
 accelerator = None
 if gpus == 0:
@@ -103,7 +102,7 @@ trainer = pl.Trainer(
     gpus=use_gpus,
     auto_select_gpus=True,
     accelerator=accelerator,
-    deterministic=synthconfig.deterministic,
+    deterministic=synthconfig.reproducible,
     max_epochs=0,
     callbacks=[TorchSynthCallback()],
 )

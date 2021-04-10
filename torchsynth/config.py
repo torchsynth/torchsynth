@@ -1,7 +1,7 @@
+import os
 from typing import Optional
 
 import torch
-import os
 
 
 class SynthConfig:
@@ -18,7 +18,8 @@ class SynthConfig:
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
-        deterministic: bool = True,
+        reproducible: bool = True,
+        no_grad: bool = True,
         debug: bool = "TORCHSYNTH_DEBUG" in os.environ,
         eps: float = 1e-6,
         # Unfortunately, Final is not supported until Python 3.8
@@ -33,8 +34,9 @@ class SynthConfig:
             sample_rate (int) : Scalar sample rate for audio generation.
             buffer_size (float) : Duration of the output in seconds [default: 4.0]
             control_rate (int) : Scalar sample rate for control signal generation.
-            deterministic (bool) : Deterministic (reproduucible) results, with a
+            reproducible (bool) : Reproducible results, with a
                     small performance impact. (Default: True)
+            no_grad (bool) : Disables gradient computations. (Default: True)
             debug (bool) : Run slow assertion tests. (Default: False, unless
                     environment variable TORCHSYNTH_DEBUG exists.)
             eps (float) : Epsilon to avoid log underrun and divide by
@@ -45,19 +47,40 @@ class SynthConfig:
         self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
         self.buffer_size = torch.tensor(int(round(buffer_size_seconds * sample_rate)))
         self.control_rate = torch.tensor(control_rate)
-        self.deterministic = deterministic
-        if self.deterministic:
-            check_for_determinism()
-            # https://github.com/turian/torchsynth/issues/131
-            torch.use_deterministic_algorithms(True)
+        self.control_buffer_size = torch.tensor(
+            int(round(buffer_size_seconds * control_rate))
+        )
+        self.no_grad = no_grad
+        if not self.no_grad:
+            raise ValueError(
+                "Gradients have not been explicitly tested in 1.0."
+                "Disable this exception at your own risk"
+            )
+        self.reproducible = reproducible
+        if self.reproducible:
+            # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
+            # and abstract synth parameter randomization
+            # (https://github.com/turian/torchsynth/issues/253)
+            # are non-deterministic unless batch_size == 64.
+            if batch_size != 64:
+                raise ValueError(
+                    "Reproducibility currently only supported "
+                    "with batch_size = 64. If you want a different batch_size, "
+                    "initialize SynthConfig with reproducible=False"
+                )
+            check_for_reproducibility()
+
         self.debug = debug
         self.eps = eps
 
         # Buffer size for control signals -- this is calculated to have the
         # same duration in seconds as that buffer size for the audio rate
         # signals. Rounded to the nearest integer number of samples.
-        self.control_buffer_size = torch.tensor(
-            int(torch.round((self.buffer_size / sample_rate * control_rate)))
+        self.control_buffer_size = (
+            torch.round((self.buffer_size / sample_rate * control_rate))
+            .clone()
+            .detach()
+            .int()
         )
 
     def to(self, device: torch.device):
@@ -74,7 +97,7 @@ class SynthConfig:
         )
 
 
-def check_for_determinism():
+def check_for_reproducibility():
     """
     Reproducible results are important to torchsynth and Synth1B1, so we are testing
     to make sure that the expected random results are produced by torch.rand when
