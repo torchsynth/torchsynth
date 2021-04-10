@@ -25,6 +25,7 @@ def test_synth_config():
         sample_rate=16000,
         buffer_size_seconds=0.5,
         control_rate=1000,
+        reproducibility=False,
     )
     assert synthconfig.control_rate == 1000
     assert synthconfig.sample_rate == 16000

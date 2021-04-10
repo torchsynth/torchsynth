@@ -75,7 +75,10 @@ class TestSynthModule:
     """
 
     def test_set_parameter(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
+        synthconfig = torchsynth.config.SynthConfig(
+            batch_size=2,
+            reproducibility=False,
+        )
         module = synthmodule.ADSR(synthconfig, attack=tensor([0.5, 1.0]))
 
         # Confirm value set correctly from constructor
@@ -91,13 +94,15 @@ class TestSynthModule:
             assert parameter.device.type == self.device
 
     def test_seconds_to_sample(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2, sample_rate=48000)
+        synthconfig = torchsynth.config.SynthConfig(
+            batch_size=2, sample_rate=48000, reproducibility=False
+        )
         module = synthmodule.SineVCO(synthconfig)
         samples = module.seconds_to_samples(4.0)
         assert samples == 4 * 48000
 
     def test_softmodeselector(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducibility=False)
         mode_selector = synthmodule.SoftModeSelector(
             synthconfig, device=self.device, n_modes=3
         )
@@ -116,7 +121,7 @@ class TestSynthModule:
         )
 
     def test_hardmodeselector(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducibility=False)
         mode_selector = synthmodule.HardModeSelector(
             synthconfig, device=self.device, n_modes=3
         )
@@ -132,7 +137,7 @@ class TestSynthModule:
         )
 
     def test_audiomixer(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducibility=False)
 
         # Make sure parameters get setup correctly
         mixer = synthmodule.AudioMixer(synthconfig, device=self.device, n_input=3)
@@ -156,7 +161,7 @@ class TestSynthModule:
             )
 
     def test_modulationmixer(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=2)
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducibility=False)
 
         mixer = synthmodule.ModulationMixer(
             synthconfig, device=self.device, n_input=2, n_output=2

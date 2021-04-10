@@ -1,6 +1,8 @@
 """
 Tests for the profile script - hard to capture the output, but this also serves
-as an integration test to make sure the PyTorch Lightning training stuff is working.
+as an integration test to make sure the PyTorch Lightning stuff is working.
+
+NOTE: batch_size=2 won't give us accurate profiles.
 """
 
 import csv
@@ -16,7 +18,13 @@ from torchsynth import profile
 class TestProfile:
     @staticmethod
     def run_profile(
-        module="Voice", batch_size=2, n_iters=1, device=None, cprofile=False, save=None
+        module="Voice",
+        batch_size=2,
+        reproducibility=False,
+        n_iters=1,
+        device=None,
+        cprofile=False,
+        save=None,
     ):
         args = ["prog", module, "-b", str(batch_size), "-n", str(n_iters)]
 
