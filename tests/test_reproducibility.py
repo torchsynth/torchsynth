@@ -34,6 +34,10 @@ class TestReproducibility:
         voice_1.randomize(234)
         self.compare_voices(voice_1, voice_1)
 
+    def test_voice_nonreproducibility(self):
+        with pytest.raises(ValueError):
+            SynthConfig(batch_size=BATCH_SIZE_FOR_REPRODUCIBILITY + 1)
+
     def compare_voices(self, voice_1, voice_2):
         # Test keyboard reproducibility
         (midi_f0_1, duration_1) = voice_1.keyboard()
