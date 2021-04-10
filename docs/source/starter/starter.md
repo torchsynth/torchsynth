@@ -1,4 +1,4 @@
-Torchsynth in two easy steps
+torchsynth in two easy steps
 ============================
 
 ```{contents}

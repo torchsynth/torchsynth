@@ -6,9 +6,23 @@
 ```
 
 
+# torchsynth documentation
 
-# Welcome to torchsynth's documentation!
+<div  align="center">
 
+The fastest synth in the universe.
+
+<img width="450px" src="https://raw.githubusercontent.com/turian/torchsynth/main/assets/logo-with-caption.jpg">
+
+</div>
+
+## Introduction
+
+torchsynth is based upon traditional modular synthesis written in
+pytorch. It is GPU-optional and differentiable.
+
+Most synthesizers are fast in terms of latency. torchsynth is fast
+in terms of throughput.
 
 ```{toctree}
 ---
