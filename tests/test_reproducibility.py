@@ -1,17 +1,18 @@
 """
-Runs tests to make sure results in Synths are deterministic
+Runs tests to make sure results in Synths are reproducible
 """
 
 import pytest
 import torch
+
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 from torchsynth.synth import Voice
-from torchsynth.config import SynthConfig
 
 
-class TestDeterminism:
-    def test_voice_determinism(self):
+class TestReproducibility:
+    def test_voice_reproducibility(self):
         # TODO make this work with different batch sizes
-        synthconfig = SynthConfig(64, reproducible=True)
+        synthconfig = SynthConfig(BATCH_SIZE_FOR_REPRODUCIBILITY, reproducible=True)
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
 
@@ -33,15 +34,19 @@ class TestDeterminism:
         voice_1.randomize(234)
         self.compare_voices(voice_1, voice_1)
 
+    def test_voice_nonreproducibility(self):
+        with pytest.raises(ValueError):
+            SynthConfig(batch_size=BATCH_SIZE_FOR_REPRODUCIBILITY + 1)
+
     def compare_voices(self, voice_1, voice_2):
-        # Test keyboard determinism
+        # Test keyboard reproducibility
         (midi_f0_1, duration_1) = voice_1.keyboard()
         (midi_f0_2, duration_2) = voice_2.keyboard()
 
         assert torch.all(midi_f0_1 == midi_f0_2)
         assert torch.all(duration_1 == duration_2)
 
-        # Test LFO ADSR determinism
+        # Test LFO ADSR reproducibility
         lfo_1_rate_1 = voice_1.lfo_1_rate_adsr(duration_1)
         lfo_2_rate_1 = voice_1.lfo_2_rate_adsr(duration_1)
         lfo_1_amp_1 = voice_1.lfo_1_amp_adsr(duration_1)

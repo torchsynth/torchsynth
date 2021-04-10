@@ -7,7 +7,7 @@ import pytest
 import torch.tensor as tensor
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 
 
 def test_synth_config_debug():
@@ -16,8 +16,8 @@ def test_synth_config_debug():
 
 
 def test_synth_config():
-    synthconfig = SynthConfig(64)
-    assert synthconfig.batch_size == 64
+    synthconfig = SynthConfig(BATCH_SIZE_FOR_REPRODUCIBILITY)
+    assert synthconfig.batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY
 
     # Test passing in specific values
     synthconfig = SynthConfig(
