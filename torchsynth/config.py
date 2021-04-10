@@ -3,6 +3,12 @@ from typing import Optional
 
 import torch
 
+# Currently, noise module (https://github.com/turian/torchsynth/issues/255)
+# and abstract synth parameter randomization
+# (https://github.com/turian/torchsynth/issues/253)
+# are non-deterministic unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
+BATCH_SIZE_FOR_REPRODUCIBILITY = 128
+
 
 class SynthConfig:
     """
@@ -14,7 +20,7 @@ class SynthConfig:
 
     def __init__(
         self,
-        batch_size: int = 64,
+        batch_size: int = BATCH_SIZE_FOR_REPRODUCIBILITY,
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
@@ -59,11 +65,12 @@ class SynthConfig:
             # Currently, noise module (https://github.com/turian/torchsynth/issues/255)
             # and abstract synth parameter randomization
             # (https://github.com/turian/torchsynth/issues/253)
-            # are non-deterministic unless batch_size == 64.
-            if batch_size != 64:
+            # are non-deterministic unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
+            if batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY:
                 raise ValueError(
                     "Reproducibility currently only supported "
-                    "with batch_size = 64. If you want a different batch_size, "
+                    f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
+                    "If you want a different batch_size, "
                     "initialize SynthConfig with reproducible=False"
                 )
             check_for_reproducibility()
@@ -137,7 +144,8 @@ def check_for_reproducibility():
         raise EnvironmentError(
             "Random number generator produced unexpected results. "
             "Reproducible dataset generation is not supported on your system."
-            "Please file an issue on github, see: "
-            "https://github.com/turian/torchsynth/issues/248 with details about your "
-            f"CPU architecture and what random results you get:\n {sample}"
+            "Please comment on the discussion board: "
+            "https://github.com/turian/torchsynth/discussions/293 "
+            "with details about your "
+            f"GPU/CPU architecture and what random results you get:\n {sample}"
         )

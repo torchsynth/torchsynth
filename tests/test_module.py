@@ -8,7 +8,7 @@ import torch.tensor as tensor
 
 import torchsynth
 import torchsynth.module as synthmodule
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 
 
 class TestSynthModule:
@@ -215,10 +215,12 @@ class TestSynthModule:
         assert torch.all(out3 != out4)
 
         with pytest.raises(ValueError):
-            # If the batch size if larger than the default
-            # of 64, then this should complain
-            synthconfig65 = SynthConfig(65, reproducible=False)
-            synthmodule.Noise(synthconfig65, seed=0)
+            # If the batch size >= BATCH_SIZE_FOR_REPRODUCIBILITY
+            # but not divisible by it, it should raise an error
+            synthconfigwrong = SynthConfig(
+                BATCH_SIZE_FOR_REPRODUCIBILITY + 1, reproducible=False
+            )
+            synthmodule.Noise(synthconfigwrong, seed=0)
 
 
 class TestControlRateModule:
