@@ -14,7 +14,8 @@ torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
 
 Most synthesizers are fast in terms of latency. torchsynth is fast
-in terms of throughput.
+in terms of throughput, achieving over 15000x realtime throughput
+on a single GPU.
 
 <div align="center">
 
@@ -30,8 +31,9 @@ in terms of throughput.
 [![Travis CI build status](https://travis-ci.com/torchsynth/torchsynth.png)](https://travis-ci.com/torchsynth/torchsynth)
 [![Documentation Status](https://readthedocs.org/projects/torchsynth/badge/?version=latest)](https://torchsynth.readthedocs.io/en/latest/?badge=latest)
 
-<img width="250px" src="https://media.githubusercontent.com/media/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
-<img width="250px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
+## Profiling
+
+<img width="350px" src="https://media.githubusercontent.com/media/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
 
 </div>
 
