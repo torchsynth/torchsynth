@@ -9,7 +9,7 @@
 # and get the latest torchsynth:
 #
 # ```
-# # !pip install git+https://github.com/turian/torchsynth.git
+# # !pip install git+https://github.com/torchsynth/torchsynth.git
 # ```
 
 # %load_ext autoreload

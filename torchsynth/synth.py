@@ -112,7 +112,7 @@ class AbstractSynth(LightningModule):
         for module_name, module in sorted(self.named_modules()):
             # Make sure this is a SynthModule, b/c we are using ParameterDict
             # and ParameterDict is a module, we get those returned as well
-            # TODO: see https://github.com/turian/torchsynth/issues/213
+            # TODO: see https://github.com/torchsynth/torchsynth/issues/213
             if isinstance(module, SynthModule):
                 for parameter in module.parameters():
                     if include_frozen or not ModuleParameter.is_parameter_frozen(
@@ -242,7 +242,7 @@ class AbstractSynth(LightningModule):
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
 
-        # https://github.com/turian/torchsynth/issues/253
+        # https://github.com/torchsynth/torchsynth/issues/253
         if (
             self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
             and self.synthconfig.reproducible

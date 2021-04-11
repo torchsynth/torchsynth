@@ -1,74 +1,38 @@
-Torchsynth in two easy steps
-============================
+Quickstart
+==========
 
 ```{contents}
 :depth: 2
 ```
 
-**1- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
+## Which way to synth1B1-312-6?
 
-## Auctor
+In this simple example, we use Voice to generate the 312th batch
+of synth1B1. We then select sample 6 from this batch, and save it
+to a WAV file.
 
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
+You will need to `pip install torchaudio` in order to save the WAV
+file. Alternately, you could modify the code slightly and use
+[SoundFile](https://pypi.org/project/SoundFile/).
 
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
+```
+import torch
+import torchaudio
+from torchsynth.synth import Voice
 
-### Aliquam
+voice = Voice()
+# Run on the GPU if it's available
+if torch.cuda.is_available():
+    voice = voice.to("cuda")
 
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
+# Generate batch 312
+# All batches are [128, 176400], i.e. 128 4-second sounds at 44100Hz
+# Each sound is a monophonic 1D tensor.
+synth1B1_312 = voice(312)
 
-Nec dui nunc mattis enim ut. Ac orci phasellus egestas tellus.:
+# Select synth1B1-312-6
+synth1B1_312_6 = synth1B1_312[6]
 
-## Tortor
-
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
-
-## Vadipiscing
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
-
-
-**2- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
-
-
-## Auctor
-
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-
-### Aliquam
-
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
-
-Nec dui nunc mattis enim ut. Ac orci phasellus egestas tellus.:
-
-## Tortor
-
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
-
-## Vadipiscing
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
+# We add one channel at the beginning, for torchaudio
+torchaudio.save("synth1B1-312-6.wav", synth1B1_312_6.unsqueeze(0), voice.sample_rate)
+```

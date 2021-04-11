@@ -129,7 +129,7 @@ class TestAbstractSynth:
             # Finally, compare the output audio from the cuda synth to the
             # cpu synth. Small numerical differences between computations of
             # GPU and CPU add up, so we need to relax the constraints here.
-            # TODO https://github.com/turian/torchsynth/issues/256
+            # TODO https://github.com/torchsynth/torchsynth/issues/256
             assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-3
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
 
