@@ -31,7 +31,11 @@ on a single GPU.
 [![Travis CI build status](https://travis-ci.com/torchsynth/torchsynth.png)](https://travis-ci.com/torchsynth/torchsynth)
 [![Documentation Status](https://readthedocs.org/projects/torchsynth/badge/?version=latest)](https://torchsynth.readthedocs.io/en/latest/?badge=latest)
 
+</div>
+
 ## Profiling
+
+<div align="center">
 
 <img width="350px" src="https://media.githubusercontent.com/media/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
 
