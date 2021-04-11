@@ -17,7 +17,6 @@ name: start
 caption: Getting started
 ---
 starter/starter
-starter/installation
 ```
 
 
