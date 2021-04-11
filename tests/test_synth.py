@@ -6,7 +6,6 @@ Tests for torch synths
 import pytest
 import torch.nn
 import torch.tensor as tensor
-from torch import Tensor as T
 
 import torchsynth.config
 import torchsynth.module as synthmodule
@@ -25,15 +24,18 @@ class TestAbstractSynth:
     def test_construction(self):
         # Test empty construction
         synthconfig = torchsynth.config.SynthConfig(
-            sample_rate=tensor(16000), buffer_size=tensor(512), batch_size=tensor(2)
+            sample_rate=16000,
+            buffer_size_seconds=0.3,
+            batch_size=2,
+            reproducible=False,
         )
         # Test construction with args
         synth = torchsynth.synth.AbstractSynth(synthconfig)
-        assert synth.sample_rate == tensor(16000)
-        assert synth.buffer_size == tensor(512)
+        assert synth.sample_rate == 16000
+        assert synth.buffer_size_seconds == 0.3
 
     def test_add_synth_module(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.AbstractSynth(synthconfig).to(self.device)
         synth.add_synth_modules(
             [
@@ -85,15 +87,15 @@ class TestAbstractSynth:
     def test_deterministic_noise(self):
         # This test confirms that randomizing a synth with the same
         # seed results in the same audio results.
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
-        cpusynth = torchsynth.synth.Voice(synthconfig)
 
-        cpusynth.randomize(1)
-        x11 = cpusynth()
-        cpusynth.randomize(2)
-        x2 = cpusynth()
-        cpusynth.randomize(1)
-        x12 = cpusynth()
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
+        cpusynth = torchsynth.synth.Voice(synthconfig)
+        x11 = torchsynth.synth.Voice(synthconfig)
+        x11 = x11(1)
+        x2 = torchsynth.synth.Voice(synthconfig)
+        x2 = x2(2)
+        x12 = torchsynth.synth.Voice(synthconfig)
+        x12 = x12(1)
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
@@ -114,12 +116,12 @@ class TestAbstractSynth:
 
             # Confirm that we get deterministic results when
             # randomizing the cuda synth with the same seed
-            cudasynth.randomize(1)
-            cuda11 = cudasynth()
-            cudasynth.randomize(2)
-            cuda2 = cudasynth()
-            cudasynth.randomize(1)
-            cuda12 = cudasynth()
+            cuda11 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda11 = cuda11(1)
+            cuda2 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda2 = cuda2(2)
+            cuda12 = torchsynth.synth.Voice(synthconfig).to(self.device)
+            cuda12 = cuda12(1)
 
             assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
             assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6
@@ -127,12 +129,25 @@ class TestAbstractSynth:
             # Finally, compare the output audio from the cuda synth to the
             # cpu synth. Small numerical differences between computations of
             # GPU and CPU add up, so we need to relax the constraints here.
-            # TODO https://github.com/turian/torchsynth/issues/256
+            # TODO https://github.com/torchsynth/torchsynth/issues/256
             assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-3
             assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 3e-3
 
+    def test_parameter_randomization(self):
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
+        cpusynth1 = torchsynth.synth.Voice(synthconfig)
+        cpusynth2 = torchsynth.synth.Voice(synthconfig)
+
+        cpusynth1.randomize(1)
+        cpusynth2.randomize(1)
+
+        params_1 = cpusynth1.get_parameters()
+        params_2 = cpusynth2.get_parameters()
+        for name, param in params_1.items():
+            assert torch.all(param.data.detach().cpu() == params_2[name].data)
+
     def test_randomize_parameter_freezing(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
 
         midi_val = tensor([69.0, 40.0])
@@ -202,7 +217,7 @@ class TestAbstractSynth:
             synth.randomize(1)
 
     def test_freeze_parameters(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
 
         for param in synth.parameters():
@@ -231,7 +246,7 @@ class TestAbstractSynth:
                 assert not param.frozen
 
     def test_set_frozen_parameters(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
 
         synth.set_frozen_parameters(
@@ -258,7 +273,7 @@ class TestAbstractSynth:
         assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
 
     def test_get_parameters(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
         params = synth.get_parameters()
         assert len(params) > 0
@@ -278,7 +293,7 @@ class TestAbstractSynth:
         assert ("keyboard", "midi_f0") in synth.get_parameters()
 
     def test_set_hyperparameters(self):
-        synthconfig = torchsynth.config.SynthConfig(batch_size=tensor(2))
+        synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
         hparams = synth.hyperparameters
         for (module_name, param_name, subname), value in hparams.items():

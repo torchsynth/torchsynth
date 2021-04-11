@@ -1,32 +1,54 @@
-Contributing Guidelines
-=======================
+Developer guidelines
+====================
 
-* Assume half our audience is non-DSP ML folks, when writing
-documentation.
+## Initial developer setup
 
-* `sample_rate` and `control_rate` should be parameters, not globals.
+```
+git clone https://github.com/torchsynth/torchsynth
+cd torchsynth
+pip3 install -e ".[dev]"
+```
 
-* Enforce preconditions on parameter values.
+Make sure you have pre-commit hooks installed:
+```
+pre-commit install
+```
+This helps us avoid checking dirty jupyter notebook cells into the
+repo.
 
-* `SynthModule` should have a `npyforward` method. Parameters intrinsic
-to the module should be in `__init__`. Outputs from other modules
-should go in `npyforward`.
+## Examples
 
-* Let's standardize on naming conventions for things like `signal`
-or `audio` or whatever.
+In Python or Jupyter Notebook (if you want to see pretty plots),
+run `examples/examples.py`.
 
-## Code Style
+### Python 3.9 on OSX
 
-* Classes should be written in functional ways, without side effects.
+Unfortunately, Python 3.9 on OSX Big Sur won't work, because
+librosa repends upon numba which isn't packaged for 3.9 yet. In
+which case you'll have to create a Python 3.7 conda environment.
+(You might also need to downgrade LLVM to 10 or 9.):
+```
+conda install -c conda-forge ipython librosa matplotlib numpy matplotlib scipy jupytext
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=envname
+```
+and change the kernel to `envname`.
 
-* Please add type annotations when possible, so people know if something
-is `float` or `nd.array` or whatever.
+## Tests
 
-* Prefer module names that are singular (`util`) not plural (`utils`)
+Unit testing is performed using `pytest`.
 
-* Avoid short cryptic names.
+To run tests, run `pytest` from the project root:
+```
+TORCHSYNTH_DEBUG=True pytest
+```
 
-* @turian will occasionally run `black` and `isort` and `flake8`
-to enforce code style conventions. You are welcome to do this
-yourself.  We may try to add a github action that PRs will get
-annotated complaints that we can ignore if we like.
+To run tests with a coverage report:
+```
+pytest --cov=./torchsynth
+```
+
+Examples also serves as an integration test:
+```
+python examples/examples.py
+```

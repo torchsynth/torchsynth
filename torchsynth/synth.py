@@ -1,11 +1,20 @@
+import sys
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
+
+if sys.version_info.major == 3 and sys.version_info.minor >= 8:
+    from typing import OrderedDict as OrderedDictType
+else:
+    # pypi version typing_extensions doesn't yet supports OrderedDict (only master)
+    # from typing_extensions import OrderedDict as OrderedDictType
+    from typing import Dict as OrderedDictType
 
 import torch
 import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -23,10 +32,6 @@ from torchsynth.module import (
 from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
 
-# https://github.com/turian/torchsynth/issues/131
-# Lightning already handles this for us
-# torch.use_deterministic_algorithms(True)
-
 
 class AbstractSynth(LightningModule):
     """
@@ -38,9 +43,13 @@ class AbstractSynth(LightningModule):
         buffer_size (int): number of samples expected at output of child modules
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.synthconfig = synthconfig
+        if synthconfig is not None:
+            self.synthconfig = synthconfig
+        else:
+            # Use the default
+            self.synthconfig = SynthConfig()
 
     @property
     def batch_size(self) -> T:
@@ -56,6 +65,11 @@ class AbstractSynth(LightningModule):
     def buffer_size(self) -> T:
         assert self.synthconfig.buffer_size.ndim == 0
         return self.synthconfig.buffer_size
+
+    @property
+    def buffer_size_seconds(self) -> T:
+        assert self.synthconfig.buffer_size_seconds.ndim == 0
+        return self.synthconfig.buffer_size_seconds
 
     def add_synth_modules(
         self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]
@@ -86,7 +100,7 @@ class AbstractSynth(LightningModule):
 
     def get_parameters(
         self, include_frozen: bool = False
-    ) -> Dict[Tuple[str, str], ModuleParameter]:
+    ) -> OrderedDictType[Tuple[str, str], ModuleParameter]:
         """
         Returns a dictionary of ModuleParameters for this synth keyed
         on a tuple of the SynthModule name and the parameter name
@@ -95,10 +109,10 @@ class AbstractSynth(LightningModule):
 
         # Each parameter in this synth will have a unique combination of module name
         # and parameter name -- create a dictionary keyed on that.
-        for module_name, module in self.named_modules():
+        for module_name, module in sorted(self.named_modules()):
             # Make sure this is a SynthModule, b/c we are using ParameterDict
             # and ParameterDict is a module, we get those returned as well
-            # TODO: see https://github.com/turian/torchsynth/issues/213
+            # TODO: see https://github.com/torchsynth/torchsynth/issues/213
             if isinstance(module, SynthModule):
                 for parameter in module.parameters():
                     if include_frozen or not ModuleParameter.is_parameter_frozen(
@@ -108,7 +122,7 @@ class AbstractSynth(LightningModule):
                             ((module_name, parameter.parameter_name), parameter)
                         )
 
-        return dict(parameters)
+        return OrderedDict(parameters)
 
     def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
         """
@@ -167,9 +181,20 @@ class AbstractSynth(LightningModule):
                                     random way. If None (default), we just use
                                     the current module parameter settings.
         """
-        if batch_idx is not None:
-            self.randomize(seed=batch_idx)
-        return self._forward(*args, **kwargs)
+        if self.synthconfig.reproducible and batch_idx is None:
+            raise ValueError(
+                "Reproducible mode is on, you must "
+                "pass a batch index when calling this synth"
+            )
+        if self.synthconfig.no_grad:
+            with torch.no_grad():
+                if batch_idx is not None:
+                    self.randomize(seed=batch_idx)
+                return self._forward(*args, **kwargs)
+        else:
+            if batch_idx is not None:
+                self.randomize(seed=batch_idx)
+            return self._forward(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
         """
@@ -179,7 +204,7 @@ class AbstractSynth(LightningModule):
         return 0.0
 
     @property
-    def hyperparameters(self) -> Dict[Tuple[str, str, str], Any]:
+    def hyperparameters(self) -> OrderedDictType[Tuple[str, str, str], Any]:
         """
         Returns a dictionary of curve and symmetry hyperparameter values keyed
         on a tuple of the module name, parameter name, and hyperparameter name
@@ -199,7 +224,7 @@ class AbstractSynth(LightningModule):
                 )
             )
 
-        return dict(hparams)
+        return OrderedDict(hparams)
 
     def set_hyperparameter(self, hyperparameter: Tuple[str, str, str], value: Any):
         """
@@ -215,24 +240,43 @@ class AbstractSynth(LightningModule):
         """
         Randomize all parameters
         """
+        parameters = [param for _, param in sorted(self.named_parameters())]
+
+        # https://github.com/torchsynth/torchsynth/issues/253
+        if (
+            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
+            and self.synthconfig.reproducible
+        ):
+            raise ValueError(
+                "Reproducibility currently only supported "
+                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
+                "If you want a different batch_size, "
+                "initialize SynthConfig with reproducible=False"
+            )
+
         if seed is not None:
-            cpu_rng = torch.Generator(device="cpu").manual_seed(seed)
-            for parameter in self.parameters():
+            # Generate batch_size x parameter number of random values
+            # Reseed the random number generator for every item in the batch
+            cpu_rng = torch.Generator(device="cpu")
+            new_values = []
+            for i in range(self.batch_size):
+                cpu_rng.manual_seed(seed * self.batch_size.numpy().item() + i)
+                new_values.append(
+                    torch.rand((len(parameters),), device="cpu", generator=cpu_rng)
+                )
+
+            # Move to device if necessary
+            new_values = torch.stack(new_values, dim=1)
+            if self.device.type != "cpu":
+                new_values = new_values.pin_memory().to(self.device, non_blocking=True)
+
+            # Set parameter data
+            for i, parameter in enumerate(parameters):
                 if not ModuleParameter.is_parameter_frozen(parameter):
-                    # TODO reproducibility with different batch sizes
-                    # See https://github.com/turian/torchsynth/issues/253
-                    if self.device.type != "cpu":  # pragma: no cover
-                        new_params = torch.rand(
-                            (self.batch_size,),
-                            device="cpu",
-                            pin_memory=True,
-                            generator=cpu_rng,
-                        )
-                        parameter.data = new_params.to(self.device, non_blocking=True)
-                    else:
-                        parameter.data.uniform_(0, 1, generator=cpu_rng)
+                    parameter.data = new_values[i]
         else:
-            for parameter in self.parameters():
+            assert not self.synthconfig.reproducible
+            for parameter in parameters:
                 if not ModuleParameter.is_parameter_frozen(parameter):
                     parameter.data.uniform_(0, 1)
 
@@ -257,7 +301,7 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: SynthConfig, *args, **kwargs):
+    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
@@ -307,16 +351,15 @@ class Voice(AbstractSynth):
             adsr_1, adsr_2, lfo_1, lfo_2
         )
 
-        # Upsample all the control signals
-        vco_1_pitch = self.control_upsample(vco_1_pitch)
-        vco_1_amp = self.control_upsample(vco_1_amp)
-        vco_2_pitch = self.control_upsample(vco_2_pitch)
-        vco_2_amp = self.control_upsample(vco_2_amp)
-        noise_amp = self.control_upsample(noise_amp)
-
         # Create signal and with modulations and mix together
-        vco_1_out = self.vca(self.vco_1(midi_f0, vco_1_pitch), vco_1_amp)
-        vco_2_out = self.vca(self.vco_2(midi_f0, vco_2_pitch), vco_2_amp)
-        noise_out = self.vca(self.noise(), noise_amp)
+        vco_1_out = self.vca(
+            self.vco_1(midi_f0, self.control_upsample(vco_1_pitch)),
+            self.control_upsample(vco_1_amp),
+        )
+        vco_2_out = self.vca(
+            self.vco_2(midi_f0, self.control_upsample(vco_2_pitch)),
+            self.control_upsample(vco_2_amp),
+        )
+        noise_out = self.vca(self.noise(), self.control_upsample(noise_amp))
 
         return self.mixer(vco_1_out, vco_2_out, noise_out)
