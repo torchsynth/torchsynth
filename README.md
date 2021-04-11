@@ -1,4 +1,4 @@
-<div  align="center">
+<div align="center">
 
 # torchsynth
 
@@ -16,6 +16,10 @@ pytorch. It is GPU-optional and differentiable.
 Most synthesizers are fast in terms of latency. torchsynth is fast
 in terms of throughput.
 
+<div align="center">
+
+[Documentation](https://torchsynth.rtfd.io/en/latest/)
+
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/torchsynth/torchsynth/blob/main/examples/examples.ipynb)
 
 [![PyPI](https://img.shields.io/pypi/v/torchsynth)](https://pypi.org/project/torchsynth/)
@@ -25,4 +29,12 @@ in terms of throughput.
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/torchsynth/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torchsynth/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/torchsynth/torchsynth.png)](https://travis-ci.com/torchsynth/torchsynth)
 
-[Homepage](https://torchsynth.rtfd.io/en/latest/).
+</div>
+
+## Installation
+
+```
+pip3 install torchsynth
+```
+
+Note that torchsynth requires PyTorch version 1.8 or greater.

@@ -24,6 +24,14 @@ pytorch. It is GPU-optional and differentiable.
 Most synthesizers are fast in terms of latency. torchsynth is fast
 in terms of throughput.
 
+## Installation
+
+```
+pip3 install torchsynth
+```
+
+Note that torchsynth requires PyTorch version 1.8 or greater.
+
 ```{toctree}
 ---
 maxdepth: 1
@@ -31,7 +39,6 @@ name: start
 caption: Getting started
 ---
 starter/starter
-starter/installation
 ```
 
 
