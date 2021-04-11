@@ -120,9 +120,9 @@ intersphinx_mapping = {
 html_theme = "pt_lightning_sphinx_theme"
 html_theme_path = [pt_lightning_sphinx_theme.get_html_theme_path()]
 
-html_logo = "../../assets/torchsynth-logotype.svg"
+html_logo = "_static/images/torchsynth-logo-and-logotype.svg"
 
-# html_favicon = '_static/images/favicon.svg'
+html_favicon = "_static/images/favicon.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
