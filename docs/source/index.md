@@ -43,6 +43,7 @@ name: performance
 caption: Performance
 ---
 performance/batch-processing
+performance/multi-gpu
 ```
 
 ```{toctree}
