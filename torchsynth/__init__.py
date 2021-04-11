@@ -1,4 +1,4 @@
-from pytorch_lightning.__info__ import (  # noqa: F401
+from torchsynth.__info__ import (  # noqa: F401
     __author__,
     __author_email__,
     __copyright__,
