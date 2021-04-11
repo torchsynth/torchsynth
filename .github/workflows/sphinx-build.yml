@@ -14,3 +14,7 @@ jobs:
       with:
         name: DocumentationHTML
         path: docs/build/html/
+    - uses: actions/upload-artifact@v1
+      with:
+        name: DocumentationPDF
+        path: docs/build/pdf/
