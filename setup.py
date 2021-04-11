@@ -74,7 +74,6 @@ setup(
             "sphinx_rtd_theme",
             "myst_parser",
             "linkify-it-py",
-            "git-lfs",  # https://github.com/readthedocs/readthedocs.org/issues/1846
         ],
     },
     classifiers=[
