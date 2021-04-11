@@ -8,7 +8,7 @@
 
 # torchsynth documentation
 
-<div  align="center">
+<div align="center">
 
 The fastest synth in the universe.
 
@@ -37,10 +37,10 @@ Note that torchsynth requires PyTorch version 1.8 or greater.
 ```{toctree}
 ---
 maxdepth: 1
-name: start
+name: getting_started
 caption: Getting started
 ---
-starter/starter
+getting-started/quickstart
 ```
 
 

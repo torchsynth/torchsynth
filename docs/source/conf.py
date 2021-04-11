@@ -39,8 +39,6 @@ if on_rtd:
     os.system("./git-lfs install")  # make lfs available in current repository
     os.system("./git-lfs fetch")  # download content from remote
     os.system("./git-lfs checkout")  # make local files to have the real content on them
-    # from git_lfs import fetch
-    # fetch(PATH_ROOT)
 
 try:
     from torchsynth import __info__ as info
