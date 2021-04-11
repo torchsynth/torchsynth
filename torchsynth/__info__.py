@@ -23,7 +23,7 @@ try:
     __long_docs__ = open(
         os.path.join(PATH_ROOT, "README.md"), "r", encoding="utf-8"
     ).read()
-except:
+except FileNotFoundError:
     __long_docs__ = open(
         os.path.join(PATH_HERE, "README.md"), "r", encoding="utf-8"
     ).read()
