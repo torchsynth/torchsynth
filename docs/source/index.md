@@ -25,20 +25,13 @@ Most synthesizers are fast in terms of latency. torchsynth is fast
 in terms of throughput. It synthesizes audio 15000x faster than
 realtime on a single GPU.
 
-## Installation
-
-```
-pip3 install torchsynth
-```
-
-Note that torchsynth requires PyTorch version 1.8 or greater.
-
 ```{toctree}
 ---
 maxdepth: 1
 name: getting_started
 caption: Getting started
 ---
+getting-started/installation
 getting-started/quickstart
 ```
 
