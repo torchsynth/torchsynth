@@ -6,9 +6,31 @@
 ```
 
 
+# torchsynth documentation
 
-# Welcome to torchsynth's documentation!
+<div  align="center">
 
+The fastest synth in the universe.
+
+<img width="450px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/assets/logo-with-caption.jpg">
+
+</div>
+
+## Introduction
+
+torchsynth is based upon traditional modular synthesis written in
+pytorch. It is GPU-optional and differentiable.
+
+Most synthesizers are fast in terms of latency. torchsynth is fast
+in terms of throughput.
+
+## Installation
+
+```
+pip3 install torchsynth
+```
+
+Note that torchsynth requires PyTorch version 1.8 or greater.
 
 ```{toctree}
 ---
@@ -55,13 +77,14 @@ contributing/contributing
 ---
 maxdepth: 3
 name: modules
-caption: Torchsynth Packages
+caption: API
 ---
-defaults
-module
-parameter
-signal
-util
+api/config
+api/module
+api/parameter
+api/signal
+api/synth
+api/util
 ```
 
 
