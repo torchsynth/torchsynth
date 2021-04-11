@@ -37,7 +37,7 @@ on a single GPU.
 
 <div align="center">
 
-<img width="350px" src="https://media.githubusercontent.com/media/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
+<img width="400px" src="https://media.githubusercontent.com/media/torchsynth/torchsynth/main/docs/source/_static/images/gpu-speed-profiles.svg">
 
 </div>
 
