@@ -16,6 +16,8 @@ The fastest synth in the universe.
 
 </div>
 
+<hr>
+
 torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
 
