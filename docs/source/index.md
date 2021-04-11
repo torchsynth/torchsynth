@@ -24,8 +24,6 @@ pytorch. It is GPU-optional and differentiable.
 Most synthesizers are fast in terms of latency. torchsynth is fast
 in terms of throughput.
 
-<img width="150px" src="_static/images/gpu-speed-profiles.svg">
-
 ## Installation
 
 ```
