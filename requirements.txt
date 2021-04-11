@@ -32,3 +32,4 @@ linkify-it-py
 sphinx>=3.0.4 # not directly required, pinned by Snyk to avoid a vulnerability
 myst-parser
 linkify-it-py
+git-lfs # https://github.com/readthedocs/readthedocs.org/issues/1846

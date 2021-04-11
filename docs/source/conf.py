@@ -21,6 +21,18 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 sys.path.insert(0, os.path.abspath("torchsynth"))
 
+
+# https://github.com/readthedocs/readthedocs.org/issues/1846
+# If runs on ReadTheDocs environment
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+
+# Hack for lacking git-lfs support ReadTheDocs
+if on_rtd:
+    print("Fetching files with git_lfs")
+    from git_lfs import fetch
+
+    fetch(PATH_ROOT)
+
 try:
     from torchsynth import __info__ as info
 except ImportError:
