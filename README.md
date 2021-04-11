@@ -28,6 +28,7 @@ in terms of throughput.
 [![codecov.io](https://codecov.io/gh/torchsynth/torchsynth/branch/main/graphs/badge.svg?logoWidth=18)](https://codecov.io/github/torchsynth/torchsynth?branch=master)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/torchsynth/torchsynth.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/torchsynth/torchsynth/alerts/)
 [![Travis CI build status](https://travis-ci.com/torchsynth/torchsynth.png)](https://travis-ci.com/torchsynth/torchsynth)
+[![Documentation Status](https://readthedocs.org/projects/torchsynth/badge/?version=latest)](https://torchsynth.readthedocs.io/en/latest/?badge=latest)
 
 </div>
 
