@@ -56,7 +56,7 @@ import mock
 
 # -- Project information -----------------------------------------------------
 
-project = "PyTorch Lightning"
+project = "torchsynth"
 copyright = info.__copyright__
 author = info.__author__
 
