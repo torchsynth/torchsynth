@@ -148,3 +148,7 @@ dmypy.json
 .DS_Store
 
 lightning_logs
+
+optuna*db
+
+*.bak
