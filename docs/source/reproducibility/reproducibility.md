@@ -1,22 +1,20 @@
 Reproduciblity
 ==============
 
-**Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore**
+```{contents}
+:depth: 2
+```
 
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
+## Overview
 
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
+We use deterministic random number generation to ensure replicability,
+even of noise oscillators. Nonetheless, there are small numeric
+differences between the CPU and GPU. The mean-average-error between
+audio samples generated on CPU and GPU are < 1e-2.
 
-Nec dui nunc mattis enim ut. Ac orci phasellus egestas tellous.:
+## Defaults
 
-Aliquam ut porttitor leo a diam sollicitudin tempor id:
-
-* Auctor eu augue ut lectus arcu bibendum at varius. Elit eget gravida cum
-* Tortor at auctor urna nunc. Nisi vitae suscipit tellus mauris a diam maecenas sed enim.
-* Vel eros donec
-* Elit eget gravida cum sociis. Lorem mollis aliquam ut porttitor leo
-* Ut pharetra sit amet aliquam. Sed turpis tincidunt id aliquet risus feugiat in. Ultrices sagittis orci a scelerisque purus.
+Reproducibility is currently guaranteed when using the default
+SynthConfig settings: `batch_size`=128, `sample_rate`=44100,
+`control_rate`=441. In future releases, we will enable reproducibility
+with larger batch sizes.

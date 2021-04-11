@@ -12,7 +12,7 @@
 
 The fastest synth in the universe.
 
-<img width="450px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/assets/logo-with-caption.jpg">
+<img width="450px" src="_static/images/logo-with-caption.jpg">
 
 </div>
 
@@ -23,6 +23,8 @@ pytorch. It is GPU-optional and differentiable.
 
 Most synthesizers are fast in terms of latency. torchsynth is fast
 in terms of throughput.
+
+<img width="150px" src="_static/images/gpu-speed-profiles.svg">
 
 ## Installation
 
@@ -45,6 +47,15 @@ starter/starter
 ```{toctree}
 ---
 maxdepth: 1
+name: performance
+caption: Performance
+---
+performance/batch-processing
+```
+
+```{toctree}
+---
+maxdepth: 1
 name: modular_design
 caption: Modular Design
 ---
@@ -60,6 +71,7 @@ name: reproducibility
 caption: Reproducibility
 ---
 reproducibility/reproducibility
+reproducibility/synth1B1
 ```
 
 
