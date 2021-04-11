@@ -5,7 +5,7 @@ TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import torch
-import torch.tensor as T
+from torch import Tensor as T
 
 from torchsynth.signal import Signal
 
@@ -39,9 +39,7 @@ def normalize_if_clipping(signal: Signal) -> Signal:
     or greater than 1.0
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
-    return torch.where(
-        max_sample > T(1.0, device=signal.device), signal / max_sample, signal
-    )
+    return torch.where(max_sample > 1.0, signal / max_sample, signal)
 
 
 def normalize(signal: Signal) -> Signal:
@@ -56,7 +54,7 @@ def normalize(signal: Signal) -> Signal:
 # might want in the future.
 # # What is amin here? And maybe we should convert it to a value in defaults?
 # # What is the range of amplitude?
-# def amplitude_to_db(amplitude: T, amin: T = T(1e-10)) -> T:
+# def amplitude_to_db(amplitude: T, amin: T = tensor(1e-10)) -> T:
 #     """
 #     Convert an amplitude value to decibels
 #     """
@@ -76,7 +74,7 @@ def normalize(signal: Signal) -> Signal:
 #     """
 #     # No gain added for quality factor less then 1/sqrt(2)
 #     if Q <= 0.707:
-#         return T(1.0)
+#         return tensor(1.0)
 #
 #     return Q * Q / torch.pow((Q * Q - 0.25), 0.5)
 #
@@ -129,9 +127,9 @@ def normalize(signal: Signal) -> Signal:
 #     # Linearly interpolate the ends of the window to achieve fractional length
 #     window = torch.cat(
 #         (
-#             T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
+#             tensor([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
 #             window[1:-1],
-#             T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
+#             tensor([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
 #         )
 #     ).to(length.device)
 #
@@ -140,5 +138,6 @@ def normalize(signal: Signal) -> Signal:
 #
 # def sinc(x: T) -> T:
 #     return torch.where(
-#         x == T(0, device=x.device), T(1.0, device=x.device), torch.sin(x) / x
+#         x == tensor(0, device=x.device), tensor(1.0, device=x.device),
+#               torch.sin(x) / x
 #     )

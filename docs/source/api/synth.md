@@ -1,8 +1,8 @@
-Torchsynth.module
+torchsynth.synth
 =================
 
 ```{eval-rst}
-.. automodule:: torchsynth.module
+.. automodule:: torchsynth.synth
    :members:
    :undoc-members:
    :show-inheritance:

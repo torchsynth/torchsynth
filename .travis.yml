@@ -18,10 +18,21 @@ matrix:
     - os: linux
       dist: bionic
       python: 3.8
-    # Do they have it?
-    #- os: linux
-    #  dist: bionic
-    #  python: 3.9
+    - os: linux
+      dist: bionic
+      python: 3.9
+    - os: linux
+      dist: xenial
+      python: 3.7
+    - os: linux
+      dist: xenial
+      python: 3.7
+    - os: linux
+      dist: xenial
+      python: 3.8
+    - os: linux
+      dist: xenial
+      python: 3.9
     - os: linux
       dist: groovy
       python: 3.7
@@ -48,7 +59,7 @@ before_install:
 install:
   - pip install ".[test]" . # install package + test dependencies
 script:
-  - pytest
+  - TORCHSYNTH_DEBUG=True pytest
   - python examples/examples.py
 after_success:
   - bash <(curl -s https://codecov.io/bash)
