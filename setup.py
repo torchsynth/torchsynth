@@ -32,9 +32,9 @@ setup(
     },
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
-    # package_data={
-    #    "": [],
-    # },
+    package_data={
+        "torchsynth": ["torchsynth/README.md"],
+    },
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
     python_requires=">=3.7",
     install_requires=[
