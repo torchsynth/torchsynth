@@ -14,6 +14,8 @@ except ImportError:
     sys.path.append("torchsynth")
     import __info__ as info
 
+long_description = open("README.md", "r", encoding="utf-8").read()
+
 setup(
     name="torchsynth",
     version=info.__version__,
@@ -23,7 +25,7 @@ setup(
     url=info.__homepage__,
     download_url="https://github.com/torchsynth/torchsynth/",
     license=info.__license__,
-    long_description=info.__long_docs__,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     project_urls={
         "Bug Tracker": "https://github.com/torchsynth/torchsynth/issues",
@@ -32,9 +34,6 @@ setup(
     },
     packages=find_packages(exclude=("tests", "examples")),
     # package_dir={"": "src"},
-    # package_data={
-    #    "": [],
-    # },
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
     python_requires=">=3.7",
     install_requires=[

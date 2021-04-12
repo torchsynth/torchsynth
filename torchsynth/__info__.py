@@ -17,4 +17,6 @@ __docs_url__ = "https://torchsynth.readthedocs.io/en/stable/"
 __docs__ = "A modular synthesizer in pytorch, GPU-optional and differentiable"
 # ptl gets fancy and replaces the shields 'master' with '__version__'
 # but I don't think we need to do that
-__long_docs__ = open(os.path.join(PATH_ROOT, "README.md"), "r", encoding="utf-8").read()
+
+# I don't wanna copy __long_docs__ in here, it's too tricky
+# to include the README in the package
