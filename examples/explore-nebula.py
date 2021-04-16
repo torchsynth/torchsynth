@@ -5,22 +5,10 @@
 # If you want to freeze the MIDI_F0, otherwise use None
 # MIDI_F0 = 48
 MIDI_F0 = 69
-BATCH_SIZE = 64
-
-
-import hashlib
-import json
-import os
-import os.path
-import pprint
-import sys
+BATCH_SIZE = 16
 
 import IPython.display as ipd
 import numpy as np
-import soundfile as sf
-import torch
-import torch.tensor as tensor
-from torch import Tensor as T
 from torchsynth.config import SynthConfig
 from torchsynth.synth import Voice
 from tqdm.auto import tqdm
@@ -336,16 +324,20 @@ proposed_nebula = {
     ("vco_2", "shape", "symmetric"): 0,
 }
 
-for name, value in proposed_nebula.items():
+proposals = [(None, None)] + list(proposed_nebula.items())
+for name, value in tqdm(proposals):
     if name[2] == "symmetric":
         continue
 
-    proposed_update = {
-        (name[0], name[1], "curve"): proposed_nebula[(name[0], name[1], "curve")],
-        (name[0], name[1], "symmetric"): proposed_nebula[
-            (name[0], name[1], "symmetric")
-        ],
-    }
+    if name is not None:
+        proposed_update = {
+            (name[0], name[1], "curve"): proposed_nebula[(name[0], name[1], "curve")],
+            (name[0], name[1], "symmetric"): proposed_nebula[
+                (name[0], name[1], "symmetric")
+            ],
+        }
+    else:
+        proposed_update = {}
 
     print(proposed_update)
 
