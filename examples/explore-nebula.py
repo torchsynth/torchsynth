@@ -326,7 +326,7 @@ proposed_nebula = {
 
 proposals = [(None, None)] + list(proposed_nebula.items())
 for name, value in tqdm(proposals):
-    if name[2] == "symmetric":
+    if name is not None and name[2] == "symmetric":
         continue
 
     if name is not None:
@@ -369,3 +369,5 @@ for name, value in tqdm(proposals):
         bigx.append(silence)
     bigx = np.hstack(bigx)
     display(ipd.Audio(bigx, rate=int(synthconfig.sample_rate.numpy())))
+    print()
+    print()
