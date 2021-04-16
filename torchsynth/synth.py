@@ -323,7 +323,7 @@ class Voice(AbstractSynth):
                 ("vco_2", SquareSawVCO),
                 ("noise", Noise, {"seed": 13}),
                 ("vca", VCA),
-                ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
+                ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.025]}),
             ]
         )
 
