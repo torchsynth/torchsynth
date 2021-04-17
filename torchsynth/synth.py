@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import pkg_resources
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -246,12 +247,21 @@ class AbstractSynth(LightningModule):
         with open(os.path.abspath(filename), "w") as fp:
             json.dump(hp, fp, indent=True)
 
-    def load_hyperparameters(self, filename: str) -> None:
+    def load_hyperparameters(self, name: str) -> None:
         """
         Load hyperparameters from a JSON file
         """
-        with open(os.path.abspath(filename), "r") as fp:
-            hyperparameters = json.load(fp)
+
+        # Try to load nebulae from package resources, otherwise, try
+        # to load from a filename
+        try:
+            synth = type(self).__name__.lower()
+            nebulae_str = f"nebulae/{synth}/{name}.json"
+            data = pkg_resources.resource_string(__name__, nebulae_str)
+            hyperparameters = json.loads(data)
+        except FileNotFoundError:
+            with open(os.path.abspath(name), "r") as fp:
+                hyperparameters = json.load(fp)
 
         # Update all hyperparameters in this synth
         for hp in hyperparameters:
@@ -322,7 +332,13 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
+    def __init__(
+        self,
+        synthconfig: Optional[SynthConfig] = None,
+        nebula: Optional[str] = "default",
+        *args,
+        **kwargs,
+    ):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
@@ -347,6 +363,9 @@ class Voice(AbstractSynth):
                 ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
             ]
         )
+
+        # Load the nebula
+        self.load_hyperparameters(nebula)
 
     def _forward(self) -> T:
         # The convention for triggering a note event is that it has
