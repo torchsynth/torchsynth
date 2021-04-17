@@ -823,8 +823,10 @@ class ModulationMixer(SynthModule):
                 # Apply custom param name if it was passed in
                 if custom_names:
                     name = f"{input_names[i]}->{output_names[j]}"
+                    description = f"Modulation {input_names[i]} to {output_names[j]}"
                 else:
                     name = f"{i}->{j}"
+                    description = f"Modulation {i} to {j}"
 
                 self.default_parameter_ranges.append(
                     ModuleParameterRange(
@@ -832,7 +834,7 @@ class ModulationMixer(SynthModule):
                         1.0,
                         curve=curves[i],
                         name=name,
-                        description=f"Mix level for input {i} to output {j}",
+                        description=description,
                     )
                 )
 
@@ -868,6 +870,7 @@ class AudioMixer(SynthModule):
         synthconfig: SynthConfig,
         n_input: int,
         curves: Optional[List[float]] = None,
+        names: Optional[List[str]] = None,
         **kwargs: Dict[str, T],
     ):
         # Parameter curves can be used to modify the parameter mapping
@@ -877,16 +880,21 @@ class AudioMixer(SynthModule):
         else:
             curves = [1.0] * n_input
 
+        # If param names were passed in, make sure we got the right number
+        if names is not None:
+            assert len(names) == n_input
+
         # Need to create the parameter ranges before calling super().__init
         self.default_parameter_ranges = []
         for i in range(n_input):
+            name = f"level{i}" if names is None else names[i]
             self.default_parameter_ranges.append(
                 ModuleParameterRange(
                     0.0,
                     1.0,
                     curve=curves[i],
-                    name=f"level{i}",
-                    description=f"Mix level for input {i}",
+                    name=name,
+                    description=f"{name} mix level",
                 )
             )
 
