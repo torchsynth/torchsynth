@@ -318,7 +318,22 @@ class Voice(AbstractSynth):
                 ("lfo_2_rate_adsr", ADSR),
                 ("control_vca", ControlRateVCA),
                 ("control_upsample", ControlRateUpsample),
-                ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
+                (
+                    "mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 4,
+                        "n_output": 5,
+                        "input_names": ["adsr_1", "adsr_2", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "vco_1_pitch",
+                            "vco_1_amp",
+                            "vco_2_pitch",
+                            "vco_2_amp",
+                            "noise_amp",
+                        ],
+                    },
+                ),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
                 ("noise", Noise, {"seed": 13}),

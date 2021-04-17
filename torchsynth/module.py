@@ -798,6 +798,8 @@ class ModulationMixer(SynthModule):
         n_input: int,
         n_output: int,
         curves: Optional[List[float]] = None,
+        input_names: Optional[List[str]] = None,
+        output_names: Optional[List[str]] = None,
         **kwargs: Dict[str, T],
     ):
         # Parameter curves can be used to modify the parameter mapping
@@ -807,16 +809,29 @@ class ModulationMixer(SynthModule):
         else:
             curves = [0.5] * n_input
 
+        custom_names = False
+        if input_names is not None:
+            assert len(input_names) == n_input
+            assert output_names is not None
+            assert len(output_names) == n_output
+            custom_names = True
+
         # Need to create the parameter ranges before calling super().__init
         self.default_parameter_ranges = []
         for i in range(n_input):
             for j in range(n_output):
+                # Apply custom param name if it was passed in
+                if custom_names:
+                    name = f"{input_names[i]}->{output_names[j]}"
+                else:
+                    name = f"{i}->{j}"
+
                 self.default_parameter_ranges.append(
                     ModuleParameterRange(
                         0.0,
                         1.0,
                         curve=curves[i],
-                        name=f"level{i}_{j}",
+                        name=name,
                         description=f"Mix level for input {i} to output {j}",
                     )
                 )
