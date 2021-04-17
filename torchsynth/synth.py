@@ -1,4 +1,6 @@
 import sys
+import os
+import json
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -235,6 +237,25 @@ class AbstractSynth(LightningModule):
         parameter = module.get_parameter(hyperparameter[1])
         assert not ModuleParameter.is_parameter_frozen(parameter)
         setattr(parameter.parameter_range, hyperparameter[2], value)
+
+    def save_hyperparameters(self, filename: str) -> None:
+        """
+        Save hyperparameters to a JSON file
+        """
+        hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
+        with open(os.path.abspath(filename), "w") as fp:
+            json.dump(hp, fp, indent=True)
+
+    def load_hyperparameters(self, filename: str) -> None:
+        """
+        Load hyperparameters from a JSON file
+        """
+        with open(os.path.abspath(filename), "r") as fp:
+            hyperparameters = json.load(fp)
+
+        # Update all hyperparameters in this synth
+        for hp in hyperparameters:
+            self.set_hyperparameter(hp["name"], hp["value"])
 
     def randomize(self, seed: Optional[int] = None):
         """
