@@ -5,7 +5,7 @@
    "attack",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.1
  },
  {
   "name": [
@@ -45,7 +45,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -53,7 +53,7 @@
    "release",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.2
  },
  {
   "name": [
@@ -125,7 +125,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -133,7 +133,7 @@
    "release",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.2
  },
  {
   "name": [
@@ -174,6 +174,22 @@
    "symmetric"
   ],
   "value": true
+ },
+ {
+  "name": [
+   "keyboard",
+   "midi_f0",
+   "minimum"
+  ],
+  "value": 36
+ },
+ {
+  "name": [
+   "keyboard",
+   "midi_f0",
+   "maximum"
+  ],
+  "value": 42
  },
  {
   "name": [
@@ -181,7 +197,7 @@
    "duration",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.01
  },
  {
   "name": [
@@ -213,7 +229,7 @@
    "mod_depth",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.2
  },
  {
   "name": [
@@ -357,7 +373,7 @@
    "sustain",
    "curve"
   ],
-  "value": 1
+  "value": 1.0
  },
  {
   "name": [
@@ -789,7 +805,7 @@
    "level1",
    "curve"
   ],
-  "value": 1.0
+  "value": 0.01
  },
  {
   "name": [
@@ -805,7 +821,7 @@
    "level2",
    "curve"
   ],
-  "value": 0.05
+  "value": 0.25
  },
  {
   "name": [
@@ -821,7 +837,7 @@
    "level0_0",
    "curve"
   ],
-  "value": 0.25
+  "value": 1.0
  },
  {
   "name": [
@@ -853,7 +869,7 @@
    "level0_2",
    "curve"
   ],
-  "value": 0.25
+  "value": 1.0
  },
  {
   "name": [
@@ -901,7 +917,7 @@
    "level1_0",
    "curve"
   ],
-  "value": 0.25
+  "value": 1.0
  },
  {
   "name": [
@@ -933,7 +949,7 @@
    "level1_2",
    "curve"
   ],
-  "value": 0.25
+  "value": 1.0
  },
  {
   "name": [
@@ -981,7 +997,7 @@
    "level2_0",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -997,7 +1013,7 @@
    "level2_1",
    "curve"
   ],
-  "value": 0.75
+  "value": 0.1
  },
  {
   "name": [
@@ -1013,7 +1029,7 @@
    "level2_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1029,7 +1045,7 @@
    "level2_3",
    "curve"
   ],
-  "value": 0.75
+  "value": 0.1
  },
  {
   "name": [
@@ -1045,7 +1061,7 @@
    "level2_4",
    "curve"
   ],
-  "value": 0.75
+  "value": 0.1
  },
  {
   "name": [
@@ -1061,7 +1077,7 @@
    "level3_0",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1077,7 +1093,7 @@
    "level3_1",
    "curve"
   ],
-  "value": 0.75
+  "value": 0.1
  },
  {
   "name": [
@@ -1093,7 +1109,7 @@
    "level3_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1109,7 +1125,7 @@
    "level3_3",
    "curve"
   ],
-  "value": 0.75
+  "value": 0.1
  },
  {
   "name": [
@@ -1125,7 +1141,7 @@
    "level3_4",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1141,7 +1157,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.2
+  "value": 0.01
  },
  {
   "name": [
@@ -1157,7 +1173,7 @@
    "mod_depth",
    "curve"
   ],
-  "value": 0.2
+  "value": 1.5
  },
  {
   "name": [
@@ -1165,7 +1181,7 @@
    "mod_depth",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -1189,7 +1205,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.2
+  "value": 0.01
  },
  {
   "name": [
