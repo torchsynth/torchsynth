@@ -5,7 +5,7 @@
    "attack",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -21,7 +21,7 @@
    "decay",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -53,7 +53,7 @@
    "release",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -85,7 +85,7 @@
    "attack",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -101,7 +101,7 @@
    "decay",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -133,7 +133,7 @@
    "release",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
