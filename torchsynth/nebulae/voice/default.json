@@ -5,7 +5,7 @@
    "attack",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -21,7 +21,7 @@
    "decay",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -53,7 +53,7 @@
    "release",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -85,7 +85,7 @@
    "attack",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -101,7 +101,7 @@
    "decay",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -133,7 +133,7 @@
    "release",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -165,7 +165,7 @@
    "midi_f0",
    "curve"
   ],
-  "value": 1.0
+  "value": 0.5
  },
  {
   "name": [
@@ -173,7 +173,7 @@
    "midi_f0",
    "symmetric"
   ],
-  "value": false
+  "value": true
  },
  {
   "name": [
@@ -803,28 +803,28 @@
   "name": [
    "mixer",
    "level2",
+   "curve"
+  ],
+  "value": 0.05
+ },
+ {
+  "name": [
+   "mixer",
+   "level2",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "level0_0",
    "curve"
   ],
   "value": 0.1
  },
  {
   "name": [
-   "mixer",
-   "level2",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_0",
-   "curve"
-  ],
-  "value": 0.5
- },
- {
-  "name": [
    "mod_matrix",
    "level0_0",
    "symmetric"
@@ -837,7 +837,7 @@
    "level0_1",
    "curve"
   ],
-  "value": 0.5
+  "value": 1.0
  },
  {
   "name": [
@@ -853,7 +853,7 @@
    "level0_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -869,7 +869,7 @@
    "level0_3",
    "curve"
   ],
-  "value": 0.5
+  "value": 1.0
  },
  {
   "name": [
@@ -901,7 +901,7 @@
    "level1_0",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -917,7 +917,7 @@
    "level1_1",
    "curve"
   ],
-  "value": 0.5
+  "value": 1.0
  },
  {
   "name": [
@@ -933,7 +933,7 @@
    "level1_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -949,7 +949,7 @@
    "level1_3",
    "curve"
   ],
-  "value": 0.5
+  "value": 1.0
  },
  {
   "name": [
@@ -981,7 +981,7 @@
    "level2_0",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1013,7 +1013,7 @@
    "level2_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1061,7 +1061,7 @@
    "level3_0",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1093,7 +1093,7 @@
    "level3_2",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.1
  },
  {
   "name": [
@@ -1141,7 +1141,7 @@
    "tuning",
    "curve"
   ],
-  "value": 1
+  "value": 0.1
  },
  {
   "name": [
@@ -1149,7 +1149,7 @@
    "tuning",
    "symmetric"
   ],
-  "value": false
+  "value": true
  },
  {
   "name": [
@@ -1189,7 +1189,7 @@
    "tuning",
    "curve"
   ],
-  "value": 1
+  "value": 0.1
  },
  {
   "name": [
@@ -1197,7 +1197,7 @@
    "tuning",
    "symmetric"
   ],
-  "value": false
+  "value": true
  },
  {
   "name": [
