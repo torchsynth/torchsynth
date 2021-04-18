@@ -37,7 +37,7 @@
    "sustain",
    "curve"
   ],
-  "value": 1
+  "value": 2.0
  },
  {
   "name": [
@@ -45,7 +45,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": false
+  "value": true
  },
  {
   "name": [
@@ -117,7 +117,7 @@
    "sustain",
    "curve"
   ],
-  "value": 1
+  "value": 2.0
  },
  {
   "name": [
@@ -125,7 +125,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": false
+  "value": true
  },
  {
   "name": [
@@ -197,7 +197,7 @@
    "frequency",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -485,7 +485,7 @@
    "frequency",
    "curve"
   ],
-  "value": 0.25
+  "value": 0.5
  },
  {
   "name": [
@@ -821,7 +821,7 @@
    "level0_0",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.25
  },
  {
   "name": [
@@ -853,7 +853,7 @@
    "level0_2",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.25
  },
  {
   "name": [
@@ -901,7 +901,7 @@
    "level1_0",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.25
  },
  {
   "name": [
@@ -933,7 +933,7 @@
    "level1_2",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.25
  },
  {
   "name": [
@@ -981,7 +981,7 @@
    "level2_0",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.3
  },
  {
   "name": [
@@ -1013,7 +1013,7 @@
    "level2_2",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.3
  },
  {
   "name": [
@@ -1061,7 +1061,7 @@
    "level3_0",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.3
  },
  {
   "name": [
@@ -1093,7 +1093,7 @@
    "level3_2",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.3
  },
  {
   "name": [
@@ -1141,7 +1141,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.2
  },
  {
   "name": [
@@ -1189,7 +1189,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.1
+  "value": 0.2
  },
  {
   "name": [
