@@ -21,6 +21,25 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 sys.path.insert(0, os.path.abspath("torchsynth"))
 
+
+# https://github.com/readthedocs/readthedocs.org/issues/1846
+# If runs on ReadTheDocs environment
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+
+# Hack for lacking git-lfs support ReadTheDocs
+if on_rtd:
+    print("Fetching files with git_lfs")
+
+    # https://github.com/readthedocs/readthedocs.org/issues/1846#issuecomment-477184259
+    if not os.path.exists("./git-lfs"):
+        os.system(
+            "wget https://github.com/git-lfs/git-lfs/releases/download/v2.13.3/git-lfs-linux-amd64-v2.13.3.tar.gz"
+        )
+        os.system("tar xvfz git-lfs-linux-amd64-v2.13.3.tar.gz")
+    os.system("./git-lfs install")  # make lfs available in current repository
+    os.system("./git-lfs fetch")  # download content from remote
+    os.system("./git-lfs checkout")  # make local files to have the real content on them
+
 try:
     from torchsynth import __info__ as info
 except ImportError:
@@ -37,7 +56,7 @@ import mock
 
 # -- Project information -----------------------------------------------------
 
-project = "PyTorch Lightning"
+project = "torchsynth"
 copyright = info.__copyright__
 author = info.__author__
 
@@ -101,9 +120,9 @@ intersphinx_mapping = {
 html_theme = "pt_lightning_sphinx_theme"
 html_theme_path = [pt_lightning_sphinx_theme.get_html_theme_path()]
 
-html_logo = "../../assets/torchsynth-logotype.svg"
+html_logo = "_static/images/torchsynth-logo-and-logotype.svg"
 
-# html_favicon = '_static/images/favicon.svg'
+html_favicon = "_static/images/favicon.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

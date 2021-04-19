@@ -1,4 +1,7 @@
 import sys
+import os
+import json
+import pkg_resources
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -236,6 +239,34 @@ class AbstractSynth(LightningModule):
         assert not ModuleParameter.is_parameter_frozen(parameter)
         setattr(parameter.parameter_range, hyperparameter[2], value)
 
+    def save_hyperparameters(self, filename: str) -> None:
+        """
+        Save hyperparameters to a JSON file
+        """
+        hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
+        with open(os.path.abspath(filename), "w") as fp:
+            json.dump(hp, fp, indent=True)
+
+    def load_hyperparameters(self, name: str) -> None:
+        """
+        Load hyperparameters from a JSON file
+        """
+
+        # Try to load nebulae from package resources, otherwise, try
+        # to load from a filename
+        try:
+            synth = type(self).__name__.lower()
+            nebulae_str = f"nebulae/{synth}/{name}.json"
+            data = pkg_resources.resource_string(__name__, nebulae_str)
+            hyperparameters = json.loads(data)
+        except FileNotFoundError:
+            with open(os.path.abspath(name), "r") as fp:
+                hyperparameters = json.load(fp)
+
+        # Update all hyperparameters in this synth
+        for hp in hyperparameters:
+            self.set_hyperparameter(hp["name"], hp["value"])
+
     def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
@@ -301,7 +332,13 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
+    def __init__(
+        self,
+        synthconfig: Optional[SynthConfig] = None,
+        nebula: Optional[str] = "default",
+        *args,
+        **kwargs,
+    ):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
@@ -318,14 +355,40 @@ class Voice(AbstractSynth):
                 ("lfo_2_rate_adsr", ADSR),
                 ("control_vca", ControlRateVCA),
                 ("control_upsample", ControlRateUpsample),
-                ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
+                (
+                    "mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 4,
+                        "n_output": 5,
+                        "input_names": ["adsr_1", "adsr_2", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "vco_1_pitch",
+                            "vco_1_amp",
+                            "vco_2_pitch",
+                            "vco_2_amp",
+                            "noise_amp",
+                        ],
+                    },
+                ),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
                 ("noise", Noise, {"seed": 13}),
                 ("vca", VCA),
-                ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
+                (
+                    "mixer",
+                    AudioMixer,
+                    {
+                        "n_input": 3,
+                        "curves": [1.0, 1.0, 0.025],
+                        "names": ["vco_1", "vco_2", "noise"],
+                    },
+                ),
             ]
         )
+
+        # Load the nebula
+        self.load_hyperparameters(nebula)
 
     def _forward(self) -> T:
         # The convention for triggering a note event is that it has

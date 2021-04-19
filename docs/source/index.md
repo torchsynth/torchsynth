@@ -8,39 +8,43 @@
 
 # torchsynth documentation
 
-<div  align="center">
+<div align="center">
 
 The fastest synth in the universe.
 
-<img width="450px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/assets/logo-with-caption.jpg">
+<img width="450px" src="_static/images/logo-with-caption.jpg">
 
 </div>
 
-## Introduction
+<hr>
 
 torchsynth is based upon traditional modular synthesis written in
 pytorch. It is GPU-optional and differentiable.
 
 Most synthesizers are fast in terms of latency. torchsynth is fast
-in terms of throughput.
-
-## Installation
-
-```
-pip3 install torchsynth
-```
-
-Note that torchsynth requires PyTorch version 1.8 or greater.
+in terms of throughput. It synthesizes audio 15000x faster than
+realtime on a single GPU.
 
 ```{toctree}
 ---
 maxdepth: 1
-name: start
+name: getting_started
 caption: Getting started
 ---
-starter/starter
+getting-started/installation
+getting-started/quickstart
 ```
 
+
+```{toctree}
+---
+maxdepth: 1
+name: performance
+caption: Performance
+---
+performance/batch-processing
+performance/multi-gpu
+```
 
 ```{toctree}
 ---
@@ -60,6 +64,7 @@ name: reproducibility
 caption: Reproducibility
 ---
 reproducibility/reproducibility
+reproducibility/synth1B1
 ```
 
 

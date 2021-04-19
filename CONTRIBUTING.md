@@ -1,6 +1,10 @@
 Developer guidelines
 ====================
 
+```{contents}
+:depth: 2
+```
+
 ## Initial developer setup
 
 ```
