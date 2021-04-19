@@ -33,7 +33,7 @@ setup(
         "Source Code": "https://github.com/torchsynth/torchsynth/",
     },
     packages=find_packages(exclude=("tests", "examples")),
-    package_data={"torchsynth": ["nebulae/*.json"]},
+    package_data={"torchsynth": ["nebulae/voice/*.json"]},
     # package_dir={"": "src"},
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
     python_requires=">=3.7",
