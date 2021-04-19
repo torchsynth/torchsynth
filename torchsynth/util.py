@@ -68,7 +68,7 @@ def format_hyperparameter_json(hyperparameter_json: str) -> str:
         "name": ["adsr_1", "attack", "curve"],
     """
     hp = re.sub(
-        '("name": \[)(\\n\s+)(.*)(\\n\s+)(.*)(\\n\s+)(.*)(\\n\s+)',
+        r'("name": \[)(\n\s+)(.*)(\n\s+)(.*)(\n\s+)(.*)(\n\s+)',
         r"\1\3 \5 \7",
         hyperparameter_json,
     )
