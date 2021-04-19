@@ -343,7 +343,7 @@ class Voice(AbstractSynth):
                     AudioMixer,
                     {
                         "n_input": 3,
-                        "curves": [1.0, 1.0, 0.1],
+                        "curves": [1.0, 1.0, 0.025],
                         "names": ["vco_1", "vco_2", "noise"],
                     },
                 ),
