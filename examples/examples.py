@@ -655,7 +655,11 @@ print(voice1.hyperparameters[("keyboard", "midi_f0", "curve")])
 
 # ### Nebulae
 #
-# Different hyperparameter settings cause the parameters of a synth to be sampled in a different way when generating random synths. We call these different versions of the same synth different nebula. For example, here is the Voice loaded with the Drum nebula, which is more likely to produce sounds that are similar synth drum hits during random sampling.
+# Different hyperparameter settings cause the parameters of a synth to be sampled in a
+# different way when generating random synths. We call these different versions of the
+# same synth different nebula. For example, here is the Voice loaded with the Drum
+# nebula, which is more likely to produce sounds that are similar synth drum hits
+# during random sampling.
 
 synthconfig16 = SynthConfig(
     batch_size=16, reproducible=False, sample_rate=44100, buffer_size_seconds=4
