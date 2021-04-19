@@ -34,6 +34,7 @@ from torchsynth.module import (
 )
 from torchsynth.parameter import ModuleParameter
 from torchsynth.signal import Signal
+import torchsynth.util as util
 
 
 class AbstractSynth(LightningModule):
@@ -243,9 +244,13 @@ class AbstractSynth(LightningModule):
         """
         Save hyperparameters to a JSON file
         """
+        # Render all hyperparameters as JSON
         hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
+        hp = json.dumps(hp, indent=True)
+        hp = util.format_hyperparameter_json(hp)
+
         with open(os.path.abspath(filename), "w") as fp:
-            json.dump(hp, fp, indent=True)
+            fp.write(hp)
 
     def load_hyperparameters(self, name: str) -> None:
         """
