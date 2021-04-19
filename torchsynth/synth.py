@@ -252,20 +252,27 @@ class AbstractSynth(LightningModule):
         with open(os.path.abspath(filename), "w") as fp:
             fp.write(hp)
 
-    def load_hyperparameters(self, name: str) -> None:
+    def load_hyperparameters(self, nebula: str) -> None:
         """
         Load hyperparameters from a JSON file
+
+        Args:
+            nebula: nebula to load. This can either be the name of a nebula that is
+                included in torchsynth, or the filename of a nebula json file to load.
+
+        TODO add nebula list in docs
+        See https://github.com/torchsynth/torchsynth/issues/324
         """
 
         # Try to load nebulae from package resources, otherwise, try
         # to load from a filename
         try:
             synth = type(self).__name__.lower()
-            nebulae_str = f"nebulae/{synth}/{name}.json"
+            nebulae_str = f"nebulae/{synth}/{nebula}.json"
             data = pkg_resources.resource_string(__name__, nebulae_str)
             hyperparameters = json.loads(data)
         except FileNotFoundError:
-            with open(os.path.abspath(name), "r") as fp:
+            with open(os.path.abspath(nebula), "r") as fp:
                 hyperparameters = json.load(fp)
 
         # Update all hyperparameters in this synth
