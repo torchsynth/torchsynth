@@ -480,7 +480,7 @@ time_plot(out2[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 mixer = ModulationMixer(synthconfig=synthconfig, device=device, n_input=2, n_output=1)
 mods_mixed = mixer(out, out2)
 
-print(f"Mixed: LFO 1:{mixer.p('level0_0')[0]:.2}, LFO 2: {mixer.p('level1_0')[0]:.2}")
+print(f"Mixed: LFO 1:{mixer.p('0->0')[0]:.2}, LFO 2: {mixer.p('1->0')[0]:.2}")
 time_plot(mods_mixed[0][0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 # -
 

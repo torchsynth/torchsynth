@@ -37,7 +37,7 @@
    "sustain",
    "curve"
   ],
-  "value": 2.0
+  "value": 1
  },
  {
   "name": [
@@ -45,7 +45,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -117,7 +117,7 @@
    "sustain",
    "curve"
   ],
-  "value": 2.0
+  "value": 1
  },
  {
   "name": [
@@ -125,7 +125,7 @@
    "sustain",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -165,7 +165,7 @@
    "midi_f0",
    "curve"
   ],
-  "value": 0.5
+  "value": 1.0
  },
  {
   "name": [
@@ -173,7 +173,7 @@
    "midi_f0",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -197,7 +197,7 @@
    "frequency",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -485,7 +485,7 @@
    "frequency",
    "curve"
   ],
-  "value": 0.5
+  "value": 0.25
  },
  {
   "name": [
@@ -770,7 +770,7 @@
  {
   "name": [
    "mixer",
-   "level0",
+   "vco_1",
    "curve"
   ],
   "value": 1.0
@@ -778,7 +778,7 @@
  {
   "name": [
    "mixer",
-   "level0",
+   "vco_1",
    "symmetric"
   ],
   "value": false
@@ -786,7 +786,7 @@
  {
   "name": [
    "mixer",
-   "level1",
+   "vco_2",
    "curve"
   ],
   "value": 1.0
@@ -794,7 +794,7 @@
  {
   "name": [
    "mixer",
-   "level1",
+   "vco_2",
    "symmetric"
   ],
   "value": false
@@ -802,15 +802,15 @@
  {
   "name": [
    "mixer",
-   "level2",
+   "noise",
    "curve"
   ],
-  "value": 0.05
+  "value": 0.025
  },
  {
   "name": [
    "mixer",
-   "level2",
+   "noise",
    "symmetric"
   ],
   "value": false
@@ -818,167 +818,7 @@
  {
   "name": [
    "mod_matrix",
-   "level0_0",
-   "curve"
-  ],
-  "value": 0.25
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_0",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_1",
-   "curve"
-  ],
-  "value": 2.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_1",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_2",
-   "curve"
-  ],
-  "value": 0.25
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_2",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_3",
-   "curve"
-  ],
-  "value": 2.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_3",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_4",
-   "curve"
-  ],
-  "value": 1.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level0_4",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_0",
-   "curve"
-  ],
-  "value": 0.25
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_0",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_1",
-   "curve"
-  ],
-  "value": 2.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_1",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_2",
-   "curve"
-  ],
-  "value": 0.25
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_2",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_3",
-   "curve"
-  ],
-  "value": 2.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_3",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_4",
-   "curve"
-  ],
-  "value": 1.0
- },
- {
-  "name": [
-   "mod_matrix",
-   "level1_4",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_0",
+   "adsr_1->vco_1_pitch",
    "curve"
   ],
   "value": 0.5
@@ -986,7 +826,7 @@
  {
   "name": [
    "mod_matrix",
-   "level2_0",
+   "adsr_1->vco_1_pitch",
    "symmetric"
   ],
   "value": false
@@ -994,23 +834,7 @@
  {
   "name": [
    "mod_matrix",
-   "level2_1",
-   "curve"
-  ],
-  "value": 0.75
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_1",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_2",
+   "adsr_1->vco_1_amp",
    "curve"
   ],
   "value": 0.5
@@ -1018,7 +842,7 @@
  {
   "name": [
    "mod_matrix",
-   "level2_2",
+   "adsr_1->vco_1_amp",
    "symmetric"
   ],
   "value": false
@@ -1026,39 +850,7 @@
  {
   "name": [
    "mod_matrix",
-   "level2_3",
-   "curve"
-  ],
-  "value": 0.75
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_3",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_4",
-   "curve"
-  ],
-  "value": 0.75
- },
- {
-  "name": [
-   "mod_matrix",
-   "level2_4",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level3_0",
+   "adsr_1->vco_2_pitch",
    "curve"
   ],
   "value": 0.5
@@ -1066,7 +858,7 @@
  {
   "name": [
    "mod_matrix",
-   "level3_0",
+   "adsr_1->vco_2_pitch",
    "symmetric"
   ],
   "value": false
@@ -1074,23 +866,7 @@
  {
   "name": [
    "mod_matrix",
-   "level3_1",
-   "curve"
-  ],
-  "value": 0.75
- },
- {
-  "name": [
-   "mod_matrix",
-   "level3_1",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level3_2",
+   "adsr_1->vco_2_amp",
    "curve"
   ],
   "value": 0.5
@@ -1098,7 +874,7 @@
  {
   "name": [
    "mod_matrix",
-   "level3_2",
+   "adsr_1->vco_2_amp",
    "symmetric"
   ],
   "value": false
@@ -1106,23 +882,7 @@
  {
   "name": [
    "mod_matrix",
-   "level3_3",
-   "curve"
-  ],
-  "value": 0.75
- },
- {
-  "name": [
-   "mod_matrix",
-   "level3_3",
-   "symmetric"
-  ],
-  "value": false
- },
- {
-  "name": [
-   "mod_matrix",
-   "level3_4",
+   "adsr_1->noise_amp",
    "curve"
   ],
   "value": 0.5
@@ -1130,7 +890,247 @@
  {
   "name": [
    "mod_matrix",
-   "level3_4",
+   "adsr_1->noise_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_1_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_1_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_1_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_1_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_2_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_2_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_2_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->vco_2_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->noise_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "adsr_2->noise_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_1_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_1_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_1_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_1_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_2_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_2_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_2_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->vco_2_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->noise_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_1->noise_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_1_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_1_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_1_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_1_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_2_pitch",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_2_pitch",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_2_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->vco_2_amp",
+   "symmetric"
+  ],
+  "value": false
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->noise_amp",
+   "curve"
+  ],
+  "value": 0.5
+ },
+ {
+  "name": [
+   "mod_matrix",
+   "lfo_2->noise_amp",
    "symmetric"
   ],
   "value": false
@@ -1141,7 +1141,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.2
+  "value": 1
  },
  {
   "name": [
@@ -1149,7 +1149,7 @@
    "tuning",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
@@ -1189,7 +1189,7 @@
    "tuning",
    "curve"
   ],
-  "value": 0.2
+  "value": 1
  },
  {
   "name": [
@@ -1197,7 +1197,7 @@
    "tuning",
    "symmetric"
   ],
-  "value": true
+  "value": false
  },
  {
   "name": [
