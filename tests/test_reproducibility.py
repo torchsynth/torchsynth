@@ -11,7 +11,6 @@ from torchsynth.synth import Voice
 
 class TestReproducibility:
     def test_voice_reproducibility(self):
-        # TODO make this work with different batch sizes
         synthconfig = SynthConfig()
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
@@ -37,6 +36,38 @@ class TestReproducibility:
     def test_voice_nonreproducibility(self):
         with pytest.raises(ValueError):
             SynthConfig(batch_size=BASE_REPRODUCIBLE_BATCH_SIZE + 1)
+
+    def test_voice_batch_size_reproducibility(self):
+        # Test to make sure different batch sizes produce the same results
+        voice256 = Voice(SynthConfig(batch_size=256))
+        out256 = voice256(0)
+
+        voice128 = Voice(SynthConfig(batch_size=128))
+        out128 = torch.vstack([voice128(0), voice128(1)])
+
+        voice64 = Voice(SynthConfig(batch_size=64))
+        out64 = torch.vstack([voice64(0), voice64(1), voice64(2), voice64(3)])
+
+        voice32 = Voice(SynthConfig(batch_size=32))
+        out32 = torch.vstack(
+            [
+                voice32(0),
+                voice32(1),
+                voice32(2),
+                voice32(3),
+                voice32(4),
+                voice32(5),
+                voice32(6),
+                voice32(7),
+            ]
+        )
+
+        # TODO there are some unexpected, very small numerical
+        # errors between some, but not all, batch sizes
+        # See https://github.com/torchsynth/torchsynth/issues/326
+        assert torch.all(torch.isclose(out256, out128))
+        assert torch.all(torch.isclose(out256, out64))
+        assert torch.all(torch.isclose(out256, out32))
 
     def compare_voices(self, voice_1, voice_2):
         # Test keyboard reproducibility
