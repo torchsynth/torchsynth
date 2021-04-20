@@ -5,14 +5,14 @@ Runs tests to make sure results in Synths are reproducible
 import pytest
 import torch
 
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig
 from torchsynth.synth import Voice
 
 
 class TestReproducibility:
     def test_voice_reproducibility(self):
         # TODO make this work with different batch sizes
-        synthconfig = SynthConfig(BATCH_SIZE_FOR_REPRODUCIBILITY, reproducible=True)
+        synthconfig = SynthConfig()
         voice_1 = Voice(synthconfig)
         voice_2 = Voice(synthconfig)
 
@@ -36,7 +36,7 @@ class TestReproducibility:
 
     def test_voice_nonreproducibility(self):
         with pytest.raises(ValueError):
-            SynthConfig(batch_size=BATCH_SIZE_FOR_REPRODUCIBILITY + 1)
+            SynthConfig(batch_size=BASE_REPRODUCIBLE_BATCH_SIZE + 1)
 
     def compare_voices(self, voice_1, voice_2):
         # Test keyboard reproducibility
