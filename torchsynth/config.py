@@ -64,7 +64,7 @@ class SynthConfig:
         self.reproducible = reproducible
         if self.reproducible:
             # We currently only support reproducibility with batch sizes that
-            # are multiples of 32
+            # are multiples of BASE_REPRODUCIBLE_BATCH_SIZE
             if batch_size % BASE_REPRODUCIBLE_BATCH_SIZE != 0.0:
                 raise ValueError(
                     "Reproducibility currently only supported "
