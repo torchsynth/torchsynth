@@ -26,6 +26,12 @@ class SynthModule(nn.Module):
     WARNING: TorchSynthModules should be atomic and not
     contain other SynthModules. This is similar to a modular synth,
     where modules don't contain submodules.
+
+    Args:
+        synthconfig: These are global settings shared across all
+            modules in the same synth.
+
+        device: The device for creating all tensors.
     """
 
     # This outlines all the parameters available in this module
@@ -38,14 +44,6 @@ class SynthModule(nn.Module):
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T],
     ):
-        """
-        Args:
-            synthconfig (:obj:`SynthGlobals`): These are global settings
-                shared across all modules in the same synth.
-
-            device (:obj:`torch.device`):
-                The device for creating all tensors.
-        """
         nn.Module.__init__(self)
         self.synthconfig = synthconfig
         self.device = device
@@ -106,12 +104,23 @@ class SynthModule(nn.Module):
         return self.synthconfig.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
+        """
+        Fix the length of a signal to the default buffer size of this module.
+        The signal will be truncated if it is larger than the default buffer
+        size or padded with zeros if it is smaller.
+
+        Args:
+            signal: signal to fix the length of
+        """
         return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         """
         Converts a tensor of seconds to number of samples at the current sample rate.
         Returns the number of samples as a float and can be fractional.
+
+        Args:
+            seconds: values in seconds to convert to samples
         """
         return seconds * self.sample_rate
 
@@ -124,7 +133,6 @@ class SynthModule(nn.Module):
     def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Wrapper for _forward that ensures a buffer_size length output.
-        TODO: Make this forward0d() after everything is 1D
         """
         signal = self._forward(*args, **kwargs)
         buffered = self.to_buffer_size(signal)
@@ -133,6 +141,9 @@ class SynthModule(nn.Module):
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
         Add parameters to this SynthModule's torch parameter dictionary.
+
+        Args:
+            parameters: List of parameters to register with this module
         """
         for parameter in parameters:
             assert parameter.parameter_name not in self.torchparameters
@@ -144,7 +155,7 @@ class SynthModule(nn.Module):
         Get a single ModuleParameter for this module
 
         Args:
-            parameter_id: str: Id of the parameter to return
+            parameter_id: Id of the parameter to return
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -155,7 +166,7 @@ class SynthModule(nn.Module):
         Get the value of a parameter in the range of [0,1]
 
         Args:
-            parameter_id (str)  :   Id of the parameter to return the value for
+            parameter_id:   Id of the parameter to return the value for
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -167,8 +178,8 @@ class SynthModule(nn.Module):
         range
 
         Args:
-            parameter_id (str)  : Id of the parameter to update
-            value (T)           : Value to update parameter with
+            parameter_id: Id of the parameter to update
+            value: Value to update parameter with
         """
         value = value.to(self.device)
         self.torchparameters[parameter_id].to_0to1(value)
@@ -181,8 +192,8 @@ class SynthModule(nn.Module):
         Update a specific parameter with a value in the range [0,1]
 
         Args:
-            parameter_id (str)  : Id of the parameter to update
-            value (T)           : Value to update parameter with
+            parameter_id: Id of the parameter to update
+            value: Value to update parameter with
         """
         value = value.to(self.device)
         assert torch.all(0.0 <= value) and torch.all(value <= 1.0)
@@ -191,24 +202,34 @@ class SynthModule(nn.Module):
 
     def p(self, parameter_id: str) -> T:
         """
-        Convenience method for getting the parameter value.
+        Convenience method for getting the parameter value. Returns
+        the parameters in human-readable range.
+
+        Args:
+            parameter_id: Id of the parameter to get
         """
         value = self.torchparameters[parameter_id].from_0to1()
         assert value.shape == (self.batch_size,)
         return value
 
-    def to(self, device=None, **kwargs):
+    def to(self, device: Optional[torch.device] = None, **kwargs):
         """
         Overriding the to call for nn.Module to transfer this module to device. This
         makes sure that the ParameterRanges for each ModuleParamter and the globals
         are also transferred to the correct device.
+
+        Args:
+            device: device to send this module to
         """
         self.update_device(device)
         return super().to(device=device, **kwargs)
 
-    def update_device(self, device=None):
+    def update_device(self, device: Optional[torch.device] = None):
         """
         This handles the device transfer tasks that are not managed by PyTorch.
+
+        Args:
+            device: Device to update this module with
         """
         self.synthconfig.to(device)
         self.device = device
