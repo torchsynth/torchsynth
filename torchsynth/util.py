@@ -52,29 +52,6 @@ def normalize(signal: Signal) -> Signal:
     return signal / max_sample
 
 
-def format_hyperparameter_json(hyperparameter_json: str) -> str:
-    """
-    Return formatted JSON string of hyperparameter dictionary -- this removes
-    the new lines and indentation on the hyperparameter name for nicer printing.
-
-    E.g.
-        "name": [
-          "adsr_1",
-          "attack",
-          "curve"
-        ],
-
-    Becomes:
-        "name": ["adsr_1", "attack", "curve"],
-    """
-    hp = re.sub(
-        r'("name": \[)(\n\s+)(.*)(\n\s+)(.*)(\n\s+)(.*)(\n\s+)',
-        r"\1\3 \5 \7",
-        hyperparameter_json,
-    )
-    return hp
-
-
 # Here are some old functions that we are not currently using but
 # might want in the future.
 # # What is amin here? And maybe we should convert it to a value in defaults?

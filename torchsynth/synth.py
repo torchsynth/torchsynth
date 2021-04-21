@@ -240,17 +240,14 @@ class AbstractSynth(LightningModule):
         assert not ModuleParameter.is_parameter_frozen(parameter)
         setattr(parameter.parameter_range, hyperparameter[2], value)
 
-    def save_hyperparameters(self, filename: str) -> None:
+    def save_hyperparameters(self, filename: str, indent=True) -> None:
         """
         Save hyperparameters to a JSON file
         """
         # Render all hyperparameters as JSON
         hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
-        hp = json.dumps(hp, indent=True)
-        hp = util.format_hyperparameter_json(hp)
-
         with open(os.path.abspath(filename), "w") as fp:
-            fp.write(hp)
+            json.dump(hp, fp, indent=indent)
 
     def load_hyperparameters(self, nebula: str) -> None:
         """
