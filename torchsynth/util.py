@@ -4,8 +4,6 @@ Utility functions for torch DSP related things
 TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
-import re
-
 import torch
 from torch import Tensor as T
 
