@@ -12,7 +12,7 @@ import torch.tensor as tensor
 from torch import Tensor as T
 
 import torchsynth.util as util
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig
 from torchsynth.parameter import ModuleParameter, ModuleParameterRange
 from torchsynth.signal import Signal
 
@@ -622,62 +622,39 @@ class Noise(SynthModule):
 
     # Do we really want deterministic noise within each batch?
     # https://github.com/torchsynth/torchsynth/issues/250
-    noise_batch_size: int = BATCH_SIZE_FOR_REPRODUCIBILITY
+    noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
     # Unfortunately, Final is not supported until Python 3.8
     # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
 
     def __init__(self, synthconfig: SynthConfig, seed: int, **kwargs):
         super().__init__(synthconfig, **kwargs)
 
-        # https://github.com/torchsynth/torchsynth/issues/255
-        if (
-            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
-            and self.synthconfig.reproducible
-        ):
-            raise ValueError(
-                "Reproducibility currently only supported "
-                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
-                "If you want a different batch_size, "
-                "initialize SynthConfig with reproducible=False"
-            )
-
         # Pre-compute default batch size number of noise samples
         generator = torch.Generator(device="cpu").manual_seed(seed)
-        noise = torch.empty((self.noise_batch_size, self.buffer_size), device="cpu")
-        noise.data.uniform_(-1.0, 1.0, generator=generator)
 
-        # Repeat the noise batches if the current batch size is larger than the default
-        if self.batch_size > self.noise_batch_size:
+        # In reproducible mode, we support batch sizes that are multiples
+        # of the BASE_REPRODUCIBLE_BATCH_SIZE
+        if self.synthconfig.reproducible:
             if self.batch_size % self.noise_batch_size != 0:
                 raise ValueError(
-                    "Batch size is not divisible by the default "
-                    f"batch size of {self.noise_batch_size}"
+                    f"Batch size must be a multiple of {self.noise_batch_size} "
+                    "when using reproducible mode. Either change your batch size,"
+                    "or set reproducible=False in the SynthConfig for this module."
                 )
 
-            noise = noise.repeat(self.batch_size // self.noise_batch_size, 1)
+            noise = torch.empty((self.noise_batch_size, self.buffer_size), device="cpu")
+            noise.data.uniform_(-1.0, 1.0, generator=generator)
+            if self.batch_size > self.noise_batch_size:
+                noise = noise.repeat(self.batch_size // self.noise_batch_size, 1)
+        else:
+            # Non-reproducible mode, just render noise of batch size
+            noise = torch.empty((self.batch_size, self.buffer_size), device="cpu")
+            noise.data.uniform_(-1.0, 1.0, generator=generator)
 
         self.register_buffer("noise", noise.to(self.device))
-        self.offset = 0
 
     def _forward(self) -> Signal:
-        # Return noise quickly if we are returning the whole batch
-        # and don't need to offset at all.
-        # TODO: Is this actually correct?
-        if self.batch_size >= self.noise_batch_size and self.offset == 0:
-            return self.noise.as_subclass(Signal)
-
-        # If the batch size is smaller than the default batch size then
-        # we need to select a portion of the noise samples. Offset
-        # is used to cycle through all the noise in the default batch size
-        # or select the correct noise sample from the default batch
-        # TODO https://github.com/torchsynth/torchsynth/issues/255
-        if self.offset == 0:
-            noise = self.noise[: self.batch_size].as_subclass(Signal)
-        else:
-            noise = torch.roll(self.noise, (-self.offset, 0), dims=(0, 1))
-
-        self.offset = (self.offset + self.batch_size) % self.noise_batch_size
-        return noise[: self.batch_size].as_subclass(Signal)
+        return self.noise.as_subclass(Signal)
 
 
 class LFO(ControlRateModule):

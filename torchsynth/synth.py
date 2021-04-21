@@ -17,7 +17,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -272,19 +272,6 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
-
-        # https://github.com/torchsynth/torchsynth/issues/253
-        if (
-            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
-            and self.synthconfig.reproducible
-        ):
-            raise ValueError(
-                "Reproducibility currently only supported "
-                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
-                "If you want a different batch_size, "
-                "initialize SynthConfig with reproducible=False"
-            )
-
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch
