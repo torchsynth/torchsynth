@@ -7,7 +7,8 @@ import torch
 # and abstract synth parameter randomization
 # (https://github.com/torchsynth/torchsynth/issues/253)
 # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
-BATCH_SIZE_FOR_REPRODUCIBILITY = 128
+DEFAULT_BATCH_SIZE = 128
+BASE_REPRODUCIBLE_BATCH_SIZE = 32
 
 
 class SynthConfig:
@@ -20,7 +21,7 @@ class SynthConfig:
 
     def __init__(
         self,
-        batch_size: int = BATCH_SIZE_FOR_REPRODUCIBILITY,
+        batch_size: int = DEFAULT_BATCH_SIZE,
         sample_rate: Optional[int] = 44100,
         buffer_size_seconds: Optional[float] = 4.0,
         control_rate: Optional[int] = 441,
@@ -62,15 +63,12 @@ class SynthConfig:
             )
         self.reproducible = reproducible
         if self.reproducible:
-            # Currently, noise module
-            # (https://github.com/torchsynth/torchsynth/issues/255)
-            # and abstract synth parameter randomization
-            # (https://github.com/torchsynth/torchsynth/issues/253)
-            # are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
-            if batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY:
+            # We currently only support reproducibility with batch sizes that
+            # are multiples of BASE_REPRODUCIBLE_BATCH_SIZE
+            if batch_size % BASE_REPRODUCIBLE_BATCH_SIZE != 0.0:
                 raise ValueError(
                     "Reproducibility currently only supported "
-                    f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
+                    f"with batch_size multiples of {BASE_REPRODUCIBLE_BATCH_SIZE}. "
                     "If you want a different batch_size, "
                     "initialize SynthConfig with reproducible=False"
                 )
