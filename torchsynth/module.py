@@ -41,17 +41,10 @@ class SynthModule(nn.Module):
         """
         Args:
             synthconfig (:obj:`SynthGlobals`): These are global settings
-            shared across all modules in the same synth.
+                shared across all modules in the same synth.
 
             device (:obj:`torch.device`):
-            The device for creating all tensors.
-
-        NOTE:
-        __init__ should only set parameters.
-        We shouldn't be doing computations in __init__ because
-        the computations will change when the parameters change.
-
-        batch_size is the number of settings we are rendering at once.
+                The device for creating all tensors.
         """
         nn.Module.__init__(self)
         self.synthconfig = synthconfig
