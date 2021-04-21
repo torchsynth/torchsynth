@@ -39,16 +39,22 @@ class TestReproducibility:
 
     def test_voice_batch_size_reproducibility(self):
         # Test to make sure different batch sizes produce the same results
-        voice256 = Voice(SynthConfig(batch_size=256))
+        self.run_batch_size_test("cpu")
+        if torch.cuda.is_available():
+            self.run_batch_size_test("cuda")
+
+    def run_batch_size_test(self, device):
+        # Runs test for reproducibility across batch sizes on a device
+        voice256 = Voice(SynthConfig(batch_size=256)).to(device)
         out256 = voice256(0)
 
-        voice128 = Voice(SynthConfig(batch_size=128))
+        voice128 = Voice(SynthConfig(batch_size=128)).to(device)
         out128 = torch.vstack([voice128(0), voice128(1)])
 
-        voice64 = Voice(SynthConfig(batch_size=64))
+        voice64 = Voice(SynthConfig(batch_size=64)).to(device)
         out64 = torch.vstack([voice64(0), voice64(1), voice64(2), voice64(3)])
 
-        voice32 = Voice(SynthConfig(batch_size=32))
+        voice32 = Voice(SynthConfig(batch_size=32)).to(device)
         out32 = torch.vstack(
             [
                 voice32(0),
