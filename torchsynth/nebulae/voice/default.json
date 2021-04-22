@@ -1,1250 +1,626 @@
 [
  {
-  "name": [
-   "adsr_1",
-   "attack",
-   "curve"
-  ],
+  "name": ["adsr_1", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_1",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["adsr_1", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_1",
-   "decay",
-   "curve"
-  ],
+  "name": ["adsr_1", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_1",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["adsr_1", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_1",
-   "sustain",
-   "curve"
-  ],
+  "name": ["adsr_1", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "adsr_1",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["adsr_1", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_1",
-   "release",
-   "curve"
-  ],
+  "name": ["adsr_1", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_1",
-   "release",
-   "symmetric"
-  ],
+  "name": ["adsr_1", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_1",
-   "alpha",
-   "curve"
-  ],
+  "name": ["adsr_1", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "adsr_1",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["adsr_1", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_2",
-   "attack",
-   "curve"
-  ],
+  "name": ["adsr_2", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_2",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["adsr_2", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_2",
-   "decay",
-   "curve"
-  ],
+  "name": ["adsr_2", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_2",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["adsr_2", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_2",
-   "sustain",
-   "curve"
-  ],
+  "name": ["adsr_2", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "adsr_2",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["adsr_2", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_2",
-   "release",
-   "curve"
-  ],
+  "name": ["adsr_2", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "adsr_2",
-   "release",
-   "symmetric"
-  ],
+  "name": ["adsr_2", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "adsr_2",
-   "alpha",
-   "curve"
-  ],
+  "name": ["adsr_2", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "adsr_2",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["adsr_2", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "keyboard",
-   "midi_f0",
-   "curve"
-  ],
+  "name": ["keyboard", "midi_f0", "curve"],
   "value": 1.0
  },
  {
-  "name": [
-   "keyboard",
-   "midi_f0",
-   "symmetric"
-  ],
+  "name": ["keyboard", "midi_f0", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "keyboard",
-   "duration",
-   "curve"
-  ],
+  "name": ["keyboard", "duration", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "keyboard",
-   "duration",
-   "symmetric"
-  ],
+  "name": ["keyboard", "duration", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "frequency",
-   "curve"
-  ],
+  "name": ["lfo_1", "frequency", "curve"],
   "value": 0.25
  },
  {
-  "name": [
-   "lfo_1",
-   "frequency",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "frequency", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "mod_depth",
-   "curve"
-  ],
+  "name": ["lfo_1", "mod_depth", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1",
-   "mod_depth",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "mod_depth", "symmetric"],
   "value": true
  },
  {
-  "name": [
-   "lfo_1",
-   "initial_phase",
-   "curve"
-  ],
+  "name": ["lfo_1", "initial_phase", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "initial_phase",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "initial_phase", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "sin",
-   "curve"
-  ],
+  "name": ["lfo_1", "sin", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "sin",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "sin", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "tri",
-   "curve"
-  ],
+  "name": ["lfo_1", "tri", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "tri",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "tri", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "saw",
-   "curve"
-  ],
+  "name": ["lfo_1", "saw", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "saw",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "saw", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "rsaw",
-   "curve"
-  ],
+  "name": ["lfo_1", "rsaw", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "rsaw",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "rsaw", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1",
-   "sqr",
-   "curve"
-  ],
+  "name": ["lfo_1", "sqr", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1",
-   "sqr",
-   "symmetric"
-  ],
+  "name": ["lfo_1", "sqr", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "attack",
-   "curve"
-  ],
+  "name": ["lfo_1_amp_adsr", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["lfo_1_amp_adsr", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "decay",
-   "curve"
-  ],
+  "name": ["lfo_1_amp_adsr", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["lfo_1_amp_adsr", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "sustain",
-   "curve"
-  ],
+  "name": ["lfo_1_amp_adsr", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["lfo_1_amp_adsr", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "release",
-   "curve"
-  ],
+  "name": ["lfo_1_amp_adsr", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "release",
-   "symmetric"
-  ],
+  "name": ["lfo_1_amp_adsr", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "alpha",
-   "curve"
-  ],
+  "name": ["lfo_1_amp_adsr", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1_amp_adsr",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["lfo_1_amp_adsr", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "attack",
-   "curve"
-  ],
+  "name": ["lfo_1_rate_adsr", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["lfo_1_rate_adsr", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "decay",
-   "curve"
-  ],
+  "name": ["lfo_1_rate_adsr", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["lfo_1_rate_adsr", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "sustain",
-   "curve"
-  ],
+  "name": ["lfo_1_rate_adsr", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["lfo_1_rate_adsr", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "release",
-   "curve"
-  ],
+  "name": ["lfo_1_rate_adsr", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "release",
-   "symmetric"
-  ],
+  "name": ["lfo_1_rate_adsr", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "alpha",
-   "curve"
-  ],
+  "name": ["lfo_1_rate_adsr", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_1_rate_adsr",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["lfo_1_rate_adsr", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "frequency",
-   "curve"
-  ],
+  "name": ["lfo_2", "frequency", "curve"],
   "value": 0.25
  },
  {
-  "name": [
-   "lfo_2",
-   "frequency",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "frequency", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "mod_depth",
-   "curve"
-  ],
+  "name": ["lfo_2", "mod_depth", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2",
-   "mod_depth",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "mod_depth", "symmetric"],
   "value": true
  },
  {
-  "name": [
-   "lfo_2",
-   "initial_phase",
-   "curve"
-  ],
+  "name": ["lfo_2", "initial_phase", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "initial_phase",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "initial_phase", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "sin",
-   "curve"
-  ],
+  "name": ["lfo_2", "sin", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "sin",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "sin", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "tri",
-   "curve"
-  ],
+  "name": ["lfo_2", "tri", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "tri",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "tri", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "saw",
-   "curve"
-  ],
+  "name": ["lfo_2", "saw", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "saw",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "saw", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "rsaw",
-   "curve"
-  ],
+  "name": ["lfo_2", "rsaw", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "rsaw",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "rsaw", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2",
-   "sqr",
-   "curve"
-  ],
+  "name": ["lfo_2", "sqr", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2",
-   "sqr",
-   "symmetric"
-  ],
+  "name": ["lfo_2", "sqr", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "attack",
-   "curve"
-  ],
+  "name": ["lfo_2_amp_adsr", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["lfo_2_amp_adsr", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "decay",
-   "curve"
-  ],
+  "name": ["lfo_2_amp_adsr", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["lfo_2_amp_adsr", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "sustain",
-   "curve"
-  ],
+  "name": ["lfo_2_amp_adsr", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["lfo_2_amp_adsr", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "release",
-   "curve"
-  ],
+  "name": ["lfo_2_amp_adsr", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "release",
-   "symmetric"
-  ],
+  "name": ["lfo_2_amp_adsr", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "alpha",
-   "curve"
-  ],
+  "name": ["lfo_2_amp_adsr", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2_amp_adsr",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["lfo_2_amp_adsr", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "attack",
-   "curve"
-  ],
+  "name": ["lfo_2_rate_adsr", "attack", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "attack",
-   "symmetric"
-  ],
+  "name": ["lfo_2_rate_adsr", "attack", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "decay",
-   "curve"
-  ],
+  "name": ["lfo_2_rate_adsr", "decay", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "decay",
-   "symmetric"
-  ],
+  "name": ["lfo_2_rate_adsr", "decay", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "sustain",
-   "curve"
-  ],
+  "name": ["lfo_2_rate_adsr", "sustain", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "sustain",
-   "symmetric"
-  ],
+  "name": ["lfo_2_rate_adsr", "sustain", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "release",
-   "curve"
-  ],
+  "name": ["lfo_2_rate_adsr", "release", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "release",
-   "symmetric"
-  ],
+  "name": ["lfo_2_rate_adsr", "release", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "alpha",
-   "curve"
-  ],
+  "name": ["lfo_2_rate_adsr", "alpha", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "lfo_2_rate_adsr",
-   "alpha",
-   "symmetric"
-  ],
+  "name": ["lfo_2_rate_adsr", "alpha", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mixer",
-   "vco_1",
-   "curve"
-  ],
+  "name": ["mixer", "vco_1", "curve"],
   "value": 1.0
  },
  {
-  "name": [
-   "mixer",
-   "vco_1",
-   "symmetric"
-  ],
+  "name": ["mixer", "vco_1", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mixer",
-   "vco_2",
-   "curve"
-  ],
+  "name": ["mixer", "vco_2", "curve"],
   "value": 1.0
  },
  {
-  "name": [
-   "mixer",
-   "vco_2",
-   "symmetric"
-  ],
+  "name": ["mixer", "vco_2", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mixer",
-   "noise",
-   "curve"
-  ],
+  "name": ["mixer", "noise", "curve"],
   "value": 0.025
  },
  {
-  "name": [
-   "mixer",
-   "noise",
-   "symmetric"
-  ],
+  "name": ["mixer", "noise", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_1_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_1_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_1_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_1_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_1_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_1_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_1_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_1_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_2_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_2_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_2_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_2_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_2_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_2_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->vco_2_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_1->vco_2_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->noise_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_1->noise_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_1->noise_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_1->noise_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_1_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_1_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_1_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_1_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_1_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_1_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_1_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_1_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_2_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_2_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_2_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_2_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_2_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_2_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->vco_2_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_2->vco_2_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->noise_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "adsr_2->noise_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "adsr_2->noise_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "adsr_2->noise_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_1_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_1_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_1_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_1_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_1_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_1_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_1_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_1_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_2_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_2_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_2_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_2_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_2_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_2_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->vco_2_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_1->vco_2_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->noise_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_1->noise_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_1->noise_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_1->noise_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_1_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_1_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_1_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_1_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_1_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_1_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_1_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_1_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_2_pitch",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_2_pitch", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_2_pitch",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_2_pitch", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_2_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_2_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->vco_2_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_2->vco_2_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->noise_amp",
-   "curve"
-  ],
+  "name": ["mod_matrix", "lfo_2->noise_amp", "curve"],
   "value": 0.5
  },
  {
-  "name": [
-   "mod_matrix",
-   "lfo_2->noise_amp",
-   "symmetric"
-  ],
+  "name": ["mod_matrix", "lfo_2->noise_amp", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "vco_1",
-   "tuning",
-   "curve"
-  ],
+  "name": ["vco_1", "tuning", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "vco_1",
-   "tuning",
-   "symmetric"
-  ],
+  "name": ["vco_1", "tuning", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "vco_1",
-   "mod_depth",
-   "curve"
-  ],
+  "name": ["vco_1", "mod_depth", "curve"],
   "value": 0.2
  },
  {
-  "name": [
-   "vco_1",
-   "mod_depth",
-   "symmetric"
-  ],
+  "name": ["vco_1", "mod_depth", "symmetric"],
   "value": true
  },
  {
-  "name": [
-   "vco_1",
-   "initial_phase",
-   "curve"
-  ],
+  "name": ["vco_1", "initial_phase", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "vco_1",
-   "initial_phase",
-   "symmetric"
-  ],
+  "name": ["vco_1", "initial_phase", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "vco_2",
-   "tuning",
-   "curve"
-  ],
+  "name": ["vco_2", "tuning", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "vco_2",
-   "tuning",
-   "symmetric"
-  ],
+  "name": ["vco_2", "tuning", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "vco_2",
-   "mod_depth",
-   "curve"
-  ],
+  "name": ["vco_2", "mod_depth", "curve"],
   "value": 0.2
  },
  {
-  "name": [
-   "vco_2",
-   "mod_depth",
-   "symmetric"
-  ],
+  "name": ["vco_2", "mod_depth", "symmetric"],
   "value": true
  },
  {
-  "name": [
-   "vco_2",
-   "initial_phase",
-   "curve"
-  ],
+  "name": ["vco_2", "initial_phase", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "vco_2",
-   "initial_phase",
-   "symmetric"
-  ],
+  "name": ["vco_2", "initial_phase", "symmetric"],
   "value": false
  },
  {
-  "name": [
-   "vco_2",
-   "shape",
-   "curve"
-  ],
+  "name": ["vco_2", "shape", "curve"],
   "value": 1
  },
  {
-  "name": [
-   "vco_2",
-   "shape",
-   "symmetric"
-  ],
+  "name": ["vco_2", "shape", "symmetric"],
   "value": false
  }
 ]
