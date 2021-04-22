@@ -519,18 +519,15 @@ class VCO(SynthModule):
         Generates audio signal from modulation signal.
 
         There are three representations of the 'pitch' at play here: (1) midi,
-        (2) instantaneous frequency, and (3) phase, a.k.a. 'argument'.
+        (2) instantaneous frequency, and (3) phase, a.k.a. 'argument':
 
-        (1) midi    This is an abuse of the standard midi convention, where
-                    semitone pitches are mapped from 0 - 127. Here it's a
-                    convenient way to represent pitch linearly. An A above
-                    middle C is midi 69.
-
-        (2) freq    Pitch scales logarithmically in frequency. A is 440Hz.
-
-        (3) phase   This is the argument of the cosine function that generates
-                    sound. Frequency is the first derivative of phase; phase is
-                    integrated frequency (~ish).
+        1. **midi** - This is an abuse of the standard midi convention, where
+           semitone pitches are mapped from 0 - 127. Here it's a convenient
+           way to represent pitch linearly. An A above middle C is midi 69.
+        2. **freq** - Pitch scales logarithmically in frequency. A is 440Hz.
+        3. **phase** - This is the argument of the cosine function that generates
+           sound. Frequency is the first derivative of phase; phase is integrated
+           frequency (~ish).
 
         First we generate the 'pitch contour' of the signal in midi values (mod
         contour + base pitch). Then we convert to a phase argument (via

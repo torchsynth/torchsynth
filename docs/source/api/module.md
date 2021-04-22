@@ -69,6 +69,7 @@ VCO
     :members:
     :undoc-members:
     :show-inheritance:
+    :private-members: _forward
 
 
 Control Rate Modules
