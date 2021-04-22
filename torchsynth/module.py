@@ -265,12 +265,25 @@ class ControlRateModule(SynthModule):
         return self.synthconfig.control_buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
+        """
+        Fix the length of a signal to the default buffer size of this module.
+        The signal will be truncated if it is larger than the default buffer
+        size or padded with zeros if it is smaller.
+
+        *Uses the control rate buffer size*
+
+        Args:
+            signal: signal to fix the length of
+        """
         return util.fix_length(signal, self.control_buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         """
         Converts a tensor of seconds to number of samples at the current control rate.
         Returns the number of samples as a float and can be fractional.
+
+        Args:
+            seconds: value in seconds to convert to samples
         """
         return seconds * self.control_rate
 
@@ -284,6 +297,10 @@ class ControlRateModule(SynthModule):
 class ADSR(ControlRateModule):
     """
     Envelope class for building a control rate ADSR signal.
+
+    Args:
+        synthconfig: Configuration for module
+        device: device for this module to run on
     """
 
     #: ADSR Parameters
@@ -347,6 +364,9 @@ class ADSR(ControlRateModule):
 
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
+
+        Args:
+            note_on_duration: Duration that midi note is held for in seconds
         """
 
         if self.synthconfig.debug:
@@ -378,11 +398,10 @@ class ADSR(ControlRateModule):
         method works by tilting and clipping ramps between 0 and 1, then
         applying some scaling factor (`alpha`).
 
-        Parameters
-        ----------
-        duration T: Length of the ramp in seconds
-        start Optional[T]: Initial delay of ramp in seconds. Defaults to None (0 start)
-        inverse Optional[bool]: Flip ramp. Becomes a ramp down. Defaults to False
+        Args:
+            duration: Length of the ramp in seconds
+            start: Initial delay of ramp in seconds
+            inverse: Flip ramp. Becomes a ramp down
         """
 
         assert duration.ndim == 1
@@ -417,15 +436,35 @@ class ADSR(ControlRateModule):
         return ramp.as_subclass(Signal)
 
     def make_attack(self, attack_time) -> Signal:
+        """
+        Create the attack portion of the envelope
+
+        Args:
+            attack_time: length of the attack in seconds
+        """
         return self._ramp(attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
+        """
+        Create the decay portion of the envelope
+
+        Args:
+            attack_time: length of the attack in seconds
+            decay_time: length of the decay time in seconds
+        """
         sustain = self.p("sustain").unsqueeze(1)
         a = 1.0 - sustain
         b = self._ramp(decay_time, start=attack_time, inverse=True)
         return torch.squeeze(a * b + sustain)
 
     def make_release(self, note_on_duration) -> Signal:
+        """
+        Create the release portion of the envelope
+
+        Args:
+            note_on_duration: duration of midi note in seconds (release starts
+                when the midi note is released)
+        """
         return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
 
     def __str__(self):  # pragma: no cover
@@ -448,8 +487,8 @@ class VCO(SynthModule):
     stationary audio signal at its base pitch.
 
     Args:
-        synthconfig (SynthConfig) : global args, see SynthModule
-        phase (:obj:'T',optional) :   initial phase values
+        synthconfig: global args, see SynthModule
+        phase: initial phase values
     """
 
     default_parameter_ranges: List[ModuleParameterRange] = [
@@ -497,6 +536,9 @@ class VCO(SynthModule):
         contour + base pitch). Then we convert to a phase argument (via
         frequency), then output sound.
 
+        Args:
+            midi_f0: Fundamental of note in midi note value (0-127)
+            mod_signal: Modulation signal to apply to the pitch
         """
         assert midi_f0.shape == (self.batch_size,)
 
@@ -513,6 +555,14 @@ class VCO(SynthModule):
         return output.as_subclass(Signal)
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
+        """
+        Creates a time-varying control signal in frequency (Hz) from the midi
+        fundamental frequency and the modulation signal.
+
+        Args:
+            midi_f0: fundamental frequency in midi
+            mod_signal: pitch modulation signal in midi
+        """
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = torch.clamp(
             (midi_f0 + self.p("tuning")).unsqueeze(1) + modulation, 0.0, 127.0
@@ -522,12 +572,19 @@ class VCO(SynthModule):
     def make_argument(self, freq: Signal) -> Signal:
         """
         Generates the phase argument to feed a cosine function to make audio.
+
+        Args:
+            freq: time-varying frequency signal in Hz
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        Dummy method. Overridden by child class VCO's.
+        Must be implemented in deriving classes
+
+        Args:
+            argument: the phase of the oscillator at each sample
+            midi_f0: fundamental frequency in midi
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -554,10 +611,19 @@ class TorchFmVCO(VCO):
     as the "modulation index" which is tied to the fundamental of the oscillator
     being modulated:
 
-        modulation_index = frequency_deviation / modulation_frequency
+        ``modulation_index = frequency_deviation / modulation_frequency``
     """
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
+        """
+        Creates a time-varying control signal in frequency (Hz) from the fundamental
+        frequency and the modulation signal. Assumes the modulation signal is in Hz
+        as opposed to the regular VCO which assumes the modulation signal is in midi.
+
+        Args:
+            midi_f0: fundamental frequency in midi
+            mod_signal: frequency modulation signal
+        """
         # Compute modulation in Hz space (rather than midi-space).
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
         fm_depth = self.p("mod_depth").unsqueeze(1) * f0_hz
@@ -565,6 +631,13 @@ class TorchFmVCO(VCO):
         return torch.clamp(f0_hz + modulation_hz, 0.0, self.nyquist)
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+        """
+        FM oscillator -- sine wave operator
+
+        Args:
+            argument: the phase of the oscillator at each sample
+            midi_f0: fundamental frequency in midi
+        """
         # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
@@ -588,6 +661,13 @@ class SquareSawVCO(VCO):
     ]
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+        """
+        SquareSaw wave oscillator.
+
+        Args:
+            argument: the phase of the oscillator at each sample
+            midi_f0: fundamental frequency in midi
+        """
         partials = self.partials_constant(midi_f0).unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
         shape = self.p("shape").unsqueeze(1)
@@ -599,6 +679,9 @@ class SquareSawVCO(VCO):
         square / saw wave in order to keep aliasing at an acceptable level.
         Higher frequencies require fewer partials whereas lower frequency sounds
         can safely have more partials without causing audible aliasing.
+
+        Args:
+            midi_f0: fundamental frequency of the oscillator in midi
         """
         max_pitch = (
             midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), tensor(0))
