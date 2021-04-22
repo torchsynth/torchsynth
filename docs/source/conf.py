@@ -183,7 +183,7 @@ class TorchSynthParameterDoc(ClassDocumenter):
     def add_directive_header(self, sig: str) -> None:
         source_name = self.get_sourcename()
         self.add_line("", source_name)
-        self.add_line(".. attribute:: ModuleParamaters", source_name)
+        self.add_line(":Module Parameters:", source_name)
         self.add_line("", source_name)
 
     def add_content(self, more_content: Any, no_docstring: bool = False) -> None:
@@ -192,12 +192,7 @@ class TorchSynthParameterDoc(ClassDocumenter):
         source_name = self.get_sourcename()
         self.add_line("", source_name)
         for parameter in self.object:
-            print(self.objpath)
             self.add_line(f".. attribute:: {parameter.name}", source_name)
-            self.add_line(
-                f"  :type: {stringify_typehint('torchsynth.parameter.ModuleParameter')}",
-                source_name,
-            )
             self.add_line("", source_name)
             self.add_line(f"  {parameter.description}.", source_name)
             self.add_line("", source_name)

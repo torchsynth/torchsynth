@@ -4,9 +4,6 @@ torchsynth.module
 ```{eval-rst}
 SynthModule
 -----------
-.. autoattribute:: torchsynth.module.SynthModule.default_parameter_ranges
-    :noindex:
-
 .. autoclass:: torchsynth.module.SynthModule
     :members:
     :undoc-members:
@@ -14,26 +11,28 @@ SynthModule
     :exclude-members: default_parameter_ranges
     :noindex:
 
-ControlModules
---------------
+Audio Rate Modules
+------------------
+These modules operate at full audio sampling rate.
+
+VCO
+===
+.. autoclass:: torchsynth.module.VCO
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :noindex:
+
+
+Control Rate Modules
+--------------------
 
 ADSR
 ====
-.. autotorchsynthparam:: torchsynth.module.ADSR.default_parameter_ranges
-    :noindex:
-
 .. autoclass:: torchsynth.module.ADSR
     :members:
     :undoc-members:
     :show-inheritance:
-    :exclude-members: default_parameter_ranges
     :noindex:
 
-```
-
-```{eval-rst}
-.. automodule:: torchsynth.module
-   :members:
-   :undoc-members:
-   :show-inheritance:
 ```
