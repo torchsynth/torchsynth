@@ -622,6 +622,12 @@ class Noise(SynthModule):
 
     # Do we really want deterministic noise within each batch?
     # https://github.com/torchsynth/torchsynth/issues/250
+    # For performance noise is pre-computed. In order to maintain
+    # reproducibility noise must be computed on the CPU and then transferred
+    # to the GPU, if a GPU is being used. We pre-compute BATCH_SIZE_FOR_REPRODUCIBILITY
+    # samples of noise and then repeat those for larger batch sizes.
+    # To keep things simple we only support multiples of BATCH_SIZE_FOR_REPRODUCIBILITY
+    # when reproducibility mode is enabled.
     noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
     # Unfortunately, Final is not supported until Python 3.8
     # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
