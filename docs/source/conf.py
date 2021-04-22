@@ -13,7 +13,6 @@
 import os
 import sys
 import torch
-from torchsynth.parameter import ModuleParameterRange
 from typing import Any, Optional
 
 from sphinx.application import Sphinx
@@ -27,6 +26,8 @@ sys.path.insert(0, os.path.abspath(PATH_ROOT))
 sys.path.insert(0, os.path.abspath("../.."))
 
 sys.path.insert(0, os.path.abspath("torchsynth"))
+
+from torchsynth.parameter import ModuleParameterRange
 
 
 # https://github.com/readthedocs/readthedocs.org/issues/1846
