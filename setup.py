@@ -36,7 +36,7 @@ setup(
     package_data={"torchsynth": ["nebulae/voice/*.json"]},
     # package_dir={"": "src"},
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     install_requires=[
         "numpy",
         "scipy",
