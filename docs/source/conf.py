@@ -17,7 +17,8 @@ from torchsynth.parameter import ModuleParameterRange
 from typing import Any, Optional
 
 from sphinx.application import Sphinx
-from sphinx.ext.autodoc import ClassDocumenter, bool_option
+from sphinx.ext.autodoc import ClassDocumenter
+from sphinx.util.typing import stringify as stringify_typehint
 
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
@@ -161,11 +162,13 @@ html_css_files = [
 
 
 class TorchSynthParameterDoc(ClassDocumenter):
+    """
+    Custom class for documenting
+    """
+
     objtype = "torchsynthparam"
     directivetype = "attribute"
     priority = 10 + ClassDocumenter.priority
-    option_spec = dict(ClassDocumenter.option_spec)
-    option_spec["hex"] = bool_option
 
     @classmethod
     def can_document_member(
@@ -189,7 +192,12 @@ class TorchSynthParameterDoc(ClassDocumenter):
         source_name = self.get_sourcename()
         self.add_line("", source_name)
         for parameter in self.object:
+            print(self.objpath)
             self.add_line(f".. attribute:: {parameter.name}", source_name)
+            self.add_line(
+                f"  :type: {stringify_typehint('torchsynth.parameter.ModuleParameter')}",
+                source_name,
+            )
             self.add_line("", source_name)
             self.add_line(f"  {parameter.description}.", source_name)
             self.add_line("", source_name)
