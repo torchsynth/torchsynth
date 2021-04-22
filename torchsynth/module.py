@@ -574,10 +574,9 @@ class SquareSawVCO(VCO):
     VCO that can be either a square or a sawtooth waveshape.
     Tweak with the shape parameter. (0 is square.)
 
-    With apologies to:
-
-    Lazzarini, Victor, and Joseph Timoney. "New perspectives on distortion synthesis for
-        virtual analog oscillators." Computer Music Journal 34, no. 1 (2010): 28-40.
+    With apologies to Lazzarini, Victor, and Joseph Timoney. "New perspectives on
+    distortion synthesis for virtual analog oscillators."
+    Computer Music Journal 34, no. 1 (2010): 28-40.
     """
 
     default_parameter_ranges: List[
