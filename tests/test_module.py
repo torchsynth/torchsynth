@@ -8,7 +8,7 @@ import torch.tensor as tensor
 
 import torchsynth
 import torchsynth.module as synthmodule
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig
 
 
 class TestSynthModule:
@@ -195,9 +195,9 @@ class TestSynthModule:
         # of noise signals. All these noise samples should equal each other.
         # i.e., noise should be returned deterministically regardless of the
         # batch size.
-        synthconfig32 = SynthConfig(32, reproducible=False)
-        synthconfig64 = SynthConfig(64, reproducible=False)
-        synthconfig128 = SynthConfig(128, reproducible=False)
+        synthconfig32 = SynthConfig(32)
+        synthconfig64 = SynthConfig(64)
+        synthconfig128 = SynthConfig(128)
 
         noise32 = synthmodule.Noise(synthconfig32, seed=0)
         noise64 = synthmodule.Noise(synthconfig64, seed=0)
@@ -215,11 +215,9 @@ class TestSynthModule:
         assert torch.all(out3 != out4)
 
         with pytest.raises(ValueError):
-            # If the batch size >= BATCH_SIZE_FOR_REPRODUCIBILITY
-            # but not divisible by it, it should raise an error
-            synthconfigwrong = SynthConfig(
-                BATCH_SIZE_FOR_REPRODUCIBILITY + 1, reproducible=False
-            )
+            # If the batch size is not a multiple of BASE_REPRODUCIBLE_BATCH_SIZE,
+            # it should raise an error in reproducible mode
+            synthconfigwrong = SynthConfig(BASE_REPRODUCIBLE_BATCH_SIZE + 1)
             synthmodule.Noise(synthconfigwrong, seed=0)
 
 

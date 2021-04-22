@@ -17,7 +17,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -239,28 +239,36 @@ class AbstractSynth(LightningModule):
         assert not ModuleParameter.is_parameter_frozen(parameter)
         setattr(parameter.parameter_range, hyperparameter[2], value)
 
-    def save_hyperparameters(self, filename: str) -> None:
+    def save_hyperparameters(self, filename: str, indent=True) -> None:
         """
         Save hyperparameters to a JSON file
         """
+        # Render all hyperparameters as JSON
         hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
         with open(os.path.abspath(filename), "w") as fp:
-            json.dump(hp, fp, indent=True)
+            json.dump(hp, fp, indent=indent)
 
-    def load_hyperparameters(self, name: str) -> None:
+    def load_hyperparameters(self, nebula: str) -> None:
         """
         Load hyperparameters from a JSON file
+
+        Args:
+            nebula: nebula to load. This can either be the name of a nebula that is
+                included in torchsynth, or the filename of a nebula json file to load.
+
+        TODO add nebula list in docs
+        See https://github.com/torchsynth/torchsynth/issues/324
         """
 
         # Try to load nebulae from package resources, otherwise, try
         # to load from a filename
         try:
             synth = type(self).__name__.lower()
-            nebulae_str = f"nebulae/{synth}/{name}.json"
+            nebulae_str = f"nebulae/{synth}/{nebula}.json"
             data = pkg_resources.resource_string(__name__, nebulae_str)
             hyperparameters = json.loads(data)
         except FileNotFoundError:
-            with open(os.path.abspath(name), "r") as fp:
+            with open(os.path.abspath(nebula), "r") as fp:
                 hyperparameters = json.load(fp)
 
         # Update all hyperparameters in this synth
@@ -272,19 +280,6 @@ class AbstractSynth(LightningModule):
         Randomize all parameters
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
-
-        # https://github.com/torchsynth/torchsynth/issues/253
-        if (
-            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
-            and self.synthconfig.reproducible
-        ):
-            raise ValueError(
-                "Reproducibility currently only supported "
-                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
-                "If you want a different batch_size, "
-                "initialize SynthConfig with reproducible=False"
-            )
-
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch

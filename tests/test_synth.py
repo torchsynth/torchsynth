@@ -131,8 +131,8 @@ class TestAbstractSynth:
             # cpu synth. Small numerical differences between computations of
             # GPU and CPU add up, so we need to relax the constraints here.
             # TODO https://github.com/torchsynth/torchsynth/issues/256
-            # assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-1
-            # assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 2e-1
+            assert torch.mean(torch.abs(cuda11.detach().cpu() - x11)) < 2e-1
+            assert torch.mean(torch.abs(cuda2.detach().cpu() - x2)) < 2e-1
 
     def test_parameter_randomization(self):
         synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
