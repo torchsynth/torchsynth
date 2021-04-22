@@ -13,6 +13,12 @@
 import os
 import sys
 import torch
+from torchsynth.parameter import ModuleParameterRange
+from typing import Any, Optional
+
+from sphinx.application import Sphinx
+from sphinx.ext.autodoc import ClassDocumenter, bool_option
+
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..", "..")
@@ -152,3 +158,50 @@ panels_add_bootstrap_css = False
 html_css_files = [
     "css/custom.css",
 ]
+
+
+class TorchSynthParameterDoc(ClassDocumenter):
+    objtype = "torchsynthparam"
+    directivetype = "attribute"
+    priority = 10 + ClassDocumenter.priority
+    option_spec = dict(ClassDocumenter.option_spec)
+    option_spec["hex"] = bool_option
+
+    @classmethod
+    def can_document_member(
+        cls, member: Any, membername: str, isattr: bool, parent: Any
+    ) -> bool:
+        if type(member) == list and all(
+            type(x) == ModuleParameterRange for x in member
+        ):
+            return True
+        return False
+
+    def add_directive_header(self, sig: str) -> None:
+        source_name = self.get_sourcename()
+        self.add_line("", source_name)
+        self.add_line(".. attribute:: ModuleParamaters", source_name)
+        self.add_line("", source_name)
+
+    def add_content(self, more_content: Any, no_docstring: bool = False) -> None:
+        super().add_content(more_content, no_docstring)
+
+        source_name = self.get_sourcename()
+        self.add_line("", source_name)
+        for parameter in self.object:
+            self.add_line(f".. attribute:: {parameter.name}", source_name)
+            self.add_line("", source_name)
+            self.add_line(f"  {parameter.description}.", source_name)
+            self.add_line("", source_name)
+            self.add_line(
+                f"  (**Min**: {parameter.minimum}, "
+                f"**Max**: {parameter.maximum}, "
+                f"**Curve**: {parameter.curve}, "
+                f"**Symmetric**: {parameter.symmetric})",
+                source_name,
+            )
+            self.add_line("", source_name)
+
+
+def setup(app: Sphinx):
+    app.add_autodocumenter(TorchSynthParameterDoc)

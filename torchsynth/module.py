@@ -286,6 +286,7 @@ class ADSR(ControlRateModule):
     Envelope class for building a control rate ADSR signal.
     """
 
+    #: ADSR Parameters
     default_parameter_ranges: List[ModuleParameterRange] = [
         ModuleParameterRange(
             0.0, 2.0, curve=0.5, name="attack", description="attack time (sec)"
