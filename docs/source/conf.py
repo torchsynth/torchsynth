@@ -163,7 +163,7 @@ html_css_files = [
 
 class TorchSynthParameterDoc(ClassDocumenter):
     """
-    Custom class for documenting
+    Custom class for documenting torchsynth SynthModule parameters
     """
 
     objtype = "torchsynthparam"
