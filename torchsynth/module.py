@@ -895,14 +895,13 @@ class ModulationMixer(SynthModule):
     Each output is a linear combination of all in the input signals
     using the mixing levels defined by NxM mixing parameters.
 
-    Parameters
-    ----------
-    synthconfig (SynthGlobals) :   Synth config settings
-    n_input     (int)           :   Number of signals this module will mix
-    n_output    (int)           :   Number of output signals
-    curves  (optional, list)    :   A list of curve values to use for underlying
-                                    mix level parameters for each mod source.
-                                    Defaults to 0.5. Must be same number of input.
+    Args:
+        synthconfig:   Synth config settings
+        n_input:   Number of signals this module will mix
+        n_output:   Number of output signals
+        curves:   A list of curve values to use for underlying
+            mix level parameters for each mod source. Defaults to 0.5.
+            Must be same number of input.
     """
 
     def __init__(
