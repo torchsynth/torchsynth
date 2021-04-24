@@ -19,19 +19,22 @@ from torchsynth.signal import Signal
 
 class SynthModule(nn.Module):
     """
-    Base class for synthesis modules, in torch.
-    All parameters are assumed to be 1D tensors,
-    the dimension size being the batch size.
+    A base class for synthesis modules. `SynthModule` is primarily responsible
+    for feeding parameters and their values to the PyTorch backend. All
+    parameters are assumed to be `batchsize`-length 1-D tensors.
 
-    WARNING: TorchSynthModules should be atomic and not
-    contain other SynthModules. This is similar to a modular synth,
-    where modules don't contain submodules.
+    All `SynthModule` objects should be atomic, i.e., they should not contain
+    other `SynthModule` objects. This design choice is in the spirit of
+    modular synthesis.
 
     Args:
-        synthconfig: These are global settings shared across all
-            modules in the same synth.
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
 
-        device: The device for creating all tensors.
+        device: An object representing the device on which a `torch` tensors
+            are be allocated (as per PyTorch, broadly).
     """
 
     # This outlines all the parameters available in this module
