@@ -394,7 +394,7 @@ class ADSR(ControlRateModule):
 
         return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
 
-    def _ramp(
+    def ramp(
         self, duration: T, start: Optional[T] = None, inverse: Optional[bool] = False
     ) -> Signal:
         """
@@ -448,7 +448,7 @@ class ADSR(ControlRateModule):
         Args:
             attack_time: length of the attack in seconds
         """
-        return self._ramp(attack_time)
+        return self.ramp(attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
         """
@@ -460,7 +460,7 @@ class ADSR(ControlRateModule):
         """
         sustain = self.p("sustain").unsqueeze(1)
         a = 1.0 - sustain
-        b = self._ramp(decay_time, start=attack_time, inverse=True)
+        b = self.ramp(decay_time, start=attack_time, inverse=True)
         return torch.squeeze(a * b + sustain)
 
     def make_release(self, note_on_duration) -> Signal:
@@ -471,7 +471,7 @@ class ADSR(ControlRateModule):
             note_on_duration: duration of midi note in seconds (release starts
                 when the midi note is released)
         """
-        return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
+        return self.ramp(self.p("release"), start=note_on_duration, inverse=True)
 
     def __str__(self):  # pragma: no cover
         return (
@@ -603,10 +603,8 @@ class SineVCO(VCO):
         return torch.cos(argument)
 
 
-class TorchFmVCO(VCO):
+class FmVCO(VCO):
     """
-    # TODO Turn this into its own voice so we can be a bit smarter about aliasing
-    # See https://github.com/torchsynth/torchsynth/issues/145
     Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
 
     Typical modulation is calculated in pitch-space (midi). For FM to work,
@@ -635,13 +633,10 @@ class TorchFmVCO(VCO):
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        FM oscillator -- sine wave operator
-
         Args:
             argument: the phase of the oscillator at each sample
             midi_f0: fundamental frequency in midi
         """
-        # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
 
@@ -650,9 +645,10 @@ class SquareSawVCO(VCO):
     VCO that can be either a square or a sawtooth waveshape.
     Tweak with the shape parameter. (0 is square.)
 
-    With apologies to Lazzarini, Victor, and Joseph Timoney. "New perspectives on
-    distortion synthesis for virtual analog oscillators."
-    Computer Music Journal 34, no. 1 (2010): 28-40.
+    With apologies to Lazzarini and Timoney (2010).
+    `"New perspectives on distortion synthesis for virtual analog oscillators."
+    <https://direct.mit.edu/comj/article/34/1/28/94288/New-Perspectives-on-Distortion-Synthesis-for>`_
+    Computer Music Journal 34, no. 1: 28-40.
     """
 
     default_parameter_ranges: List[
@@ -665,8 +661,6 @@ class SquareSawVCO(VCO):
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        SquareSaw wave oscillator.
-
         Args:
             argument: the phase of the oscillator at each sample
             midi_f0: fundamental frequency in midi
@@ -698,8 +692,13 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
-        return audio_in * control_in
+    def _forward(self, audio: Signal, amp_control: Signal) -> Signal:
+        """
+        Args:
+            audio: audio input to apply VCA to
+            amp_control: time-varying amplitude modulation signal
+        """
+        return audio * amp_control
 
 
 class ControlRateVCA(ControlRateModule):
@@ -707,8 +706,13 @@ class ControlRateVCA(ControlRateModule):
     A VCA that operates at control rate
     """
 
-    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
-        return audio_in * control_in
+    def _forward(self, control: Signal, amp_control: Signal) -> Signal:
+        """
+        Args:
+            control: control signal input to apply VCA to
+            amp_control: time-varying amplitude modulation signal
+        """
+        return control * amp_control
 
 
 class Noise(SynthModule):
