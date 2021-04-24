@@ -719,20 +719,28 @@ class Noise(SynthModule):
     """
     Generates white noise that is the same length as the buffer.
 
-    A batch size number of noise samples are pre-computed for performance.
-    A seed for the noise generator is required. If you use multiple of
-    these in a synth then choose different seeds for each instance.
+    For performance noise is pre-computed. In order to maintain
+    reproducibility noise must be computed on the CPU and then transferred
+    to the GPU, if a GPU is being used. We pre-compute
+    :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`
+    samples of noise and then repeat those for larger batch sizes.
+
+    To keep things fast we only support multiples of
+    :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`
+    when reproducibility mode is enabled. For example, if you batch size
+    is 4 times :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`, then
+    you get the same noise signals repeated 4 times.
+
+    `Note`: If you have multiple `Noise` modules in the same
+    :class:`~torchsynth.synth.AbstractSynth`, make sure you instantiate
+    each `Noise` with a unique seed.
+
+    Args:
+        synthconfig: See :class:`~torchsynth.module.SynthModule`
+        seed: random number generator seed for white noise
     """
 
-    # Do we really want deterministic noise within each batch?
-    # https://github.com/torchsynth/torchsynth/issues/250
-    # For performance noise is pre-computed. In order to maintain
-    # reproducibility noise must be computed on the CPU and then transferred
-    # to the GPU, if a GPU is being used. We pre-compute BATCH_SIZE_FOR_REPRODUCIBILITY
-    # samples of noise and then repeat those for larger batch sizes.
-    # To keep things simple we only support multiples of BATCH_SIZE_FOR_REPRODUCIBILITY
-    # when reproducibility mode is enabled.
-    noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
+    __noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
     # Unfortunately, Final is not supported until Python 3.8
     # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
 
@@ -745,17 +753,17 @@ class Noise(SynthModule):
         # In reproducible mode, we support batch sizes that are multiples
         # of the BASE_REPRODUCIBLE_BATCH_SIZE
         if self.synthconfig.reproducible:
-            if self.batch_size % self.noise_batch_size != 0:
+            if self.batch_size % self.__noise_batch_size != 0:
                 raise ValueError(
-                    f"Batch size must be a multiple of {self.noise_batch_size} "
+                    f"Batch size must be a multiple of {self.__noise_batch_size} "
                     "when using reproducible mode. Either change your batch size,"
                     "or set reproducible=False in the SynthConfig for this module."
                 )
 
-            noise = torch.empty((self.noise_batch_size, self.buffer_size), device="cpu")
+            noise = torch.empty((self.__noise_batch_size, self.buffer_size), device="cpu")
             noise.data.uniform_(-1.0, 1.0, generator=generator)
-            if self.batch_size > self.noise_batch_size:
-                noise = noise.repeat(self.batch_size // self.noise_batch_size, 1)
+            if self.batch_size > self.__noise_batch_size:
+                noise = noise.repeat(self.batch_size // self.__noise_batch_size, 1)
         else:
             # Non-reproducible mode, just render noise of batch size
             noise = torch.empty((self.batch_size, self.buffer_size), device="cpu")

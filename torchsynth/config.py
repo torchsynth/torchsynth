@@ -3,11 +3,13 @@ from typing import Optional
 
 import torch
 
-# Currently, noise module (https://github.com/torchsynth/torchsynth/issues/255)
-# and abstract synth parameter randomization
-# (https://github.com/torchsynth/torchsynth/issues/253)
-# are non-reproducible unless batch_size == BATCH_SIZE_FOR_REPRODUCIBILITY.
+
+#: This batch size is a nice trade-off between speed and memory consumption. On
+#: a typical GPU this consumes ~2.3GB of memory for the default Voice.
+#: `batch processing <../performance/batch-processing.html>`_
 DEFAULT_BATCH_SIZE = 128
+
+#: Smallest batch size divisor that is supported for any reproducible output
 BASE_REPRODUCIBLE_BATCH_SIZE = 32
 
 
