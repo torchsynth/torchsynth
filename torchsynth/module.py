@@ -777,7 +777,15 @@ class Noise(SynthModule):
 
 class LFO(ControlRateModule):
     """
-    An abstract base class for low frequency oscillators
+    Low Frequency Oscilllator that can output a mixture of
+    sine, triangle, saw, reverse saw, and square waves. They are mixed
+    together with a re-implementation of :class:`~torchsynth.synth.SoftModeSelector`,
+    and in the future :class:`~torchsynth.synth.SoftModeSelector` may be an input
+    to this class.
+
+    Args:
+        synthconfig: see :class:`~torchsynth.module.SynthConfig`
+        exponent: see :class:`~torchsynth.synth.SoftModeSelector`
     """
 
     default_ranges: List[ModuleParameterRange] = [
@@ -826,7 +834,8 @@ class LFO(ControlRateModule):
 
     def _forward(self, mod_signal: Signal) -> Signal:
         """
-        Must be implemented in deriving classes
+        Args:
+            mod_signal: LFO frequency modulation signal
         """
         # This module accepts signals at control rate!
         assert mod_signal.shape == (self.batch_size, self.control_buffer_size)
@@ -847,6 +856,12 @@ class LFO(ControlRateModule):
         return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
 
     def make_control(self, mod_signal: Signal) -> Signal:
+        """
+        Adds the modulation signal to the base frequency for this LFO
+
+        Args:
+            mod_signal: modulation signal in Hz
+        """
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, tensor(0.0))
 
@@ -854,6 +869,9 @@ class LFO(ControlRateModule):
         """
         Creates a set of LFO shapes at the correct frequency:
         Sinusoid, Triangle, Saw, Reverse Saw, and Square
+
+        Args:
+            argument: time-varying phase at each sample to create LFO signals with
         """
         cos = torch.cos(argument + torch.pi)
         square = torch.sign(cos)
