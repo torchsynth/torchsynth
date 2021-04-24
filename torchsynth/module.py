@@ -295,7 +295,7 @@ class ControlRateModule(SynthModule):
 
     def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each SynthModule should override this.
+        Each ContralRateModule should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
