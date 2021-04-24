@@ -156,7 +156,7 @@ class SynthModule(nn.Module):
 
     def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """
-        Get a single ModuleParameter for this module
+        Get a single :class:`~torchsynth.parameter.ModuleParameter` for this module
 
         Args:
             parameter_id: Id of the parameter to return
@@ -170,7 +170,7 @@ class SynthModule(nn.Module):
         Get the value of a parameter in the range of [0,1]
 
         Args:
-            parameter_id:   Id of the parameter to return the value for
+            parameter_id: Id of the parameter to return the value for
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -218,17 +218,19 @@ class SynthModule(nn.Module):
 
     def to(self, device: Optional[torch.device] = None, **kwargs):
         """
-        Overriding the to call for nn.Module to transfer this module to device. This
-        makes sure that the ParameterRanges for each ModuleParamter and the globals
+        Overriding the to call for :class:`~torch.nn.Module` to transfer this
+        module to device. This makes sure that the
+        :class:`~torchsynth.parameter.ModuleParameterRange` for each
+        :class:`~torchsynth.parameter.ModuleParameter` and the globals
         are also transferred to the correct device.
 
         Args:
             device: device to send this module to
         """
-        self.update_device(device)
+        self._update_device(device)
         return super().to(device=device, **kwargs)
 
-    def update_device(self, device: Optional[torch.device] = None):
+    def _update_device(self, device: Optional[torch.device] = None):
         """
         This handles the device transfer tasks that are not managed by PyTorch.
 
