@@ -21,7 +21,8 @@ class SynthModule(nn.Module):
     """
     A base class for synthesis modules. `SynthModule` is primarily responsible
     for feeding parameters and their values to the PyTorch backend. All
-    parameters are assumed to be `batchsize`-length 1-D tensors.
+    parameters are assumed to be
+    :attr:`~torchsynth.config.SynthConfig.batch_size`-length 1-D tensors.
 
     All `SynthModule` objects should be atomic, i.e., they should not contain
     other `SynthModule` objects. This design choice is in the spirit of
@@ -33,8 +34,8 @@ class SynthModule(nn.Module):
             :class:`~torchsynth.synth.Voice`, or some other, possibly custom
             :class:`~torchsynth.synth.AbstractSynth` subclass.
 
-        device: An object representing the device on which a `torch` tensors
-            are be allocated (as per PyTorch, broadly).
+        device: An object representing the device on which the `torch` tensors
+            are to be allocated (as per PyTorch, broadly).
     """
 
     # This outlines all the parameters available in this module

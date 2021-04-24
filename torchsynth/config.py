@@ -13,10 +13,23 @@ BASE_REPRODUCIBLE_BATCH_SIZE = 32
 
 class SynthConfig:
     """
-    Any SynthModule and AbstractSynth might use
-    these global configuration values.
-    Every SynthModule in the same AbstractSynth
-    should have the save SynthConfig.
+    Any SynthModule and AbstractSynth might use these global configuration
+    values. Every SynthModule in the same AbstractSynth should have the save
+    SynthConfig.
+
+    Args:
+        batch_size (int)  : Scalar that indicates how many parameter settings
+        there are, i.e. how many different sounds to generate. [default: 64]
+        sample_rate (int) : Scalar sample rate for audio generation.
+        buffer_size (float) : Duration of the output in seconds [default: 4.0]
+        control_rate (int) : Scalar sample rate for control signal generation.
+        reproducible (bool) : Reproducible results, with a
+                small performance impact. (Default: True)
+        no_grad (bool) : Disables gradient computations. (Default: True)
+        debug (bool) : Run slow assertion tests. (Default: False, unless
+                environment variable TORCHSYNTH_DEBUG exists.)
+        eps (float) : Epsilon to avoid log underrun and divide by
+                      zero.
     """
 
     def __init__(
@@ -32,21 +45,6 @@ class SynthConfig:
         # Unfortunately, Final is not supported until Python 3.8
         # eps: Final[float] = 1e-6,
     ):
-        """
-        Args:
-            batch_size (int)  : Scalar that indicates how many parameter settings
-            there are, i.e. how many different sounds to generate. [default: 64]
-            sample_rate (int) : Scalar sample rate for audio generation.
-            buffer_size (float) : Duration of the output in seconds [default: 4.0]
-            control_rate (int) : Scalar sample rate for control signal generation.
-            reproducible (bool) : Reproducible results, with a
-                    small performance impact. (Default: True)
-            no_grad (bool) : Disables gradient computations. (Default: True)
-            debug (bool) : Run slow assertion tests. (Default: False, unless
-                    environment variable TORCHSYNTH_DEBUG exists.)
-            eps (float) : Epsilon to avoid log underrun and divide by
-                          zero.
-        """
         self.batch_size = torch.tensor(batch_size)
         self.sample_rate = torch.tensor(sample_rate)
         self.buffer_size_seconds = torch.tensor(buffer_size_seconds)
