@@ -250,11 +250,12 @@ class TestAbstractSynth:
         synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         synth = torchsynth.synth.Voice(synthconfig)
 
-        synth.set_frozen_parameters(
+        synth.set_parameters(
             {
                 ("vco_1", "tuning"): 0.0,
                 ("adsr_1", "attack"): 1.5,
-            }
+            },
+            freeze=True,
         )
 
         # Parameters should have been set with correct batch size
