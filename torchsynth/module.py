@@ -770,7 +770,9 @@ class Noise(SynthModule):
                     "or set reproducible=False in the SynthConfig for this module."
                 )
 
-            noise = torch.empty((self.__noise_batch_size, self.buffer_size), device="cpu")
+            noise = torch.empty(
+                (self.__noise_batch_size, self.buffer_size), device="cpu"
+            )
             noise.data.uniform_(-1.0, 1.0, generator=generator)
             if self.batch_size > self.__noise_batch_size:
                 noise = noise.repeat(self.batch_size // self.__noise_batch_size, 1)
