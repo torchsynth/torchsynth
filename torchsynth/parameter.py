@@ -16,7 +16,6 @@ class ModuleParameterRange:
     functionality for converting to and from a range between 0 and
     1. This class does not store the value of a parameter, just the
     range.
-
     Args:
         minimum (float) :   minimum value in range
         maximum (float) :   maximum value in range
@@ -68,7 +67,6 @@ class ModuleParameterRange:
     def from_0to1(self, normalized: T) -> T:
         """
         Set value of this parameter using a normalized value in the range [0,1]
-
         Args:
           normalized (T): value within [0,1] range to convert to range defined by
           minimum and maximum
@@ -97,7 +95,6 @@ class ModuleParameterRange:
     def to_0to1(self, value: T) -> T:
         """
         Convert a ranged parameter to a normalized range from 0 to 1
-
         Args:
           value (T): value within the range defined by minimum and maximum
         """
@@ -121,17 +118,14 @@ class ModuleParameter(nn.Parameter):
     so it can be used for training. Can use a ModuleParameterRange
     object to help convert from a 0 to 1 range which is expected
     internally and an external user specified range.
-
     Args:
         value (T) : initial value of this parameter in the user-specific
         range. Must pass in a ModuleParameterRange object when using
         this to provide conversion to and from 0-to-1 range
-
         parameter_name (str) : A name for this parameter
         parameter_range (ModuleParameterRange) : A ModuleParameterRange
         object that supports conversion to and from 0-to-1 range
         and a user-specified range.
-
         data (Tensor) : directly add data to this parameter without a user-range
         requires_grad (bool) : whether or not a gradient is required for this parameter
         frozen (optional bool) : freeze parameter value and prevent updating
@@ -199,7 +193,6 @@ class ModuleParameter(nn.Parameter):
         Set the value of this parameter using an input that is
         within the user-specified range. It will be converted to a
         0-to-1 range and stored internally.
-
         Args:
             new_value (Tensor) : new value to update this parameter with
         """
@@ -210,7 +203,6 @@ class ModuleParameter(nn.Parameter):
             self.data = self.parameter_range.to_0to1(new_value)
         else:
             raise RuntimeError("A range was never set for this parameter")
-        
 
     @staticmethod
     def is_parameter_frozen(parameter):

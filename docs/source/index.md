@@ -85,11 +85,11 @@ name: modules
 caption: API
 ---
 api/config
+api/module
 api/parameter
 api/signal
 api/synth
 api/util
-api/module
 ```
 
 
