@@ -29,3 +29,7 @@ jobs:
         shell: bash -l {0}
         run: |
           cd docs && make linkcheck
+      - uses: actions/upload-artifact@v1
+        with:
+          name: linkcheck-output.txt
+          path: docs/build/linkcheck/output.txt
