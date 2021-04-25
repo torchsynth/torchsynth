@@ -8,18 +8,67 @@ matrix:
     #  dist: bionic
     #  python: 3.9
     # https://travis-ci.community/t/how-to-skip-python-download-to-osx-image-and-avoid-download-unavailable-error/9554/2
+    - name: "Python 3.7.5 on macOS 10.14"
+      os: osx
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      osx_image: xcode10.2  # Python 3.7.5 running on macOS 10.14.3
+    - name: "Python 3.7.4  on macOS 10.14.4"
+      os: osx
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      osx_image: xcode11.2
+    - name: "Python 3.8.0 on macOS 10.14"
+      os: osx
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      osx_image: xcode11.3
     - os: osx
-    #  # Would be nice to try different python versions :(
-    #  #python: 3.7
-      osx_image: xcode10.2
-    - os: osx
-    #  # Would be nice to try different python versions :(
-    #  #python: 3.7
-      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
-    - os: osx
-    #  # Would be nice to try different python versions :(
-    #  #python: 3.7
+      language: shell       # 'language: python' is an error on Travis CI macOS
       osx_image: xcode12.4
+
+    - name: "Python 3.5.4 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.5.4
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
+    - name: "Python 3.6.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.6.8
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.9 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.7.9
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    - name: "Python 3.8.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.8.8
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+    - name: "Python 3.9.2 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.9.2
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 
     - os: linux
       dist: focal
@@ -864,7 +913,7 @@ matrix:
 before_install:
   - python --version
   - pip install -U pip
-  - pip install -U pytest
+  - pip install -U pytest codecov
   - pip install $TORCH_PIP_PACKAGE --progress-bar off
 install:
   - pip install ".[test]" . # install package + test dependencies
