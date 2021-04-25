@@ -8,14 +8,18 @@ matrix:
     #  dist: bionic
     #  python: 3.9
     # https://travis-ci.community/t/how-to-skip-python-download-to-osx-image-and-avoid-download-unavailable-error/9554/2
-    #- os: osx
+    - os: osx
     #  # Would be nice to try different python versions :(
     #  #python: 3.7
-    #  osx_image: xcode10.2
-    #- os: osx
+      osx_image: xcode10.2
+    - os: osx
     #  # Would be nice to try different python versions :(
     #  #python: 3.7
-    #  osx_image: xcode12.4
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+    - os: osx
+    #  # Would be nice to try different python versions :(
+    #  #python: 3.7
+      osx_image: xcode12.4
 
     - os: linux
       dist: focal
