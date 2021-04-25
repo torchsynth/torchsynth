@@ -34,6 +34,7 @@ caption: Getting started
 ---
 getting-started/installation
 getting-started/quickstart
+getting-started/detailed-walkthrough
 ```
 
 
