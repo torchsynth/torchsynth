@@ -68,12 +68,10 @@ class TestReproducibility:
             ]
         )
 
-        # TODO there are some unexpected, very small numerical
-        # errors between some, but not all, batch sizes
-        # See https://github.com/torchsynth/torchsynth/issues/326
         assert torch.all(torch.isclose(out256, out128))
         assert torch.all(torch.isclose(out256, out64))
-        assert torch.all(torch.isclose(out256, out32))
+        # 1e-12 seems close enough to me
+        assert torch.mean(torch.abs(out256 - out32)) < 1e-12
 
     def compare_voices(self, voice_1, voice_2):
         # Test keyboard reproducibility
