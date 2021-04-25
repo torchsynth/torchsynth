@@ -1,4 +1,7 @@
 import sys
+import os
+import json
+import pkg_resources
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -14,7 +17,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import BATCH_SIZE_FOR_REPRODUCIBILITY, SynthConfig
+from torchsynth.config import SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -112,7 +115,7 @@ class AbstractSynth(LightningModule):
         for module_name, module in sorted(self.named_modules()):
             # Make sure this is a SynthModule, b/c we are using ParameterDict
             # and ParameterDict is a module, we get those returned as well
-            # TODO: see https://github.com/turian/torchsynth/issues/213
+            # TODO: see https://github.com/torchsynth/torchsynth/issues/213
             if isinstance(module, SynthModule):
                 for parameter in module.parameters():
                     if include_frozen or not ModuleParameter.is_parameter_frozen(
@@ -163,7 +166,7 @@ class AbstractSynth(LightningModule):
             if isinstance(param, ModuleParameter):
                 param.frozen = False
 
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+    def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
         """
@@ -190,11 +193,11 @@ class AbstractSynth(LightningModule):
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self._forward(*args, **kwargs)
+                return self.output(*args, **kwargs)
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self._forward(*args, **kwargs)
+            return self.output(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
         """
@@ -236,24 +239,47 @@ class AbstractSynth(LightningModule):
         assert not ModuleParameter.is_parameter_frozen(parameter)
         setattr(parameter.parameter_range, hyperparameter[2], value)
 
+    def save_hyperparameters(self, filename: str, indent=True) -> None:
+        """
+        Save hyperparameters to a JSON file
+        """
+        # Render all hyperparameters as JSON
+        hp = [{"name": key, "value": val} for key, val in self.hyperparameters.items()]
+        with open(os.path.abspath(filename), "w") as fp:
+            json.dump(hp, fp, indent=indent)
+
+    def load_hyperparameters(self, nebula: str) -> None:
+        """
+        Load hyperparameters from a JSON file
+
+        Args:
+            nebula: nebula to load. This can either be the name of a nebula that is
+                included in torchsynth, or the filename of a nebula json file to load.
+
+        TODO add nebula list in docs
+        See https://github.com/torchsynth/torchsynth/issues/324
+        """
+
+        # Try to load nebulae from package resources, otherwise, try
+        # to load from a filename
+        try:
+            synth = type(self).__name__.lower()
+            nebulae_str = f"nebulae/{synth}/{nebula}.json"
+            data = pkg_resources.resource_string(__name__, nebulae_str)
+            hyperparameters = json.loads(data)
+        except FileNotFoundError:
+            with open(os.path.abspath(nebula), "r") as fp:
+                hyperparameters = json.load(fp)
+
+        # Update all hyperparameters in this synth
+        for hp in hyperparameters:
+            self.set_hyperparameter(hp["name"], hp["value"])
+
     def randomize(self, seed: Optional[int] = None):
         """
         Randomize all parameters
         """
         parameters = [param for _, param in sorted(self.named_parameters())]
-
-        # https://github.com/turian/torchsynth/issues/253
-        if (
-            self.batch_size != BATCH_SIZE_FOR_REPRODUCIBILITY
-            and self.synthconfig.reproducible
-        ):
-            raise ValueError(
-                "Reproducibility currently only supported "
-                f"with batch_size = {BATCH_SIZE_FOR_REPRODUCIBILITY}. "
-                "If you want a different batch_size, "
-                "initialize SynthConfig with reproducible=False"
-            )
-
         if seed is not None:
             # Generate batch_size x parameter number of random values
             # Reseed the random number generator for every item in the batch
@@ -301,7 +327,13 @@ class Voice(AbstractSynth):
     In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
     """
 
-    def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
+    def __init__(
+        self,
+        synthconfig: Optional[SynthConfig] = None,
+        nebula: Optional[str] = "default",
+        *args,
+        **kwargs,
+    ):
         AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
 
         # Register all modules as children
@@ -318,16 +350,42 @@ class Voice(AbstractSynth):
                 ("lfo_2_rate_adsr", ADSR),
                 ("control_vca", ControlRateVCA),
                 ("control_upsample", ControlRateUpsample),
-                ("mod_matrix", ModulationMixer, {"n_input": 4, "n_output": 5}),
+                (
+                    "mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 4,
+                        "n_output": 5,
+                        "input_names": ["adsr_1", "adsr_2", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "vco_1_pitch",
+                            "vco_1_amp",
+                            "vco_2_pitch",
+                            "vco_2_amp",
+                            "noise_amp",
+                        ],
+                    },
+                ),
                 ("vco_1", SineVCO),
                 ("vco_2", SquareSawVCO),
                 ("noise", Noise, {"seed": 13}),
                 ("vca", VCA),
-                ("mixer", AudioMixer, {"n_input": 3, "curves": [1.0, 1.0, 0.1]}),
+                (
+                    "mixer",
+                    AudioMixer,
+                    {
+                        "n_input": 3,
+                        "curves": [1.0, 1.0, 0.025],
+                        "names": ["vco_1", "vco_2", "noise"],
+                    },
+                ),
             ]
         )
 
-    def _forward(self) -> T:
+        # Load the nebula
+        self.load_hyperparameters(nebula)
+
+    def output(self) -> T:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         midi_f0, note_on_duration = self.keyboard()
