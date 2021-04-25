@@ -252,8 +252,8 @@ class TestAbstractSynth:
 
         synth.set_parameters(
             {
-                ("vco_1", "tuning"): 0.0,
-                ("adsr_1", "attack"): 1.5,
+                ("vco_1", "tuning"): tensor([0.0] * synthconfig.batch_size),
+                ("adsr_1", "attack"): tensor([1.5] * synthconfig.batch_size),
             },
             freeze=True,
         )
