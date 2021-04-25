@@ -1,3 +1,7 @@
 .tutorials-header .header-logo {
   background-image: url("../images/torchsynth-logo-and-logotype.svg") !important;
 }
+
+article.pytorch-article img {
+	width: 350px !important;
+}

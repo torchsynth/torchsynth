@@ -137,7 +137,7 @@ class ModuleParameter(nn.Parameter):
         frozen (optional bool) : freeze parameter value and prevent updating
     """
 
-    def __new__(
+    def __init__(
         cls,
         # TODO: REMOVEME
         value: Optional[T] = None,
@@ -210,6 +210,7 @@ class ModuleParameter(nn.Parameter):
             self.data = self.parameter_range.to_0to1(new_value)
         else:
             raise RuntimeError("A range was never set for this parameter")
+        
 
     @staticmethod
     def is_parameter_frozen(parameter):

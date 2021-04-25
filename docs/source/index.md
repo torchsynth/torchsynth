@@ -12,7 +12,7 @@
 
 The fastest synth in the universe.
 
-<img width="450px" src="_static/images/logo-with-caption.jpg">
+<img width="450px" alt="logo-with-caption" src="_static/images/logo-with-caption.jpg">
 
 </div>
 
@@ -85,11 +85,11 @@ name: modules
 caption: API
 ---
 api/config
-api/module
 api/parameter
 api/signal
 api/synth
 api/util
+api/module
 ```
 
 
