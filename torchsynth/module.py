@@ -124,7 +124,7 @@ class SynthModule(nn.Module):
         """
         return seconds * self.sample_rate
 
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+    def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each SynthModule should override this.
         """
@@ -132,9 +132,9 @@ class SynthModule(nn.Module):
 
     def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Wrapper for _forward that ensures a buffer_size length output.
+        Wrapper for output that ensures a buffer_size length output.
         """
-        signal = self._forward(*args, **kwargs)
+        signal = self.output(*args, **kwargs)
         buffered = self.to_buffer_size(signal)
         return buffered
 
@@ -287,7 +287,7 @@ class ControlRateModule(SynthModule):
         """
         return seconds * self.control_rate
 
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+    def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each SynthModule should override this.
         """
@@ -344,7 +344,7 @@ class ADSR(ControlRateModule):
             "range", torch.arange(self.control_buffer_size, device=self.device)
         )
 
-    def _forward(self, note_on_duration: T) -> Signal:
+    def output(self, note_on_duration: T) -> Signal:
         """Generate an ADSR envelope.
 
         By default, this envelope reacts as if it was triggered with midi, for
@@ -514,7 +514,7 @@ class VCO(SynthModule):
         ),
     ]
 
-    def _forward(self, midi_f0: T, mod_signal: Signal) -> Signal:
+    def output(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -692,7 +692,7 @@ class VCA(SynthModule):
     Voltage controlled amplifier.
     """
 
-    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
+    def output(self, audio_in: Signal, control_in: Signal) -> Signal:
         return audio_in * control_in
 
 
@@ -701,7 +701,7 @@ class ControlRateVCA(ControlRateModule):
     A VCA that operates at control rate
     """
 
-    def _forward(self, audio_in: Signal, control_in: Signal) -> Signal:
+    def output(self, audio_in: Signal, control_in: Signal) -> Signal:
         return audio_in * control_in
 
 
@@ -753,7 +753,7 @@ class Noise(SynthModule):
 
         self.register_buffer("noise", noise.to(self.device))
 
-    def _forward(self) -> Signal:
+    def output(self) -> Signal:
         return self.noise.as_subclass(Signal)
 
 
@@ -806,7 +806,7 @@ class LFO(ControlRateModule):
         super().__init__(synthconfig, **kwargs)
         self.exponent = exponent
 
-    def _forward(self, mod_signal: Signal) -> Signal:
+    def output(self, mod_signal: Signal) -> Signal:
         """
         Must be implemented in deriving classes
         """
@@ -978,7 +978,7 @@ class AudioMixer(SynthModule):
         super().__init__(synthconfig, **kwargs)
         self.n_input = n_input
 
-    def _forward(self, *signals: Signal) -> Signal:
+    def output(self, *signals: Signal) -> Signal:
 
         # Turn params into matrix
         params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)
@@ -1011,7 +1011,7 @@ class ControlRateUpsample(SynthModule):
             self.synthconfig.buffer_size, mode="linear", align_corners=True
         )
 
-    def _forward(self, signal: Signal) -> Signal:
+    def output(self, signal: Signal) -> Signal:
         return self.upsample(signal.unsqueeze(1)).squeeze(1)
 
 
