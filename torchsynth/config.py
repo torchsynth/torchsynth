@@ -1,3 +1,8 @@
+"""
+Global configuration for :class:`~torchsynth.synth.AbstractSynth` and its
+component :class:`~torchsynth.module.SynthModule`.
+"""
+
 import os
 from typing import Optional
 
@@ -6,32 +11,35 @@ import torch
 
 #: This batch size is a nice trade-off between speed and memory consumption. On
 #: a typical GPU this consumes ~2.3GB of memory for the default Voice.
-#: `batch processing <../performance/batch-processing.html>`_
+#: Learn more about `batch processing <../performance/batch-processing.html>`_.
 DEFAULT_BATCH_SIZE = 128
 
 #: Smallest batch size divisor that is supported for any reproducible output
+#: This is because :class:`~torch.module.Noise`: creates deterministic
+#: noise batches in advance, for speed.
 BASE_REPRODUCIBLE_BATCH_SIZE = 32
 
 
 class SynthConfig:
     """
-    Any SynthModule and AbstractSynth might use these global configuration
-    values. Every SynthModule in the same AbstractSynth should have the save
-    SynthConfig.
+    Any :class:`~torchsynth.module.SynthModule` and
+    :class:`~torchsynth.synth.AbstractSynth` might use these global
+    configuration values. Every :class:`~torchsynth.module.SynthModule`
+    in the same :class:`~torchsynth.synth.AbstractSynth` should
+    have the save SynthConfig.
 
     Args:
-        batch_size (int)  : Scalar that indicates how many parameter settings
-        there are, i.e. how many different sounds to generate. [default: 64]
-        sample_rate (int) : Scalar sample rate for audio generation.
-        buffer_size (float) : Duration of the output in seconds [default: 4.0]
-        control_rate (int) : Scalar sample rate for control signal generation.
-        reproducible (bool) : Reproducible results, with a
-                small performance impact. (Default: True)
-        no_grad (bool) : Disables gradient computations. (Default: True)
-        debug (bool) : Run slow assertion tests. (Default: False, unless
-                environment variable TORCHSYNTH_DEBUG exists.)
-        eps (float) : Epsilon to avoid log underrun and divide by
-                      zero.
+        batch_size: Scalar that indicates how many parameter settings
+            there are, i.e. how many different sounds to generate.
+        sample_rate: Scalar sample rate for audio generation.
+        buffer_size: Duration of the output in seconds.
+        control_rate: Scalar sample rate for control signal generation.
+            reproducible: Reproducible results, with a
+            small performance impact.
+        no_grad: Disables gradient computations.
+        debug: Run slow assertion tests. (Default: False, unless
+            environment variable TORCHSYNTH_DEBUG exists.)
+        eps: Epsilon to avoid log underrun and divide by zero.
     """
 
     def __init__(
@@ -88,7 +96,10 @@ class SynthConfig:
         )
 
     def to(self, device: torch.device):
-        # Only helpful to have sample and control rates on device, and as a float
+        """
+        For speed, we've noticed that it is only helpful to have
+        sample and control rates on device, and as a float.
+        """
         self.sample_rate = self.sample_rate.to(device).float()
         self.control_rate = self.control_rate.to(device).float()
 
@@ -103,6 +114,10 @@ class SynthConfig:
 
 def check_for_reproducibility():
     """
+    This method is called automatically if your
+    :class:`~torchsynth.config.SynthConfig` specifies
+    ``reproducibility=True``.
+
     Reproducible results are important to torchsynth and synth1B1,
     so we are testing to make sure that the expected random results
     are produced by torch.rand when seeded. This raises an error
