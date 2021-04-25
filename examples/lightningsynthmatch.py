@@ -1,41 +1,36 @@
 # -*- coding: utf-8 -*-
+# # lightningsynthmatch
+#
+# Attempt to match a 909 Snare sound to minimize multi-scale spectral loss, using Optuna.
+#
+# Unfortunately, I believe Optuna restricts us to [batch size=1](https://github.com/optuna/optuna/issues/2626).
+#
+# This currently only has been tested with one GPU, but Optuna should support multiprocessing. We just haven't implemented it.
+#
+# TODO: Actually move stuff to CUDA if it exists.
+
 # +
+import json
 import multiprocessing
 from typing import Any
 
 import auraloss
+import IPython.display as ipd
+import optuna
 import pytorch_lightning as pl
 import soundfile as sf
 import torch
-
+from IPython.core.display import display
+from optuna.visualization import plot_optimization_history
 from torchsynth.config import SynthConfig
 from torchsynth.synth import Voice
 
 # -
 
-gpus = torch.cuda.device_count()
-print("Usings %d gpus" % gpus)
-
-ncores = multiprocessing.cpu_count()
-print(f"Using ncores {ncores} for generating batch numbers (low CPU usage)")
-
-
-class batch_idx_dataset(torch.utils.data.Dataset):
-    def __init__(self, num_batches):
-        self.num_batches = num_batches
-
-    def __getitem__(self, idx):
-        return idx
-
-    def __len__(self):
-        return self.num_batches
-
-
-synthconfig = SynthConfig()
+synthconfig = SynthConfig(batch_size=1, reproducible=False)
 voice = Voice(synthconfig)
-synth1B = batch_idx_dataset(1000000000 // synthconfig.batch_size)
-test_dataloader = torch.utils.data.DataLoader(synth1B, num_workers=0, batch_size=1)
 
+# +
 target_sound, sr = sf.read("909-snare-4sec.ogg")
 # This won't work with multi-GPU :(
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -48,63 +43,70 @@ assert sr == synthconfig.sample_rate
 assert target_sound.ndim == 1
 assert target_sound.shape[0] == synthconfig.buffer_size
 
+display(ipd.Audio(target_sound, rate=int(voice.sample_rate.numpy().item())))
 
-# TODO Add this to torchsynth API
-# see https://github.com/turian/torchsynth/issues/154
-class TorchSynthCallback(pl.Callback):
-    def __init__(self, target_sound, sr, **kwargs):
-        super().__init__(**kwargs)
-        self.target_sound = target_sound
-        self.sr = sr
-        self.best_distance = 1e10
-        self.mrstft = auraloss.freq.MultiResolutionSTFTLoss()
 
-    def on_test_batch_end(
-        self,
-        trainer,
-        pl_module: pl.LightningModule,
-        outputs: Any,
-        batch: Any,
-        batch_idx: int,
-        dataloader_idx: int,
+# +
+
+
+def print_best_jsonl(study):
+    for name, value in study.best_params.items():
+        print(json.dumps([name, value]))
+
+
+class RunningBestCallback:
+    def __init__(self):
+        pass
+
+    def __call__(
+        self, study: optuna.study.Study, trial: optuna.trial.FrozenTrial
     ) -> None:
-        assert batch.ndim == 1
-        batchsounds = pl_module(batch_idx)
-        for i, sound in enumerate(batchsounds):
-            assert sound.shape == self.target_sound.shape
-            loss = self.mrstft(self.target_sound, sound)
-            if loss < self.best_distance:
-                print(f"New best loss {loss} for {batch_idx}-{i}")
-                sf.write(
-                    f"predicted_sound-{loss}-{batch_idx}-{i}.wav",
-                    sound.cpu().detach().numpy(),
-                    self.sr,
+        if study.best_trial.number == trial.number:
+            fig = plot_optimization_history(study)
+            fig.show()
+            print("New best value", study.best_value)
+            print("New best trial", study.best_trial.number)
+            display(
+                ipd.Audio(
+                    voice()[0].numpy(), rate=int(voice.sample_rate.numpy().item())
                 )
-                self.best_distance = loss
+            )
+            print("New best params")
+            print_best_jsonl(study)
+            print("\n")
 
 
-accelerator = None
-if gpus == 0:
-    use_gpus = None
-    precision = 32
-else:
-    # specifies all available GPUs (if only one GPU is not occupied,
-    # auto_select_gpus=True uses one gpu)
-    use_gpus = -1
-    # TODO: Change precision?
-    precision = 16
-    if gpus > 1:
-        accelerator = "ddp"
+# +
+mrstft = auraloss.freq.MultiResolutionSTFTLoss()
 
-# Use deterministic?
-trainer = pl.Trainer(
-    precision=precision,
-    gpus=use_gpus,
-    auto_select_gpus=True,
-    accelerator=accelerator,
-    deterministic=True,
-    max_epochs=0,
-    callbacks=[TorchSynthCallback(target_sound, synthconfig.sample_rate)],
+
+def objective(trial):
+    params = voice.get_parameters(include_frozen=True)
+    for param_name in list(params.keys()):
+        value = trial.suggest_float(json.dumps(param_name), 0, 1)
+        params[param_name] = torch.tensor([value])
+
+    voice.set_parameters(params, freeze=True, range0to1=True)
+    # print(dict(voice.get_parameters()))
+    # https://github.com/optuna/optuna/issues/2626
+    assert voice.batch_size == 1
+    batchsounds = voice()
+    assert len(batchsounds) == 1
+    sound = batchsounds[0]
+    loss = mrstft(sound, target_sound)
+    return loss
+
+
+# +
+# Make optuna less chatty
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+sampler = optuna.samplers.CmaEsSampler(n_startup_trials=2000)
+study = optuna.create_study(sampler=sampler)  # , study_name=study_name)
+# -
+
+study.optimize(
+    objective, n_trials=10000, callbacks=[RunningBestCallback()], show_progress_bar=True
 )
-
-trainer.test(voice, test_dataloaders=test_dataloader)
+fig = plot_optimization_history(study)
+fig.show()
