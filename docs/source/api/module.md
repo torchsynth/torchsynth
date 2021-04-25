@@ -83,6 +83,7 @@ ControlRateModule
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: sample_rate, buffer_size
 
 ADSR
 ====
