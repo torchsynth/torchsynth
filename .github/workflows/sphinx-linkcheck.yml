@@ -1,0 +1,46 @@
+name: sphinx-linkcheck
+
+on:
+  push:
+    branches:
+    - '*'
+  pull_request:
+    branches:
+    - '*'
+  schedule:
+    - cron: 43 4 5 * *  # 04:43 UTC on the 5th day of each month
+
+jobs:
+  sphinx-linkcheck:
+    name: linkcheck
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9']
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache conda pkgs
+        uses: actions/cache@v1
+        env:
+          # Increase this value to reset cache if envs/environment-test.yaml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('environment.yaml') }}
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+           auto-update-conda: false
+           auto-activate-base: false
+           use-only-tar-bz2: true # Required for caching to work properly!
+           environment-file: environment.yaml
+           python-version: ${{ matrix.python-version }}
+           activate-environment: moad-docs
+
+      - name: linkcheck
+        shell: bash -l {0}
+        run: |
+          make linkcheck
