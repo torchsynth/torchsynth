@@ -565,10 +565,10 @@ for i in range(synthconfig16.batch_size):
 voice.unfreeze_all_parameters()
 voice.set_parameters(
     {
-        ("keyboard", "midi_f0"): 42.0,
-        ("keyboard", "duration"): 3.0,
-        ("vco_1", "tuning"): 0.0,
-        ("vco_2", "tuning"): 0.0,
+        ("keyboard", "midi_f0"): tensor([42.0] * voice.batch_size),
+        ("keyboard", "duration"): tensor([3.0] * voice.batch_size),
+        ("vco_1", "tuning"): tensor([0.0] * voice.batch_size),
+        ("vco_2", "tuning"): tensor([0.0] * voice.batch_size),
     },
     freeze=True,
 )
