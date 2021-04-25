@@ -319,7 +319,7 @@ class AbstractSynth(LightningModule):
         for module in self.modules():
             if isinstance(module, SynthModule):
                 # TODO look into performance of calling to instead
-                module.update_device(self.device)
+                module._update_device(self.device)
 
 
 class Voice(AbstractSynth):
