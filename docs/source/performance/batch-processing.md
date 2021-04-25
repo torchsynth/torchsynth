@@ -16,11 +16,11 @@ $\cdot$ batch_size MB, including the torchsynth model.)
 
 <div align="center">
 
-<img style="width: 350px;" src="../_static/images/gpu-speed-profiles.svg">
+<img style="width: 350px;" alt="gpu-speed-profiles" src="../_static/images/gpu-speed-profiles.svg">
 
-<img style="width: 350px;" src="../_static/images/gpu-mem-profiles.svg">
+<img style="width: 350px;" alt="gpu-mem-profiles" src="../_static/images/gpu-mem-profiles.svg">
 
-</div align="center">
+</div>
 
 ## ADSR Batches
 
@@ -28,6 +28,6 @@ An example of a batch of 4 of randomly generated ADSR envelopes is shown below:
 
 <div align="center">
 
-<img width="350px" src="../_static/images/ADSR.svg">
+<img style="width: 350px;" alt="ADSR" src="../_static/images/ADSR.svg">
 
 </div>
