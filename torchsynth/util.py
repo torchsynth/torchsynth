@@ -1,7 +1,5 @@
 """
 Utility functions for torch DSP related things
-
-TODO: These should operate on vectors, many of these assume scalar Tensors.
 """
 
 import torch
@@ -15,13 +13,19 @@ torch.pi = torch.acos(torch.zeros(1)).item() * 2  # which is 3.1415927410125732
 def midi_to_hz(midi: T) -> T:
     """
     Convert from midi (linear pitch) to frequency in Hz.
+
+    Args:
+        midi: Linear pitch on the MIDI scale.
+
+    Return:
+        Frequency in Hz.
     """
     return 440.0 * (torch.exp2((midi - 69.0) / 12.0))
 
 
 def fix_length(signal: Signal, length: T) -> Signal:
     """
-    Pad or truncate array to specified length.
+    Pad or truncate :class:`~torchsynth.Signal` to specified length.
     """
     assert length.ndim == 0
     assert signal.ndim == 2
@@ -35,8 +39,8 @@ def fix_length(signal: Signal, length: T) -> Signal:
 
 def normalize_if_clipping(signal: Signal) -> Signal:
     """
-    Only normalize signals in batch that have samples less than -1.0
-    or greater than 1.0
+    Only normalize invidiaul signals in batch that have samples
+    less than -1.0 or greater than 1.0
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
     return torch.where(max_sample > 1.0, signal / max_sample, signal)
@@ -44,7 +48,7 @@ def normalize_if_clipping(signal: Signal) -> Signal:
 
 def normalize(signal: Signal) -> Signal:
     """
-    Normalize each clip in batch
+    Normalize every individual signal in batch.
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
     return signal / max_sample

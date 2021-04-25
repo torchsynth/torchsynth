@@ -1,16 +1,14 @@
-"""
-A convenience type for signals.
-I'd like to call this filename signal.py but it conflicts with
-a core python module.
-"""
-
 import torch
 
 
 class Signal(torch.Tensor):
     """
-    IMPORTANT: To make sure a tensor is a signal, do this:
-    torch.zeros(batch_size, N, device='cuda').as_subclass(Signal)
+    A convenience type for batched signals, either audio signals
+    or control signals. A signal is 2D :class:`~torch.Tensor`:
+    `batch` x `num_samples`.
+
+    Note: To cast a tensor as a signal:
+    ``torch.zeros(batch_size, N).as_subclass(Signal)``
     """
 
     @property
