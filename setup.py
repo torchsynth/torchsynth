@@ -70,6 +70,7 @@ setup(
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
             "sphinxcontrib-napoleon",
+            "sphinx-autodoc-typehints",
             "mock",
             "sphinx_rtd_theme",
             "myst_parser",
