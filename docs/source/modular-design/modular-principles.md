@@ -20,7 +20,7 @@ and voltage-controlled amplifiers
 ({class}`~torchsynth.module.VCA`s).  Control modules output control
 signals that are used modulate the parameters of another module.
 For speed, these modules operate at a reduced control rate (default
-44.1KHz). Examples of control modules include
+441Hz). Examples of control modules include
 {class}`~torchsynth.module.ADSR` envelope generators and low frequency
 oscillators ({class}`~torchsynth.module.LFO`s).  Finally, parameter
 modules simply output parameters. Examples of these include a
