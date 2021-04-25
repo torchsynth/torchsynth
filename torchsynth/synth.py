@@ -166,7 +166,7 @@ class AbstractSynth(LightningModule):
             if isinstance(param, ModuleParameter):
                 param.frozen = False
 
-    def _forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
+    def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
         Each AbstractSynth should override this.
         """
@@ -193,11 +193,11 @@ class AbstractSynth(LightningModule):
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self._forward(*args, **kwargs)
+                return self.output(*args, **kwargs)
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self._forward(*args, **kwargs)
+            return self.output(*args, **kwargs)
 
     def test_step(self, batch, batch_idx):
         """
@@ -385,7 +385,7 @@ class Voice(AbstractSynth):
         # Load the nebula
         self.load_hyperparameters(nebula)
 
-    def _forward(self) -> T:
+    def output(self) -> T:
         # The convention for triggering a note event is that it has
         # the same note_on_duration for both ADSRs.
         midi_f0, note_on_duration = self.keyboard()
