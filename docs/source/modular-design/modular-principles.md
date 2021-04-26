@@ -27,7 +27,6 @@ modules simply output parameters. Examples of these include a
 {class}`~torchsynth.module.MonophonicKeyboard` module that has no
 input, and outputs the note midi f0 value and duration.
 
-
 ## Synth Architectures
 
 The default configuration in torchsynth is the

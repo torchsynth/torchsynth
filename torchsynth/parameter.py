@@ -11,30 +11,31 @@ from torch import Tensor as T
 
 class ModuleParameterRange:
     """
-    ModuleParameterRange class is a structure for keeping track of
+    `ModuleParameterRange` class is a structure for keeping track of
     the specific range that a parameter might take on. Also handles
-    functionality for converting to and from a range between 0 and
-    1. This class does not store the value of a parameter, just the
-    range.
+    functionality for converting between machine-readable range [0, 1] and a
+    human-readable range [minimum, maximum].
 
     Args:
-        minimum (float) :   minimum value in range
-        maximum (float) :   maximum value in range
-        device  (torch.device) : Device for storing tensors
-        curve   (float) :   shape of the curve, values less than 1
-        place more emphasis on smaller values and values greater than 1
-        place more emphasis no larger values. Defaults to 1 which is linear.
-        symmetric (bool) :  whether or not the parameter range is symmetric,
-         allows for curves around a center point. Defaults to False.
-        name    (str) : name of this parameter
-        description (str) : optional description of this parameter
+        minimum:   minimum value in human-readable range
+        maximum:   maximum value in human-readable range
+        curve:   strictly positive shape of the curve
+            values less than 1 place more emphasis on smaller
+            values and values greater than 1 place more emphasis on
+            larger values. 1 is linear.
+        symmetric:  whether or not the parameter range is symmetric,
+            allows for curves around a center point. When this is True,
+            a curve value of one is linear, greater than one emphasizes
+            the minimum and maximum, and less than one emphasizes values
+            closer to :math:`(maximum - minimum)/2`.
+        name: name of this parameter
+        description: optional description of this parameter
     """
 
     def __init__(
         self,
         minimum: float,
         maximum: float,
-        device: Optional[torch.device] = None,
         curve: float = 1,
         symmetric: bool = False,
         # TODO: Make this not optional
@@ -43,24 +44,15 @@ class ModuleParameterRange:
     ):
         self.name = name
         self.description = description
-        self.device = None
         self.minimum = minimum
         self.maximum = maximum
         self.curve = curve
         self.symmetric = symmetric
 
-    def to(self, device: torch.device):
-        """
-        Update the device attribute. Can do more here in the future if need be,
-        but from initial profiling it is faster to not have the attributes as tensors
-        """
-        self.device = device
-        return self
-
     def __repr__(self):
         return (
-            f"ModuleParameterRange(name={self.name}, min={self.minimum}, "
-            + f"max={self.maximum}, curve={self.curve}, "
+            f"ModuleParameterRange(name={self.name}, minimum={self.minimum}, "
+            + f"maximum={self.maximum}, curve={self.curve}, "
             + f"symmetric={self.symmetric}, "
             + f"description={self.description})"
         )
@@ -70,8 +62,8 @@ class ModuleParameterRange:
         Set value of this parameter using a normalized value in the range [0,1]
 
         Args:
-          normalized (T): value within [0,1] range to convert to range defined by
-          minimum and maximum
+            normalized: value within machine-readable range [0, 1] to convert to
+                human-readable range [minimum, maximum].
         """
         # TODO: These asserts are very slow
         # assert torch.all(0.0 <= normalized)
@@ -96,10 +88,10 @@ class ModuleParameterRange:
 
     def to_0to1(self, value: T) -> T:
         """
-        Convert a ranged parameter to a normalized range from 0 to 1
+        Convert from human-readable range [minimum, maximum] to machine-range [0, 1].
 
         Args:
-          value (T): value within the range defined by minimum and maximum
+          value: value within the range defined by minimum and maximum
         """
         assert torch.all(self.minimum <= value)
         assert torch.all(value <= self.maximum)
@@ -117,29 +109,27 @@ class ModuleParameterRange:
 
 class ModuleParameter(nn.Parameter):
     """
-    ModuleParameter class that inherits from pytorch nn.Parameter
-    so it can be used for training. Can use a ModuleParameterRange
-    object to help convert from a 0 to 1 range which is expected
-    internally and an external user specified range.
+    `ModuleParameter` class that inherits from pytorch :class:`~torch.nn.Parameter`
+
+    TODO: Rethink value vs data here
+    see https://github.com/torchsynth/torchsynth/issues/101
+
+    TODO: parameter_range shouldn't be optional
+    see https://github.com/torchsynth/torchsynth/issues/340
 
     Args:
-        value (T) : initial value of this parameter in the user-specific
-        range. Must pass in a ModuleParameterRange object when using
-        this to provide conversion to and from 0-to-1 range
-
-        parameter_name (str) : A name for this parameter
-        parameter_range (ModuleParameterRange) : A ModuleParameterRange
-        object that supports conversion to and from 0-to-1 range
-        and a user-specified range.
-
-        data (Tensor) : directly add data to this parameter without a user-range
-        requires_grad (bool) : whether or not a gradient is required for this parameter
-        frozen (optional bool) : freeze parameter value and prevent updating
+        value: initial value of this parameter in the human-readable range.
+        parameter_name: A name for this parameter
+        parameter_range: A :class:`~torchsynth.parameter.ModuleParameterRange`
+            object that supports conversion between human-readable range and
+            machine-readable [0,1] range.
+        data: directly add data to this parameter in machine-readable range.
+        requires_grad: whether or not a gradient is required for this parameter
+        frozen: freeze parameter value and prevent updating
     """
 
     def __new__(
         cls,
-        # TODO: REMOVEME
         value: Optional[T] = None,
         parameter_name: str = "",
         parameter_range: Optional[ModuleParameterRange] = None,
@@ -174,34 +164,27 @@ class ModuleParameter(nn.Parameter):
             self.parameter_name, self.data
         )
 
-    # TODO: Pull this out?
-    # Not sure if this works yet
-    # def __eq__(self, other):
-    #    # Should we be testing other attributes??
-    #    return self.parameter_name == other.parameter_name and torch.all(
-    #        self.data == other.data
-    #    )
-
-    # TODO: Move to ModuleRange
     def from_0to1(self) -> T:
         """
-        Get the value of this parameter in the user-specified range. If no user range
-        was specified, then the original parameter is returned.
+        Get the value of this parameter in the human-readable range.
+
+        TODO ModuleParameterRange should not be optional
+        see https://github.com/torchsynth/torchsynth/issues/340
+        If no parameter range was specified, then the original parameter is returned.
         """
         if self.parameter_range is not None:
             return self.parameter_range.from_0to1(self)
 
         return self
 
-    # TODO: Move to ModuleRange
     def to_0to1(self, new_value: T):
         """
         Set the value of this parameter using an input that is
-        within the user-specified range. It will be converted to a
-        0-to-1 range and stored internally.
+        in the human-readable range. Raises a runtime error if
+        this parameter has been frozen.
 
         Args:
-            new_value (Tensor) : new value to update this parameter with
+            new_value: new value to update this parameter with
         """
         if self.frozen:
             raise RuntimeError("Parameter is frozen")
@@ -212,7 +195,15 @@ class ModuleParameter(nn.Parameter):
             raise RuntimeError("A range was never set for this parameter")
 
     @staticmethod
-    def is_parameter_frozen(parameter):
+    def is_parameter_frozen(parameter: "ModuleParameter"):
+        """
+        Check whether a `ModuleParameter` is frozen. Asserts
+        that parameter is an instance of :class:`~torchsynth.parameter.ModuleParameter`,
+        and returns a bool indicating whether it is frozen.
+
+        Args:
+            parameter: parameter to check
+        """
         if isinstance(parameter, ModuleParameter):
             return parameter.frozen
         else:

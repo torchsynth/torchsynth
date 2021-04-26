@@ -19,19 +19,23 @@ from torchsynth.signal import Signal
 
 class SynthModule(nn.Module):
     """
-    Base class for synthesis modules, in torch.
-    All parameters are assumed to be 1D tensors,
-    the dimension size being the batch size.
+    A base class for synthesis modules. :class:`~.SynthModule` is primarily
+    responsible for feeding parameters and their values to the PyTorch backend.
+    All parameters are assumed to be
+    :attr:`~torchsynth.config.SynthConfig.batch_size`-length 1-D tensors.
 
-    WARNING: TorchSynthModules should be atomic and not
-    contain other SynthModules. This is similar to a modular synth,
-    where modules don't contain submodules.
+    All :class:`~.SynthModule` objects should be atomic, i.e., they should not
+    contain other :class:`~.SynthModule` objects. This design choice is in the
+    spirit of modular synthesis.
 
     Args:
-        synthconfig: These are global settings shared across all
-            modules in the same synth.
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
 
-        device: The device for creating all tensors.
+        device: An object representing the device on which the `torch` tensors
+            are to be allocated (as per PyTorch, broadly).
     """
 
     # This outlines all the parameters available in this module
@@ -54,8 +58,9 @@ class SynthModule(nn.Module):
         self.seed: Optional[int] = None
 
         if self.default_parameter_ranges is not None:
-            # We want to create copies of the parameter ranges otherwise each instance
-            # of the same module type (ex. ADSR) will reference the same param range
+            # We want to create copies of the parameter ranges otherwise each
+            # instance of the same module type (ex. ADSR) will reference the
+            # same param range.
             assert isinstance(self.default_parameter_ranges, list)
             self.parameter_ranges = copy.deepcopy(self.default_parameter_ranges)
             self._parameter_ranges_dict: Dict[str, ModuleParameterRange] = {
@@ -67,7 +72,9 @@ class SynthModule(nn.Module):
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        data=torch.rand((self.synthconfig.batch_size,), device=device),
+                        data=torch.rand(
+                            (self.synthconfig.batch_size,), device=device
+                        ),
                         parameter_range=parameter_range,
                     )
                     for parameter_range in self.parameter_ranges
@@ -82,57 +89,66 @@ class SynthModule(nn.Module):
 
     @property
     def batch_size(self) -> T:
+        """Size of the batch to be generated."""
         assert self.synthconfig.batch_size.ndim == 0
         return self.synthconfig.batch_size
 
     @property
     def sample_rate(self) -> T:
+        """Sample rate frequency in Hz."""
         assert self.synthconfig.sample_rate.ndim == 0
         return self.synthconfig.sample_rate
 
     @property
     def nyquist(self):
+        """Convenience property for the highest frequency that can be
+        represented at :attr:`~.sample_rate` (as per Shannon-Nyquist)."""
         return self.sample_rate / 2.0
 
     @property
     def eps(self) -> float:
+        """A very small value used to avoid computational errors."""
         return self.synthconfig.eps
 
     @property
     def buffer_size(self) -> T:
+        """Size of the module output in samples."""
         assert self.synthconfig.buffer_size.ndim == 0
         return self.synthconfig.buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
         """
-        Fix the length of a signal to the default buffer size of this module.
-        The signal will be truncated if it is larger than the default buffer
-        size or padded with zeros if it is smaller.
+        Fixes the length of a signal to the default buffer size of this module,
+        as specified by :attr:`~.SynthModule.buffer_size`. Longer signals are
+        truncated to length; shorter signals are zero-padded.
 
         Args:
-            signal: signal to fix the length of
+            signal: A signal to pad or truncate.
         """
         return util.fix_length(signal, self.buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         """
-        Converts a tensor of seconds to number of samples at the current sample rate.
-        Returns the number of samples as a float and can be fractional.
+        Convenience function to calculate the number of samples corresponding to
+        given a time value and :attr:`~.sample_rate`. Returns a possibly
+        fractional value.
 
         Args:
-            seconds: values in seconds to convert to samples
+            seconds: Time value in seconds.
         """
         return seconds * self.sample_rate
 
     def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each SynthModule should override this.
+        Performs the main action of :class:`~.SynthModule`. Each child class
+        should override this method.
         """
         raise NotImplementedError("Derived classes must override this method")
 
     def forward(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Wrapper for output that ensures a buffer_size length output.
+        Wrapper for output that ensures a :attr:`~.SynthModule.buffer_size`
+        length output.
         """
         signal = self.output(*args, **kwargs)
         buffered = self.to_buffer_size(signal)
@@ -140,10 +156,11 @@ class SynthModule(nn.Module):
 
     def add_parameters(self, parameters: List[ModuleParameter]):
         """
-        Add parameters to this SynthModule's torch parameter dictionary.
+        Adds parameters to the :class:`~.SynthModule` parameter dictionary. Used
+        by the class constructor.
 
         Args:
-            parameters: List of parameters to register with this module
+            parameters: List of parameters to register with this module.
         """
         for parameter in parameters:
             assert parameter.parameter_name not in self.torchparameters
@@ -152,10 +169,11 @@ class SynthModule(nn.Module):
 
     def get_parameter(self, parameter_id: str) -> ModuleParameter:
         """
-        Get a single ModuleParameter for this module
+        Retrieves a single :class:`~torchsynth.parameter.ModuleParameter`, as
+        specified by its parameter Id.
 
         Args:
-            parameter_id: Id of the parameter to return
+            parameter_id: Id of the parameter to retrieve.
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -163,10 +181,10 @@ class SynthModule(nn.Module):
 
     def get_parameter_0to1(self, parameter_id: str) -> T:
         """
-        Get the value of a parameter in the range of [0,1]
+        Retrieves a specified parameter value in the normalized range [0,1].
 
         Args:
-            parameter_id:   Id of the parameter to return the value for
+            parameter_id: Id of the parameter to retrieve.
         """
         value = self.torchparameters[parameter_id]
         assert value.shape == (self.batch_size,)
@@ -174,12 +192,11 @@ class SynthModule(nn.Module):
 
     def set_parameter(self, parameter_id: str, value: T):
         """
-        Update a specific parameter value, ensuring that it is within a specified
-        range
+        Updates a parameter value in a parameter-specific non-normalized range.
 
         Args:
-            parameter_id: Id of the parameter to update
-            value: Value to update parameter with
+            parameter_id: Id of the parameter to update.
+            value:  Value to assign to the parameter.
         """
         value = value.to(self.device)
         self.torchparameters[parameter_id].to_0to1(value)
@@ -189,11 +206,11 @@ class SynthModule(nn.Module):
 
     def set_parameter_0to1(self, parameter_id: str, value: T):
         """
-        Update a specific parameter with a value in the range [0,1]
+        Update a parameter value in a normalized range [0,1].
 
         Args:
-            parameter_id: Id of the parameter to update
-            value: Value to update parameter with
+            parameter_id: Id of the parameter to update.
+            value: Value to assign to the parameter.
         """
         value = value.to(self.device)
         assert torch.all(0.0 <= value) and torch.all(value <= 1.0)
@@ -202,11 +219,11 @@ class SynthModule(nn.Module):
 
     def p(self, parameter_id: str) -> T:
         """
-        Convenience method for getting the parameter value. Returns
-        the parameters in human-readable range.
+        Convenience method for retrieving a parameter value. Returns
+        the value in parameter-specific, non-normalized range.
 
         Args:
-            parameter_id: Id of the parameter to get
+            parameter_id: Id of the parameter to retrieve.
         """
         value = self.torchparameters[parameter_id].from_0to1()
         assert value.shape == (self.batch_size,)
@@ -214,36 +231,35 @@ class SynthModule(nn.Module):
 
     def to(self, device: Optional[torch.device] = None, **kwargs):
         """
-        Overriding the to call for nn.Module to transfer this module to device. This
-        makes sure that the ParameterRanges for each ModuleParamter and the globals
-        are also transferred to the correct device.
+        This function overrides the :func:`~torch.nn.Module.to` call in
+        :class:`torch.nn.Module`. It ensures that the related values
+        :class:`~torchsynth.parameter.ModuleParameterRange` and
+        :class:`~torchsynth.parameter.ModuleParameter`, as well as
+        :attr:`~.SynthModule.synthconfig` are also transferred to the correct
+        device.
 
         Args:
             device: device to send this module to
         """
-        self.update_device(device)
+        self._update_device(device)
         return super().to(device=device, **kwargs)
 
-    def update_device(self, device: Optional[torch.device] = None):
+    def _update_device(self, device: Optional[torch.device] = None):
         """
-        This handles the device transfer tasks that are not managed by PyTorch.
+        This method handles the device transfer tasks that are not managed by
+        PyTorch.
 
         Args:
-            device: Device to update this module with
+            device: Device to assign to this module.
         """
         self.synthconfig.to(device)
         self.device = device
-        # Currently the parameters ranges themselves are not move to a different
-        # device, but each ParameterRange object is device aware if it needs to be
-        # TODO: Do ParameterRanges need to be device aware? See issue #240
-        for name, parameter in self.torchparameters.items():
-            parameter.parameter_range.to(device)
 
 
 class ControlRateModule(SynthModule):
     """
-    Control rate module is an abstract base class for SynthModules that run
-    at a control rate as opposed to full audio rate.
+    An abstract base class for non-audio modules that adapts the functions of
+    :class:`.~SynthModule` to run at :attr:`~.ControlRateModule.control_rate`.
     """
 
     @property
@@ -256,51 +272,58 @@ class ControlRateModule(SynthModule):
 
     @property
     def control_rate(self) -> T:
+        """Control rate frequency in Hz."""
         assert self.synthconfig.control_rate.ndim == 0
         return self.synthconfig.control_rate
 
     @property
     def control_buffer_size(self) -> T:
+        """Size of the module output in samples."""
         assert self.synthconfig.control_buffer_size.ndim == 0
         return self.synthconfig.control_buffer_size
 
     def to_buffer_size(self, signal: Signal) -> Signal:
         """
-        Fix the length of a signal to the default buffer size of this module.
-        The signal will be truncated if it is larger than the default buffer
-        size or padded with zeros if it is smaller.
-
-        *Uses the control rate buffer size*
+        Fixes the length of a signal to the control buffer size of this module,
+        as specified by :attr:`~.ControlRateModule.control_buffer_size`. Longer
+        signals are truncated to length; shorter signals are zero-padded.
 
         Args:
-            signal: signal to fix the length of
+            signal: A signal to pad or truncate.
         """
         return util.fix_length(signal, self.control_buffer_size)
 
     def seconds_to_samples(self, seconds: T) -> T:
         """
-        Converts a tensor of seconds to number of samples at the current control rate.
-        Returns the number of samples as a float and can be fractional.
+        Convenience function to calculate the number of samples corresponding to
+        given a time value and :attr:`~.control_rate`. Returns a possibly
+        fractional value.
 
         Args:
-            seconds: value in seconds to convert to samples
+            seconds: Time value in seconds.
         """
         return seconds * self.control_rate
 
     def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each SynthModule should override this.
+        Performs the main action of :class:`~.ControlRateModule`. Each child
+        class should override this method.
         """
         raise NotImplementedError("Derived classes must override this method")
 
 
 class ADSR(ControlRateModule):
     """
-    Envelope class for building a control rate ADSR signal.
+    Envelope class for building a control-rate ADSR signal.
 
     Args:
-        synthconfig: Configuration for module
-        device: device for this module to run on
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
+
+        device: An object representing the device on which the `torch` tensors
+            are allocated (as per PyTorch, broadly).
     """
 
     #: ADSR Parameters
@@ -357,16 +380,16 @@ class ADSR(ControlRateModule):
         programatically-counterintuitive behaviour:
 
         Example:
-            E.g., assume attack is .5 seconds, and decay is .5 seconds. If a note is
+            Assume attack is .5 seconds, and decay is .5 seconds. If a note is
             held for .75 seconds, the envelope won't pass through the entire
-            attack-and-decay (specifically, it will execute the entire attack, and
-            only .25 seconds of the decay).
+            attack-and-decay (specifically, it will execute the entire attack,
+            and only .25 seconds of the decay).
 
         If this is confusing, don't worry about it. ADSR's do a lot of work
         behind the scenes to make the playing experience feel natural.
 
         Args:
-            note_on_duration: Duration that midi note is held for in seconds
+            note_on_duration: Duration of note on event in seconds.
         """
 
         if self.synthconfig.debug:
@@ -388,7 +411,7 @@ class ADSR(ControlRateModule):
 
         return (attack_signal * decay_signal * release_signal).as_subclass(Signal)
 
-    def _ramp(
+    def ramp(
         self, duration: T, start: Optional[T] = None, inverse: Optional[bool] = False
     ) -> Signal:
         """
@@ -396,12 +419,12 @@ class ADSR(ControlRateModule):
 
         The construction of this matrix is rather cryptic. Essentially, this
         method works by tilting and clipping ramps between 0 and 1, then
-        applying some scaling factor (`alpha`).
+        applying a scaling factor :attr:`~alpha`.
 
         Args:
-            duration: Length of the ramp in seconds
-            start: Initial delay of ramp in seconds
-            inverse: Flip ramp. Becomes a ramp down
+            duration: Length of the ramp in seconds.
+            start: Initial delay of ramp in seconds.
+            inverse: Toggle to flip the ramp from ascending to descending.
         """
 
         assert duration.ndim == 1
@@ -422,12 +445,11 @@ class ADSR(ControlRateModule):
         ramp = (ramp + self.eps) / duration + self.eps
         ramp = torch.minimum(ramp, self.one)
 
-        """
-        The following is a workaround. In inverse mode, a ramp with 0 duration
-        (that is all 1's) becomes all 0's, which is a problem for the
-        ultimate calculation of the ADSR signal (a * d * r => 0's). So this
-        replaces only rows who sum to 0 (i.e., all components are zero).
-        """
+        # The following is a workaround. In inverse mode, a ramp with 0 duration
+        # (that is all 1's) becomes all 0's, which is a problem for the
+        # ultimate calculation of the ADSR signal (a * d * r => 0's). So this
+        # replaces only rows who sum to 0 (i.e., all components are zero).
+
         if inverse:
             ramp = torch.where(duration > 0.0, 1.0 - ramp, ramp)
 
@@ -437,35 +459,35 @@ class ADSR(ControlRateModule):
 
     def make_attack(self, attack_time) -> Signal:
         """
-        Create the attack portion of the envelope
+        Builds the attack portion of the envelope.
 
         Args:
-            attack_time: length of the attack in seconds
+            attack_time: Length of the attack in seconds.
         """
-        return self._ramp(attack_time)
+        return self.ramp(attack_time)
 
     def make_decay(self, attack_time, decay_time) -> Signal:
         """
-        Create the decay portion of the envelope
+        Creates the decay portion of the envelope.
 
         Args:
-            attack_time: length of the attack in seconds
-            decay_time: length of the decay time in seconds
+            attack_time: Length of the attack in seconds.
+            decay_time: Length of the decay time in seconds.
         """
         sustain = self.p("sustain").unsqueeze(1)
         a = 1.0 - sustain
-        b = self._ramp(decay_time, start=attack_time, inverse=True)
+        b = self.ramp(decay_time, start=attack_time, inverse=True)
         return torch.squeeze(a * b + sustain)
 
     def make_release(self, note_on_duration) -> Signal:
         """
-        Create the release portion of the envelope
+        Creates the release portion of the envelope.
 
         Args:
-            note_on_duration: duration of midi note in seconds (release starts
-                when the midi note is released)
+            note_on_duration: Duration of midi note in seconds (release starts
+                when the midi note is released).
         """
-        return self._ramp(self.p("release"), start=note_on_duration, inverse=True)
+        return self.ramp(self.p("release"), start=note_on_duration, inverse=True)
 
     def __str__(self):  # pragma: no cover
         return (
@@ -479,7 +501,7 @@ class ADSR(ControlRateModule):
 
 class VCO(SynthModule):
     """
-    Base class for voltage controlled oscillators (VCO).
+    Base class for voltage controlled oscillators.
 
     Think of this as a VCO on a modular synthesizer. It has a base pitch
     (specified here as a midi value), and a pitch modulation depth. Its call
@@ -487,8 +509,11 @@ class VCO(SynthModule):
     stationary audio signal at its base pitch.
 
     Args:
-        synthconfig: global args, see SynthModule
-        phase: initial phase values
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
+        phase: Initial oscillator phase.
     """
 
     default_parameter_ranges: List[ModuleParameterRange] = [
@@ -518,24 +543,9 @@ class VCO(SynthModule):
         """
         Generates audio signal from modulation signal.
 
-        There are three representations of the 'pitch' at play here: (1) midi,
-        (2) instantaneous frequency, and (3) phase, a.k.a. 'argument':
-
-        1. **midi** - This is an abuse of the standard midi convention, where
-           semitone pitches are mapped from 0 - 127. Here it's a convenient
-           way to represent pitch linearly. An A above middle C is midi 69.
-        2. **freq** - Pitch scales logarithmically in frequency. A is 440Hz.
-        3. **phase** - This is the argument of the cosine function that generates
-           sound. Frequency is the first derivative of phase; phase is integrated
-           frequency (~ish).
-
-        First we generate the 'pitch contour' of the signal in midi values (mod
-        contour + base pitch). Then we convert to a phase argument (via
-        frequency), then output sound.
-
         Args:
-            midi_f0: Fundamental of note in midi note value (0-127)
-            mod_signal: Modulation signal to apply to the pitch
+            midi_f0: Fundamental of note in midi note value (0-127).
+            mod_signal: Modulation signal to apply to the pitch.
         """
         assert midi_f0.shape == (self.batch_size,)
 
@@ -553,12 +563,12 @@ class VCO(SynthModule):
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
-        Creates a time-varying control signal in frequency (Hz) from the midi
-        fundamental frequency and the modulation signal.
+        Generates a time-varying control signal in frequency (Hz) from a midi
+        fundamental pitch and pitch-modulation signal.
 
         Args:
-            midi_f0: fundamental frequency in midi
-            mod_signal: pitch modulation signal in midi
+            midi_f0: Fundamental pitch value in midi.
+            mod_signal: Pitch modulation signal in midi.
         """
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         control_as_midi = torch.clamp(
@@ -568,20 +578,22 @@ class VCO(SynthModule):
 
     def make_argument(self, freq: Signal) -> Signal:
         """
-        Generates the phase argument to feed a cosine function to make audio.
+        Generates the phase argument to feed an oscillating function to
+        generate an audio signal.
 
         Args:
-            freq: time-varying frequency signal in Hz
+            freq: Time-varying instantaneous frequency in Hz.
         """
         return torch.cumsum(2 * torch.pi * freq / self.sample_rate, dim=1)
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        Must be implemented in deriving classes
+        This function accepts a phase argument and generates output audio. It is
+        implemented by the child class.
 
         Args:
-            argument: the phase of the oscillator at each sample
-            midi_f0: fundamental frequency in midi
+            argument: The phase of the oscillator at each time sample.
+            midi_f0: Fundamental frequency in midi.
         """
         raise NotImplementedError("Derived classes must override this method")
 
@@ -589,37 +601,43 @@ class VCO(SynthModule):
 class SineVCO(VCO):
     """
     Simple VCO that generates a pitched sinusoid.
-
-    Derives from VCO, it simply implements a cosine function as oscillator.
     """
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
+        """
+        A cosine oscillator. ...Good ol' cosine.
+
+        Args:
+            argument: The phase of the oscillator at each time sample.
+            midi_f0: Fundamental frequency in midi (ignored in this VCO).
+        """
         return torch.cos(argument)
 
 
-class TorchFmVCO(VCO):
+class FmVCO(VCO):
     """
-    # TODO Turn this into its own voice so we can be a bit smarter about aliasing
-    # See https://github.com/torchsynth/torchsynth/issues/145
-    Frequency modulation VCO. Takes `mod_signal` as instantaneous frequency.
+    Frequency modulation VCO. Takes a modulation signal as instantaneous
+    frequency (in Hz) rather than as a midi value.
 
     Typical modulation is calculated in pitch-space (midi). For FM to work,
-    we have to change the order of calculations. Here `mod_depth` is interpreted
-    as the "modulation index" which is tied to the fundamental of the oscillator
-    being modulated:
+    we have to change the order of calculations. Here the modulation depth is
+    re-interpreted as the "modulation index" which is tied to the fundamental of
+    the oscillator being modulated:
 
-        ``modulation_index = frequency_deviation / modulation_frequency``
+        :math:`I = \\Delta f / f_m`
+
+    where :math:`I` is the modulation index, :math:`\\Delta f` is the frequency
+    deviation imparted by the modulation, and :math:`f_m` is the modulation
+    frequency, both in Hz.
     """
 
     def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
         """
-        Creates a time-varying control signal in frequency (Hz) from the fundamental
-        frequency and the modulation signal. Assumes the modulation signal is in Hz
-        as opposed to the regular VCO which assumes the modulation signal is in midi.
+        Creates a time-varying control signal in instantaneous frequency (Hz).
 
         Args:
-            midi_f0: fundamental frequency in midi
-            mod_signal: frequency modulation signal
+            midi_f0: Fundamental frequency in midi.
+            mod_signal: FM modulation signal (interpreted as modulation index).
         """
         # Compute modulation in Hz space (rather than midi-space).
         f0_hz = util.midi_to_hz(midi_f0 + self.p("tuning")).unsqueeze(1)
@@ -629,24 +647,26 @@ class TorchFmVCO(VCO):
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        FM oscillator -- sine wave operator
+        A cosine oscillator. ...Good ol' cosine.
 
         Args:
-            argument: the phase of the oscillator at each sample
-            midi_f0: fundamental frequency in midi
+            argument: The phase of the oscillator at each time sample.
+            midi_f0: Fundamental frequency in midi (ignored in this VCO).
         """
-        # Classically, FM operators are sine waves.
         return torch.cos(argument)
 
 
 class SquareSawVCO(VCO):
     """
-    VCO that can be either a square or a sawtooth waveshape.
-    Tweak with the shape parameter. (0 is square.)
+    An oscillator that can take on either a square or a sawtooth waveshape, and
+    can sweep continuously between them, as determined by the
+    :attr:`~torchsynth.module.SquareSawVCO.shape` parameter. A shape value of 0
+    makes a square wave; a shape of 1 makes a saw wave.
 
-    With apologies to Lazzarini, Victor, and Joseph Timoney. "New perspectives on
-    distortion synthesis for virtual analog oscillators."
-    Computer Music Journal 34, no. 1 (2010): 28-40.
+    With apologies to Lazzarini and Timoney (2010).
+    `"New perspectives on distortion synthesis for virtual analog oscillators."
+    <https://doi.org/10.1162/comj.2010.34.1.28>`_
+    Computer Music Journal 34, no. 1: 28-40.
     """
 
     default_parameter_ranges: List[
@@ -659,11 +679,11 @@ class SquareSawVCO(VCO):
 
     def oscillator(self, argument: Signal, midi_f0: T) -> Signal:
         """
-        SquareSaw wave oscillator.
+        Generates output square/saw audio given a phase argument.
 
         Args:
-            argument: the phase of the oscillator at each sample
-            midi_f0: fundamental frequency in midi
+            argument: The phase of the oscillator at each time sample.
+            midi_f0: Fundamental frequency in midi.
         """
         partials = self.partials_constant(midi_f0).unsqueeze(1)
         square = torch.tanh(torch.pi * partials * torch.sin(argument) / 2)
@@ -672,13 +692,14 @@ class SquareSawVCO(VCO):
 
     def partials_constant(self, midi_f0):
         """
-        Constant value that determines the number of partials in the resulting
-        square / saw wave in order to keep aliasing at an acceptable level.
-        Higher frequencies require fewer partials whereas lower frequency sounds
-        can safely have more partials without causing audible aliasing.
+        Calculates a value to determine the number of overtones in the resulting
+        square / saw wave, in order to keep aliasing at an acceptable level.
+        Higher fundamental frequencies require fewer partials for a rich sound;
+        lower-frequency sounds can safely have more partials without causing
+        audible aliasing.
 
         Args:
-            midi_f0: fundamental frequency of the oscillator in midi
+            midi_f0: Fundamental frequency in midi.
         """
         max_pitch = (
             midi_f0 + self.p("tuning") + torch.maximum(self.p("mod_depth"), tensor(0))
@@ -690,18 +711,36 @@ class SquareSawVCO(VCO):
 class VCA(SynthModule):
     """
     Voltage controlled amplifier.
+
+    The VCA shapes the amplitude of an audio input signal over time, as
+    determined by a control signal. To shape control-rate signals, use
+    :class:`torchsynth.module.ControlRateVCA`.
     """
 
     def output(self, audio_in: Signal, control_in: Signal) -> Signal:
+        """
+        Args:
+            audio: Audio input to shape with the VCA.
+            amp_control: Time-varying amplitude modulation signal.
+        """
         return audio_in * control_in
 
 
 class ControlRateVCA(ControlRateModule):
     """
-    A VCA that operates at control rate
+    Voltage controlled amplifier.
+
+    The VCA shapes the amplitude of a control input signal over time, as
+    determined by another control signal. To shape audio-rate signals, use
+    :class:`torchsynth.module.VCA`.
     """
 
     def output(self, audio_in: Signal, control_in: Signal) -> Signal:
+        """
+        Args:
+            control: Control signal input to shape with the VCA.
+            amp_control: Time-varying amplitude modulation signal.
+        """
         return audio_in * control_in
 
 
@@ -709,20 +748,28 @@ class Noise(SynthModule):
     """
     Generates white noise that is the same length as the buffer.
 
-    A batch size number of noise samples are pre-computed for performance.
-    A seed for the noise generator is required. If you use multiple of
-    these in a synth then choose different seeds for each instance.
+    For performance noise is pre-computed. In order to maintain
+    reproducibility noise must be computed on the CPU and then transferred
+    to the GPU, if a GPU is being used. We pre-compute
+    :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`
+    samples of noise and then repeat those for larger batch sizes.
+
+    To keep things fast we only support multiples of
+    :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`
+    when reproducibility mode is enabled. For example, if you batch size
+    is 4 times :attr:`~torchsynth.config.BASE_REPRODUCIBLE_BATCH_SIZE`, then
+    you get the same noise signals repeated 4 times.
+
+    `Note`: If you have multiple `Noise` modules in the same
+    :class:`~torchsynth.synth.AbstractSynth`, make sure you instantiate
+    each `Noise` with a unique seed.
+
+    Args:
+        synthconfig: See :class:`~torchsynth.module.SynthModule`
+        seed: random number generator seed for white noise
     """
 
-    # Do we really want deterministic noise within each batch?
-    # https://github.com/torchsynth/torchsynth/issues/250
-    # For performance noise is pre-computed. In order to maintain
-    # reproducibility noise must be computed on the CPU and then transferred
-    # to the GPU, if a GPU is being used. We pre-compute BATCH_SIZE_FOR_REPRODUCIBILITY
-    # samples of noise and then repeat those for larger batch sizes.
-    # To keep things simple we only support multiples of BATCH_SIZE_FOR_REPRODUCIBILITY
-    # when reproducibility mode is enabled.
-    noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
+    __noise_batch_size: int = BASE_REPRODUCIBLE_BATCH_SIZE
     # Unfortunately, Final is not supported until Python 3.8
     # noise_batch_size: Final[int] = BATCH_SIZE_FOR_REPRODUCIBILITY
 
@@ -735,17 +782,19 @@ class Noise(SynthModule):
         # In reproducible mode, we support batch sizes that are multiples
         # of the BASE_REPRODUCIBLE_BATCH_SIZE
         if self.synthconfig.reproducible:
-            if self.batch_size % self.noise_batch_size != 0:
+            if self.batch_size % self.__noise_batch_size != 0:
                 raise ValueError(
-                    f"Batch size must be a multiple of {self.noise_batch_size} "
+                    f"Batch size must be a multiple of {self.__noise_batch_size} "
                     "when using reproducible mode. Either change your batch size,"
                     "or set reproducible=False in the SynthConfig for this module."
                 )
 
-            noise = torch.empty((self.noise_batch_size, self.buffer_size), device="cpu")
+            noise = torch.empty(
+                (self.__noise_batch_size, self.buffer_size), device="cpu"
+            )
             noise.data.uniform_(-1.0, 1.0, generator=generator)
-            if self.batch_size > self.noise_batch_size:
-                noise = noise.repeat(self.batch_size // self.noise_batch_size, 1)
+            if self.batch_size > self.__noise_batch_size:
+                noise = noise.repeat(self.batch_size // self.__noise_batch_size, 1)
         else:
             # Non-reproducible mode, just render noise of batch size
             noise = torch.empty((self.batch_size, self.buffer_size), device="cpu")
@@ -759,7 +808,18 @@ class Noise(SynthModule):
 
 class LFO(ControlRateModule):
     """
-    An abstract base class for low frequency oscillators
+    Low Frequency Oscillator.
+
+    The LFO shape can be any mixture of sine, triangle, saw, reverse saw, and
+    square waves. Contributions of each base-shape are determined by the
+    :attr:`~torchsynth.module.LFO.lfo_types` values, which are between 0 and 1.
+
+    Args:
+        synthconfig: See :class:`~torchsynth.module.SynthConfig`.
+        exponent: A non-negative value that determines the discrimination of the
+            soft-max selector for LFO shapes. Higher values will tend to favour
+            one LFO shape over all others. Lower values will result in a more
+            even blend of LFO shapes.
     """
 
     default_ranges: List[ModuleParameterRange] = [
@@ -808,7 +868,11 @@ class LFO(ControlRateModule):
 
     def output(self, mod_signal: Signal) -> Signal:
         """
-        Must be implemented in deriving classes
+        Generates low frequency oscillator control signal.
+
+        Args:
+            mod_signal:  LFO rate modulation signal in Hz. To modulate the
+                depth of the LFO, use :class:`torchsynth.module.ControlRateVCA`.
         """
         # This module accepts signals at control rate!
         assert mod_signal.shape == (self.batch_size, self.control_buffer_size)
@@ -829,13 +893,23 @@ class LFO(ControlRateModule):
         return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
 
     def make_control(self, mod_signal: Signal) -> Signal:
+        """
+        Applies the LFO-rate modulation signal to the LFO base frequency.
+
+        Args:
+            mod_signal: Modulation signal in Hz. Positive values increase the
+                LFO base rate; negative values decrease it.
+        """
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, tensor(0.0))
 
     def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
         """
-        Creates a set of LFO shapes at the correct frequency:
-        Sinusoid, Triangle, Saw, Reverse Saw, and Square
+        Generates five separate signals for each LFO shape and returns them as a
+        tuple, to be mixed by :func:`torchsynth.module.LFO.output`.
+
+        Args:
+            argument: Time-varying phase to generate LFO signals.
         """
         cos = torch.cos(argument + torch.pi)
         square = torch.sign(cos)
@@ -854,19 +928,17 @@ class LFO(ControlRateModule):
 
 class ModulationMixer(SynthModule):
     """
-    A modulation matrix that takes in N input modulation signals
-    and combines them together to create M output modulation signals.
-    Each output is a linear combination of all in the input signals
-    using the mixing levels defined by NxM mixing parameters.
+    A modulation matrix that combines :math:`N` input modulation signals to make
+    :math:`M` output modulation signals. Each output is a linear combination of
+    all in input signals, as determined by an :math:`N \times M` mixing matrix.
 
-    Parameters
-    ----------
-    synthconfig (SynthGlobals) :   Synth config settings
-    n_input     (int)           :   Number of signals this module will mix
-    n_output    (int)           :   Number of output signals
-    curves  (optional, list)    :   A list of curve values to use for underlying
-                                    mix level parameters for each mod source.
-                                    Defaults to 0.5. Must be same number of input.
+    Args:
+        synthconfig: See :class:`~torchsynth.module.SynthConfig`.
+        n_input: Number of input signals to module mix.
+        n_output: Number of output signals to generate.
+        curves: A positive value that determines the contribution of each
+            input signal to the other signals. A low value discourages
+            over-mixing.
     """
 
     def __init__(
@@ -921,7 +993,7 @@ class ModulationMixer(SynthModule):
 
     def forward(self, *signals: Signal) -> Tuple[Signal]:
         """
-        Mix together a set of modulation signals.
+        Performs mixture of modulation signals.
         """
 
         # Get params into batch_size x n_output x n_input matrix
@@ -939,7 +1011,8 @@ class ModulationMixer(SynthModule):
 
 class AudioMixer(SynthModule):
     """
-    Sums together a set of N signals together and applies normalization if required
+    Sums together N audio signals and applies range-normalization if the
+    resulting signal is outside of [-1, 1].
     """
 
     def __init__(
@@ -979,6 +1052,9 @@ class AudioMixer(SynthModule):
         self.n_input = n_input
 
     def output(self, *signals: Signal) -> Signal:
+        """
+        Returns a mixed signal from an array of input signals.
+        """
 
         # Turn params into matrix
         params = torch.stack([self.p(p) for p in self.torchparameters], dim=1)

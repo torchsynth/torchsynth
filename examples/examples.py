@@ -71,7 +71,7 @@ from torchsynth.module import (
     MonophonicKeyboard,
     Noise,
     SineVCO,
-    TorchFmVCO,
+    FmVCO,
 )
 from torchsynth.parameter import ModuleParameterRange
 
@@ -243,7 +243,12 @@ time_plot(envelope.clone().detach().cpu().T)
 
 # ## Oscillators
 #
-# There are several types of oscillators and sound generators available. Oscillators that can be controlled by an external signal are called voltage-coltrolled oscillators (VCOs) in the analog world and we adpot a similar approach here; oscillators accept an input control signal and produce audio output. We have a simple sine oscilator:`SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM oscillator: `TorchFmVCO`. There is also a white noise generator: `Noise`.
+# There are several types of oscillators and sound generators available. Oscillators
+# that can be controlled by an external signal are called voltage-coltrolled
+# oscillators (VCOs) in the analog world and we adpot a similar approach here;
+# oscillators accept an input control signal and produce audio output. We have a simple
+# sine oscilator:`SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM
+# oscillator: `FmVCO`. There is also a white noise generator: `Noise`.
 
 # +
 # %matplotlib inline
@@ -364,9 +369,14 @@ time_plot(test_output[0].detach().cpu())
 
 # ### FM Synthesis
 #
-# What about FM? You bet. Use the `TorchFmVCO` class. It accepts any audio input.
+# What about FM? You bet. Use the `FmVCO` class. It accepts any audio input.
 #
-# Just a note that, as in classic FM synthesis, you're dealing with a complex architecture of modulators. Each 'operator ' has its own pitch envelope, and amplitude envelope. The 'amplitude' envelope of an operator is really the *modulation depth* of the oscillator it operates on. So in the example below, we're using an ADSR to shape the depth of the *operator*, and this affects the modulation depth of the resultant signal.
+# Just a note that, as in classic FM synthesis, you're dealing with a complex
+# architecture of modulators. Each 'operator ' has its own pitch envelope, and
+# amplitude envelope. The 'amplitude' envelope of an operator is really the
+# *modulation depth* of the oscillator it operates on. So in the example below,
+# we're using an ADSR to shape the depth of the *operator*, and this affects
+# the modulation depth of the resultant signal.
 
 # +
 
@@ -389,7 +399,7 @@ operator_out = sine_operator(keyboard.p("midi_f0"), envelope)
 operator_out = vca(envelope, operator_out)
 
 # Feed into FM oscillator as modulator signal.
-fm_vco = TorchFmVCO(
+fm_vco = FmVCO(
     tuning=tensor([0.0, 0.0]),
     mod_depth=tensor([2.0, 5.0]),
     synthconfig=synthconfig,
@@ -553,13 +563,14 @@ for i in range(synthconfig16.batch_size):
 
 # +
 voice.unfreeze_all_parameters()
-voice.set_frozen_parameters(
+voice.set_parameters(
     {
-        ("keyboard", "midi_f0"): 42.0,
-        ("keyboard", "duration"): 3.0,
-        ("vco_1", "tuning"): 0.0,
-        ("vco_2", "tuning"): 0.0,
+        ("keyboard", "midi_f0"): tensor([42.0] * voice.batch_size),
+        ("keyboard", "duration"): tensor([3.0] * voice.batch_size),
+        ("vco_1", "tuning"): tensor([0.0] * voice.batch_size),
+        ("vco_2", "tuning"): tensor([0.0] * voice.batch_size),
     },
+    freeze=True,
 )
 
 voice_out = voice()

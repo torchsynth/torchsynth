@@ -120,6 +120,13 @@ intersphinx_mapping = {
     "pytorch_lightning": ("https://pytorch-lightning.readthedocs.io/en/stable/", None),
 }
 
+# -- Options for link checking -------------------------------------------------
+# Ignore check on relative links and the link to the CMJ paper on SquareSaw osc
+linkcheck_ignore = [
+    r'^\.\./.*$',
+    r'^https://doi.org/10.1162/comj.2010.34.1.28$'
+]
+
 # -- Options for HTML output -------------------------------------------------
 
 
