@@ -622,6 +622,15 @@ class TorchFmVCO(VCO):
         ``modulation_index = frequency_deviation / modulation_frequency``
     """
 
+    # We include this override to output to make mod_signal non-optional
+    def output(self, midi_f0: T, mod_signal: Signal) -> Signal:
+        """
+        Args:
+            midi_f0: note value in midi
+            mod_signal: audio rate frequency modulation signal
+        """
+        return super().output(midi_f0, mod_signal)
+
     def make_control_as_frequency(self, midi_f0: T, mod_signal) -> Signal:
         """
         Creates a time-varying control signal in frequency (Hz) from the fundamental
