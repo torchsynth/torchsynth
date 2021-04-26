@@ -14,8 +14,8 @@ audio samples generated on CPU and GPU are < 1e-2.
 
 ## Defaults
 
-Reproducibility is currently guaranteed when using `batch_size` a
-multpiple of 32 and the default SynthConfig settings: `sample_rate`=44100,
+Reproducibility is currently guaranteed when `batch_size` is multiple
+of 32 and you use the default SynthConfig settings: `sample_rate`=44100,
 `control_rate`=441.
 
 ## Train vs Test
