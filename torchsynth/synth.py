@@ -3,7 +3,7 @@ import os
 import json
 import pkg_resources
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import OrderedDict as OrderedDictType
@@ -17,7 +17,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import SynthConfig, N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -174,7 +174,7 @@ class AbstractSynth(LightningModule):
 
     def forward(
         self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
-    ) -> Signal:  # pragma: no cover
+    ) -> Tuple[Signal, Union[torch.Tensor, None]]:  # pragma: no cover
         """
         Each AbstractSynth should override this.
 
@@ -189,15 +189,24 @@ class AbstractSynth(LightningModule):
                 "Reproducible mode is on, you must "
                 "pass a batch index when calling this synth"
             )
+        # Determine which samples are training examples if batch_idx is provided
+        if batch_idx is not None:
+            idxs = torch.range(
+                self.batch_size * batch_idx, (batch_idx + 1) * self.batch_size - 1
+            )
+            assert len(idxs) == self.batch_size
+            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY) % 10 <= 9
+        else:
+            is_train = None
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self.output(*args, **kwargs)
+                return self.output(*args, **kwargs), is_train
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self.output(*args, **kwargs)
+            return self.output(*args, **kwargs), is_train
 
     def test_step(self, batch, batch_idx):
         """
