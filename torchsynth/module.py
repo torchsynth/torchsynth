@@ -860,8 +860,7 @@ class LFO(ControlRateModule):
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
         return torch.maximum(frequency + modulation, tensor(0.0))
 
-    @staticmethod
-    def make_lfo_shapes(argument: Signal) -> Tuple[T, T, T, T, T]:
+    def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
         """
         Creates a set of LFO shapes at the correct frequency:
         Sinusoid, Triangle, Saw, Reverse Saw, and Square
