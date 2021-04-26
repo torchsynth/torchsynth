@@ -26,6 +26,10 @@ in terms of throughput. It synthesizes audio 16200x faster than
 realtime (714MHz) on a single GPU. This is of particular interest
 to audio ML researchers seeking large training corpora.
 
+Additionally, all synthesized audio is returned with the underlying
+latent parameters used for generating the corresponding audio. This
+is useful for multi-modal training regimes.
+
 If you'd like to hear torchsynth, check out synth1K1, a dataset of 
 1024 4-second sounds rendered from the {class}`~torchsynth.synth.Voice`
 synthesizer.
@@ -35,6 +39,7 @@ src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/10
 
 All the individual sound files and code to generate synth1K1 are available in a 
 git repo: https://github.com/torchsynth/synth1K1 
+
 
 ```{toctree}
 ---

@@ -116,16 +116,19 @@ if torch.cuda.is_available():
     synth.to("cuda")
 # -
 
-# Now, let's make some sounds! We just call synth with a batch_id.
+# Now, let's make some sounds!
+#
+# We just call our synth with a batch_id. This returns a triple containing the audio
+# output, parameters for this sound, as well as a tensor of bools indicating whether
+# each sound can be considered a training item. The purpose of this multi-modal output
+# is to support machine learning researchers in creating large-scale reproducible audio
+# datasets consisting of both training and testing samples.
 
-# +
-audio = synth(0)
-
+audio, params, is_train = synth(0)
 print(
     f"Created {audio.shape[0]} synthesizer sounds "
-    f"that are each {audio.shape[1]} samples long"
+    f"that are each {audio.shape[1]} samples long\n"
 )
-# -
 
 # Let's listen to some of the sounds we made
 
