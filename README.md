@@ -18,6 +18,10 @@ in terms of throughput. It synthesizes audio 16200x faster than
 realtime (714MHz) on a single GPU. This is of particular interest
 to audio ML researchers seeking large training corpora.
 
+Additionally, all synthesized audio is returned with the underlying
+latent parameters used for generating the corresponding audio. This
+is useful for multi-modal training regimes.
+
 <div align="center">
 
 [Documentation](https://torchsynth.rtfd.io/en/latest/)
@@ -41,3 +45,11 @@ pip3 install torchsynth
 ```
 
 Note that torchsynth requires PyTorch version 1.8 or greater.
+
+## Listen
+
+If you'd like to hear torchsynth, check out
+[synth1K1](https://github.com/torchsynth/synth1K1), a dataset of
+1024 4-second sounds rendered from the
+[Voice](https://torchsynth.readthedocs.io/en/latest/api/synth.html#torchsynth.synth.Voice)
+synthesizer, or listen [on SoundCloud](https://soundcloud.com/user-357924775/synth1k1).
