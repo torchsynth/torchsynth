@@ -34,5 +34,5 @@ synth1B1_312 = voice(312)
 synth1B1_312_6 = synth1B1_312[6]
 
 # We add one channel at the beginning, for torchaudio
-torchaudio.save("synth1B1-312-6.wav", synth1B1_312_6.unsqueeze(0), voice.sample_rate)
+torchaudio.save("synth1B1-312-6.wav", synth1B1_312_6.unsqueeze(0).cpu(), voice.sample_rate)
 ```

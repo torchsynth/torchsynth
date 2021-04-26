@@ -194,3 +194,31 @@ class TestReproducibility:
         output_2 = voice_2.mixer(vco_1_2, vco_2_2, noise_2)
 
         assert torch.all(output_1 == output_2)
+
+    def test1024_is_train(self):
+        voice1024 = Voice(SynthConfig(batch_size=1024, reproducible=False)).to(device)
+        _, is_train = voice1024(0)
+        assert torch.all(is_train == True)
+        _, is_train = voice1024(8)
+        assert torch.all(is_train == True)
+        _, is_train = voice1024(9)
+        assert torch.all(is_train == False)
+        _, is_train = voice1024(10)
+        assert torch.all(is_train == True)
+
+    def test256_is_train(self):
+        voice256 = Voice(SynthConfig(batch_size=256, reproducible=False)).to(device)
+        _, is_train = voice256(0 * 4)
+        assert torch.all(is_train == True)
+        _, is_train = voice256(8 * 4)
+        assert torch.all(is_train == True)
+        _, is_train = voice256(9 * 4)
+        assert torch.all(is_train == False)
+        _, is_train = voice256(9 * 4 + 1)
+        assert torch.all(is_train == False)
+        _, is_train = voice256(9 * 4 + 2)
+        assert torch.all(is_train == False)
+        _, is_train = voice256(9 * 4 + 3)
+        assert torch.all(is_train == False)
+        _, is_train = voice256(10 * 4)
+        assert torch.all(is_train == True)

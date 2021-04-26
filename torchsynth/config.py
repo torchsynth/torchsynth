@@ -19,6 +19,12 @@ DEFAULT_BATCH_SIZE = 128
 #: noise batches in advance, for speed.
 BASE_REPRODUCIBLE_BATCH_SIZE = 32
 
+# If a train/test split is desired, 10% of the samples are marked
+# as test. Because researchers with larger GPUs seek higher-throughput
+# with batchsize 1024, $9 \cdot 1024$ samples are designated as train,
+# the next 1024 samples as test, etc.
+N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY = 1024
+
 
 class SynthConfig:
     """
