@@ -46,25 +46,27 @@ class TestReproducibility:
     def run_batch_size_test(self, device):
         # Runs test for reproducibility across batch sizes on a device
         voice256 = Voice(SynthConfig(batch_size=256)).to(device)
-        out256 = voice256(0)
+        out256, _ = voice256(0)
 
         voice128 = Voice(SynthConfig(batch_size=128)).to(device)
-        out128 = torch.vstack([voice128(0), voice128(1)])
+        out128 = torch.vstack([voice128(0)[0], voice128(1)[0]])
 
         voice64 = Voice(SynthConfig(batch_size=64)).to(device)
-        out64 = torch.vstack([voice64(0), voice64(1), voice64(2), voice64(3)])
+        out64 = torch.vstack(
+            [voice64(0)[0], voice64(1)[0], voice64(2)[0], voice64(3)[0]]
+        )
 
         voice32 = Voice(SynthConfig(batch_size=32)).to(device)
         out32 = torch.vstack(
             [
-                voice32(0),
-                voice32(1),
-                voice32(2),
-                voice32(3),
-                voice32(4),
-                voice32(5),
-                voice32(6),
-                voice32(7),
+                voice32(0)[0],
+                voice32(1)[0],
+                voice32(2)[0],
+                voice32(3)[0],
+                voice32(4)[0],
+                voice32(5)[0],
+                voice32(6)[0],
+                voice32(7)[0],
             ]
         )
 
