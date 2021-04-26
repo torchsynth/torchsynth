@@ -46,7 +46,7 @@ class TestReproducibility:
     def run_batch_size_test(self, device):
         # Runs test for reproducibility across batch sizes on a device
         voice256 = Voice(SynthConfig(batch_size=256)).to(device)
-        out256, _ = voice256(0)
+        out256, _, _ = voice256(0)
 
         voice128 = Voice(SynthConfig(batch_size=128)).to(device)
         out128 = torch.vstack([voice128(0)[0], voice128(1)[0]])
@@ -196,29 +196,35 @@ class TestReproducibility:
         assert torch.all(output_1 == output_2)
 
     def test1024_is_train(self):
-        voice1024 = Voice(SynthConfig(batch_size=1024, reproducible=False)).to(device)
-        _, is_train = voice1024(0)
+        voice1024 = Voice(SynthConfig(batch_size=1024, reproducible=False))
+        is_train = voice1024._batch_idx_to_is_train(0)
         assert torch.all(is_train == True)
-        _, is_train = voice1024(8)
+        is_train = voice1024._batch_idx_to_is_train(8)
         assert torch.all(is_train == True)
-        _, is_train = voice1024(9)
+        is_train = voice1024._batch_idx_to_is_train(9)
         assert torch.all(is_train == False)
-        _, is_train = voice1024(10)
+        is_train = voice1024._batch_idx_to_is_train(10)
         assert torch.all(is_train == True)
 
     def test256_is_train(self):
-        voice256 = Voice(SynthConfig(batch_size=256, reproducible=False)).to(device)
-        _, is_train = voice256(0 * 4)
+        voice256 = Voice(SynthConfig(batch_size=256, reproducible=False))
+        is_train = voice256._batch_idx_to_is_train(8 * 4)
         assert torch.all(is_train == True)
-        _, is_train = voice256(8 * 4)
+        is_train = voice256._batch_idx_to_is_train(9 * 4)
+        assert torch.all(is_train == False)
+        is_train = voice256._batch_idx_to_is_train(9 * 4 + 1)
+        assert torch.all(is_train == False)
+        is_train = voice256._batch_idx_to_is_train(9 * 4 + 2)
+        assert torch.all(is_train == False)
+        is_train = voice256._batch_idx_to_is_train(9 * 4 + 3)
+        assert torch.all(is_train == False)
+        is_train = voice256._batch_idx_to_is_train(10 * 4)
         assert torch.all(is_train == True)
-        _, is_train = voice256(9 * 4)
-        assert torch.all(is_train == False)
-        _, is_train = voice256(9 * 4 + 1)
-        assert torch.all(is_train == False)
-        _, is_train = voice256(9 * 4 + 2)
-        assert torch.all(is_train == False)
-        _, is_train = voice256(9 * 4 + 3)
-        assert torch.all(is_train == False)
-        _, is_train = voice256(10 * 4)
-        assert torch.all(is_train == True)
+
+    def test2048_is_train(self):
+        voice2048 = Voice(SynthConfig(batch_size=2048, reproducible=False))
+        is_train = voice2048._batch_idx_to_is_train(4)
+        half_train_half_test = torch.hstack(
+            [torch.tensor([True] * 1024), torch.tensor([False] * 1024)]
+        )
+        assert torch.all(is_train == half_train_half_test)
