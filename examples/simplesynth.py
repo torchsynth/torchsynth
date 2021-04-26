@@ -1,10 +1,11 @@
 # ## Creating a simple synth
 #
-# In this example we'll create a new synth using torchsynth modules. Synth
-# artchitectures can be created using a modular synthesizer paradigm by interconnecting
-# individual modules that each have a unique function. We'll create a simple single
-# oscillator synth with an attack-decay-sustain-release (ADSR) envelope controlling
-# the amplitude in this example. More complicated architectures can be created
+# In this example we'll create a new synthesizer using
+# torchsynth SynthModules. Synths in torchsynth are created using
+# an approach inspired by modular synthesizers that involves interconnecting individual
+# modules. We'll create a simple single oscillator synth with an
+# attack-decay-sustain-release (ADSR) envelope controlling
+# the amplitude. More complicated architectures can be created
 # using the same ideas!
 
 # +
@@ -26,16 +27,14 @@ from torchsynth.config import SynthConfig, BASE_REPRODUCIBLE_BATCH_SIZE
 
 # -
 
-# ### The SimpleSynth class
+# ## Creating the SimpleSynth class
 #
-# All synths in torchsynth derive from `AbstractSynth`, which contains many helpful
-# methods which include funcitonality for keeping track of children `SynthModule`s,
-# creating random patches, and more. See the API documentation for `AbstractSynth` for
-# more information.
+# All synths in torchsynth derive from `AbstractSynth`, which
+# provides helpful functionality for managing children modules and parameters.
 #
-# There are two steps involved in creating a class that derives from `Abstract Synth`:
-# 1. Define the synth modules that will be used in `__init__`
-# 2. Define how modules interconnect in `output`
+# There are two steps involved in creating a class that derives from `AbstractSynth`:
+#    1. Define the modules that will be used in the `__init__` method
+#    2. Define how modules are connected in the `output` method
 
 
 class SimpleSynth(AbstractSynth):
