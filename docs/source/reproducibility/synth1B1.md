@@ -23,12 +23,9 @@ million samples of Synth1B1 respectively.
 If you change any of the defaults, *e.g.* in SynthConfig, please
 call that in your work, and use a variant of the name synth1B1.
 
-One tenth of the examples are designated as the test set.  If a
-train/test split is desired, 10% of the samples are marked as test.
-Because researchers with larger GPUs seek higher-throughput with
-batchsize 1024, 9 $\cdot$ 1024 samples are designated as train, the
-next 1024 samples as test, *etc.*. Note that only batch size
-128 is currently supported; future releases will extend this.
+One tenth of the examples are designated as the test set. See
+[Reproducibility > Train vs. Test](reproducibility)
+for more information.
 
 The nomenclature "synth1B1-312-6" denotes batch 312 (assuming
 batch size of 128) and sound 6 within that batch.
