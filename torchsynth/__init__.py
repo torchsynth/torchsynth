@@ -1,6 +1,6 @@
-from torchsynth.__info__ import (
+from torchsynth.__info__ import (  # noqa: F401
     __author__,
-    __author_email__,  # noqa: F401
+    __author_email__,
     __copyright__,
     __docs__,
     __homepage__,
