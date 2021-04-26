@@ -29,7 +29,7 @@ import torch
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY, SynthConfig
+from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -247,7 +247,7 @@ class AbstractSynth(LightningModule):
             assert len(idxs) == self.batch_size
             # As specified in our paper, the first 9x1024 samples
             # are train, and the next 1024 are test.
-            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY) % 10 != 9
+            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY) % 10 != 9
         else:
             is_train = None
         return is_train

@@ -23,7 +23,7 @@ BASE_REPRODUCIBLE_BATCH_SIZE = 32
 # as test. Because researchers with larger GPUs seek higher-throughput
 # with batchsize 1024, $9 \cdot 1024$ samples are designated as train,
 # the next 1024 samples as test, etc.
-N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY = 1024
+N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY = 1024
 
 
 class SynthConfig:
