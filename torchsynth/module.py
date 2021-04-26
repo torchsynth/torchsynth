@@ -549,6 +549,17 @@ class VCO(SynthModule):
         """
         assert midi_f0.shape == (self.batch_size,)
 
+        if mod_signal is not None and mod_signal.shape != (
+            self.batch_size,
+            self.buffer_size,
+        ):
+            raise ValueError(
+                "mod_signal has incorrect shape. Expected "
+                f"{torch.Size([self.batch_size, self.buffer_size])}, "
+                f"and received {mod_signal.shape}. Make sure the mod_signal "
+                "being passed in is at full audio sampling rate."
+            )
+
         control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
 
         if self.synthconfig.debug:
