@@ -624,9 +624,9 @@ class FmVCO(VCO):
     re-interpreted as the "modulation index" which is tied to the fundamental of
     the oscillator being modulated:
 
-        :math:`I = \Delta f / f_m`
+        :math:`I = \\Delta f / f_m`
 
-    where :math:`I` is the modulation index, :math:\Delta f` is the frequency
+    where :math:`I` is the modulation index, :math:`\\Delta f` is the frequency
     deviation imparted by the modulation, and :math:`f_m` is the modulation
     frequency, both in Hz.
     """
