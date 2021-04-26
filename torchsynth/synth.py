@@ -1,9 +1,10 @@
-import sys
-import os
 import json
-import pkg_resources
+import os
+import sys
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import pkg_resources
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import OrderedDict as OrderedDictType
@@ -17,7 +18,7 @@ import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig, N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY
+from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
