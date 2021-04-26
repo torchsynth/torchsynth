@@ -208,8 +208,6 @@ class TestReproducibility:
 
     def test256_is_train(self):
         voice256 = Voice(SynthConfig(batch_size=256, reproducible=False))
-        _, _, is_train = voice256(0 * 4)
-        assert torch.all(is_train == True)
         _, _, is_train = voice256(8 * 4)
         assert torch.all(is_train == True)
         _, _, is_train = voice256(9 * 4)
