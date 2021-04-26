@@ -20,9 +20,9 @@ from torchsynth.signal import Signal
 class SynthModule(nn.Module):
     """
     A base class for synthesis modules. A :class:`~.SynthModule`
-    optionally take input from other :class:`~.SynthModule`s, and
-    use its (optional) input and its
-    :class:`~torchsynth.parameter.ModuleParameter`s to generate
+    optionally takes input from other :class:`~.SynthModule` instances.
+    The :class:`~.SynthModule` uses its (optional) input and its
+    set of :class:`~torchsynth.parameter.ModuleParameter` to generate
     output. All :class:`~torchsynth.parameter.ModuleParameter` of
     the :class:`~.SynthModule` are assumed to be
     :attr:`~torchsynth.config.SynthConfig.batch_size`-length 1-D
