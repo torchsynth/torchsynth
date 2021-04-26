@@ -549,7 +549,7 @@ voice1.set_parameters(
 audio_out, parameters, is_train = voice1()
 print(f"Audio output: \n{audio_out}\n")
 print(f"Parameters used to create audio: \n{parameters}\n")
-print(f"Is test: \n{is_test}\n")
+print(f"Is test: \n{is_train}\n")
 
 stft_plot(audio_out.cpu().view(-1).detach().numpy())
 ipd.Audio(audio_out.cpu().detach().numpy(), rate=voice1.sample_rate.item())
