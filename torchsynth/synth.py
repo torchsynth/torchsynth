@@ -207,9 +207,14 @@ class AbstractSynth(LightningModule):
                 module parameter settings.
 
         Returns:
+            audio, parameters, is_train as a Tuple.
+
             (batch_size x buffer_size audio tensor,
+
             batch_size x n_parameters [0, 1] parameters tensor,
-            batch_size Boolean tensor of is this example train [or test])
+
+            batch_size Boolean tensor of is this example train [or test],
+            None if batch_idx is None)
         """
         if self.synthconfig.reproducible and batch_idx is None:
             raise ValueError(
