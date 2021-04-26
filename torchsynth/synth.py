@@ -10,8 +10,6 @@ inference easy. Nonetheless, you can treat each synth as a native
 torch :class:`~torch.nn.Module`.
 """
 
-import sys
-import os
 import json
 import os
 import sys
