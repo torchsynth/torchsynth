@@ -542,9 +542,10 @@ voice1.set_parameters(
 # be None.
 
 # +
-audio_out, parameters = voice1()
+audio_out, parameters, is_test = voice1()
 print(f"Audio output: \n{audio_out}\n")
 print(f"Parameters used to create audio: \n{parameters}\n")
+print(f"Is test: \n{is_test}\n")
 
 stft_plot(audio_out.cpu().view(-1).detach().numpy())
 ipd.Audio(audio_out.cpu().detach().numpy(), rate=voice1.sample_rate.item())
@@ -569,7 +570,7 @@ voice2.set_parameters(
 )
 
 # Only grab the audio output from this voice
-voice_out2 = voice2()[0]
+voice_out2, _, _ = voice2()
 stft_plot(voice_out2.cpu().view(-1).detach().numpy())
 ipd.Audio(voice_out2.cpu().detach().numpy(), rate=voice2.sample_rate.item())
 # -
@@ -588,7 +589,7 @@ synthconfig16 = SynthConfig(
     batch_size=16, reproducible=False, sample_rate=44100, buffer_size_seconds=4
 )
 voice = Voice(synthconfig=synthconfig16).to(device)
-voice_out = voice()[0]
+voice_out, _, _ = voice()
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
@@ -609,7 +610,7 @@ voice.set_parameters(
     freeze=True,
 )
 
-voice_out = voice()[0]
+voice_out, _, _ = voice()
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
@@ -712,7 +713,7 @@ synthconfig16 = SynthConfig(
     batch_size=16, reproducible=False, sample_rate=44100, buffer_size_seconds=4
 )
 voice = Voice(synthconfig=synthconfig16, nebula="drum").to(device)
-voice_out = voice()[0]
+voice_out, _, _ = voice()
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
