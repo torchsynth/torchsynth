@@ -119,7 +119,7 @@ if torch.cuda.is_available():
 # Now, let's make some sounds! We just call synth with a batch_id.
 
 # +
-audio = synth(0)
+audio, _ = synth(0)
 
 print(
     f"Created {audio.shape[0]} synthesizer sounds "
