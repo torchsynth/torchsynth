@@ -220,6 +220,8 @@ class AbstractSynth(LightningModule):
                 self.batch_size * batch_idx, (batch_idx + 1) * self.batch_size - 1
             )
             assert len(idxs) == self.batch_size
+            # As specified in our paper, the first 9x1024 samples
+            # are train, and the next 1024 are test.
             is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY) % 10 <= 9
         else:
             is_train = None
