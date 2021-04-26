@@ -535,14 +535,18 @@ voice1.set_parameters(
     }
 )
 
-# All Synths in torchsynth return a triple containing the audio, parameters, and an
-# boolean indicating whether the batch is a test batch. This is to support ML
-# researchers who are interested in multi-modal training using torchsynth.
+# All Synths in torchsynth return a triple containing the audio
+# output, parameters for this sound, as well as a tensor of bools indicating whether
+# each sound can be considered a training item. The purpose of this multi-modal output
+# is to support machine learning researchers in creating large-scale reproducible audio
+# datasets consisting of both training and testing samples.
+
+
 # *Note:* If the synth is not in reproducible mode then the test batch variable will
 # be None.
 
 # +
-audio_out, parameters, is_test = voice1()
+audio_out, parameters, is_train = voice1()
 print(f"Audio output: \n{audio_out}\n")
 print(f"Parameters used to create audio: \n{parameters}\n")
 print(f"Is test: \n{is_test}\n")
