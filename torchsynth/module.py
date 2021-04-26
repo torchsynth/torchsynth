@@ -665,7 +665,7 @@ class SquareSawVCO(VCO):
 
     With apologies to Lazzarini and Timoney (2010).
     `"New perspectives on distortion synthesis for virtual analog oscillators."
-    <https://direct.mit.edu/comj/article/34/1/28/94288/New-Perspectives-on-Distortion-Synthesis-for>`_
+    <https://doi.org/10.1162/comj.2010.34.1.28>`_
     Computer Music Journal 34, no. 1: 28-40.
     """
 

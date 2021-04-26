@@ -1,5 +1,5 @@
 torchsynth.config
-===================
+=================
 
 ```{eval-rst}
 .. automodule:: torchsynth.config

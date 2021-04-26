@@ -24,7 +24,6 @@ parameters. Examples of these include a monophonic "keyboard"
 module that has no input, and outputs the note midi f0 value and
 duration.
 
-
 ## Synth Architectures
 
 The default configuration in torchsynth is the Voice, which is the
