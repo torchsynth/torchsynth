@@ -217,7 +217,9 @@ class AbstractSynth(LightningModule):
         # Determine which samples are training examples if batch_idx is provided
         if batch_idx is not None:
             idxs = torch.range(
-                self.batch_size * batch_idx, (batch_idx + 1) * self.batch_size - 1
+                self.batch_size * batch_idx,
+                (batch_idx + 1) * self.batch_size - 1,
+                device=self.device,
             )
             assert len(idxs) == self.batch_size
             # As specified in our paper, the first 9x1024 samples
