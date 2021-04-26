@@ -15,8 +15,8 @@ audio samples generated on CPU and GPU are < 1e-2.
 ## Defaults
 
 Reproducibility is currently guaranteed when `batch_size` is multiple
-of 32 and you use the default SynthConfig settings: `sample_rate`=44100,
-`control_rate`=441.
+of 32 and you use the default {class}`~torchsynth.config.SynthConfig`
+settings: `sample_rate`=44100, `control_rate`=441.
 
 ## Train vs Test
 

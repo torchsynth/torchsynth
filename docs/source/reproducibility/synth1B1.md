@@ -20,8 +20,9 @@ Researchers can denote subsamples of this corpus as synth1M1,
 synth10M1, *etc.*, which would refer to the first 1 million and 10
 million samples of Synth1B1 respectively.
 
-If you change any of the defaults, *e.g.* in SynthConfig, please
-call that in your work, and use a variant of the name synth1B1.
+Besides having a `batch_size` that is a multiple of 32, if you
+change any of the defaults in {class}`~torchsynth.config.SynthConfig`,
+please call that in your work, and use a variant of the name synth1B1.
 
 One tenth of the examples are designated as the test set. See
 [Reproducibility > Train vs. Test](../reproducibility/reproducibility)
