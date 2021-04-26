@@ -535,9 +535,20 @@ voice1.set_parameters(
     }
 )
 
-voice_out1 = voice1()
-stft_plot(voice_out1.cpu().view(-1).detach().numpy())
-ipd.Audio(voice_out1.cpu().detach().numpy(), rate=voice1.sample_rate.item())
+# All Synths in torchsynth return a triple containing the audio, parameters, and an
+# boolean indicating whether the batch is a test batch. This is to support ML
+# researchers who are interested in multi-modal training using torchsynth.
+# *Note:* If the synth is not in reproducible mode then the test batch variable will
+# be None.
+
+# +
+audio_out, parameters = voice1()
+print(f"Audio output: \n{audio_out}\n")
+print(f"Parameters used to create audio: \n{parameters}\n")
+
+stft_plot(audio_out.cpu().view(-1).detach().numpy())
+ipd.Audio(audio_out.cpu().detach().numpy(), rate=voice1.sample_rate.item())
+# -
 
 
 # Additionally, the Voice class can take two oscillators.
@@ -557,7 +568,8 @@ voice2.set_parameters(
     }
 )
 
-voice_out2 = voice2()
+# Only grab the audio output from this voice
+voice_out2 = voice2()[0]
 stft_plot(voice_out2.cpu().view(-1).detach().numpy())
 ipd.Audio(voice_out2.cpu().detach().numpy(), rate=voice2.sample_rate.item())
 # -
@@ -565,7 +577,7 @@ ipd.Audio(voice_out2.cpu().detach().numpy(), rate=voice2.sample_rate.item())
 
 # Test gradients on entire voice
 
-err = torch.mean(torch.abs(voice_out1 - voice_out2))
+err = torch.mean(torch.abs(audio_out - voice_out2))
 print(err)
 
 # ## Random synths
@@ -576,7 +588,7 @@ synthconfig16 = SynthConfig(
     batch_size=16, reproducible=False, sample_rate=44100, buffer_size_seconds=4
 )
 voice = Voice(synthconfig=synthconfig16).to(device)
-voice_out = voice()
+voice_out = voice()[0]
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
@@ -597,7 +609,7 @@ voice.set_parameters(
     freeze=True,
 )
 
-voice_out = voice()
+voice_out = voice()[0]
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
@@ -700,7 +712,7 @@ synthconfig16 = SynthConfig(
     batch_size=16, reproducible=False, sample_rate=44100, buffer_size_seconds=4
 )
 voice = Voice(synthconfig=synthconfig16, nebula="drum").to(device)
-voice_out = voice()
+voice_out = voice()[0]
 for i in range(synthconfig16.batch_size):
     stft_plot(voice_out[i].cpu().view(-1).detach().numpy())
     ipd.display(
