@@ -8,8 +8,9 @@ Quickstart
 ## Which way to synth1B1-312-6?
 
 In this simple example, we use Voice to generate the 312th batch
-of synth1B1. We then select sample 6 from this batch, and save it
-to a WAV file.
+of synth1B1. This batch comprises audio, parameters, and whether
+the instances are training examples.  We then select sample 6 from
+the audio batch, and save it to a WAV file.
 
 You will need to `pip install torchaudio` in order to save the WAV
 file. Alternately, you could modify the code slightly and use
