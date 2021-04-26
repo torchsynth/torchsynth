@@ -26,6 +26,10 @@ in terms of throughput. It synthesizes audio 16200x faster than
 realtime (714MHz) on a single GPU. This is of particular interest
 to audio ML researchers seeking large training corpora.
 
+Additionally, all synthesized audio is returned with the underlying
+latent parameters used for generating the corresponding audio. This
+is useful for multi-modal training regimes.
+
 ```{toctree}
 ---
 maxdepth: 1

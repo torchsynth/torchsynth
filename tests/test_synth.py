@@ -92,11 +92,11 @@ class TestAbstractSynth:
         synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
         cpusynth = torchsynth.synth.Voice(synthconfig)
         x11 = torchsynth.synth.Voice(synthconfig)
-        x11 = x11(1)
+        x11, _, _ = x11(1)
         x2 = torchsynth.synth.Voice(synthconfig)
-        x2 = x2(2)
+        x2, _, _ = x2(2)
         x12 = torchsynth.synth.Voice(synthconfig)
-        x12 = x12(1)
+        x12, _, _ = x12(1)
 
         assert torch.mean(torch.abs(x11 - x2)) > 1e-6
         assert torch.mean(torch.abs(x11 - x12)) < 1e-6
@@ -118,11 +118,11 @@ class TestAbstractSynth:
             # Confirm that we get deterministic results when
             # randomizing the cuda synth with the same seed
             cuda11 = torchsynth.synth.Voice(synthconfig).to(self.device)
-            cuda11 = cuda11(1)
+            cuda11, _, _ = cuda11(1)
             cuda2 = torchsynth.synth.Voice(synthconfig).to(self.device)
-            cuda2 = cuda2(2)
+            cuda2, _, _ = cuda2(2)
             cuda12 = torchsynth.synth.Voice(synthconfig).to(self.device)
-            cuda12 = cuda12(1)
+            cuda12, _, _ = cuda12(1)
 
             assert torch.mean(torch.abs(cuda11 - cuda2)) > 1e-6
             assert torch.mean(torch.abs(cuda11 - cuda12)) < 1e-6

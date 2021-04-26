@@ -10,12 +10,13 @@ inference easy. Nonetheless, you can treat each synth as a native
 torch :class:`~torch.nn.Module`.
 """
 
-import sys
-import os
 import json
-import pkg_resources
+import os
+import sys
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import pkg_resources
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import OrderedDict as OrderedDictType
@@ -28,7 +29,7 @@ import torch
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -188,7 +189,7 @@ class AbstractSynth(LightningModule):
 
     def forward(
         self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
-    ) -> Signal:  # pragma: no cover
+    ) -> Tuple[Signal, torch.Tensor, Union[torch.Tensor, None]]:  # pragma: no cover
         """
         Wrapper around `output`, which optionally randomizes the
         synth :class:`~torchsynth.parameter.ModuleParameter` values
@@ -202,21 +203,54 @@ class AbstractSynth(LightningModule):
                 :attr:`~torchsynth.config.SynthConfig.batch_size`.
                 If None (default), we just use the current
                 module parameter settings.
+
+        Returns:
+            audio, parameters, is_train as a Tuple.
+
+            (batch_size x buffer_size audio tensor,
+
+            batch_size x n_parameters [0, 1] parameters tensor,
+
+            batch_size Boolean tensor of is this example train [or test],
+            None if batch_idx is None)
         """
         if self.synthconfig.reproducible and batch_idx is None:
             raise ValueError(
                 "Reproducible mode is on, you must "
                 "pass a batch index when calling this synth"
             )
+        is_train = self._batch_idx_to_is_train(batch_idx)
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self.output(*args, **kwargs)
+                params = torch.stack([p.data for p in self.parameters()], dim=1)
+                return self.output(*args, **kwargs), params, is_train
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self.output(*args, **kwargs)
+            params = torch.stack([p.data for p in self.parameters()], dim=1)
+            return self.output(*args, **kwargs), params, is_train
+
+    def _batch_idx_to_is_train(
+        self, batch_idx: Union[None, int]
+    ) -> Union[None, torch.tensor]:
+        """
+        Determine which samples are training examples if batch_idx is provided
+        """
+        if batch_idx is not None:
+            idxs = torch.range(
+                self.batch_size * batch_idx,
+                self.batch_size * (batch_idx + 1) - 1,
+                device=self.device,
+            )
+            assert len(idxs) == self.batch_size
+            # As specified in our paper, the first 9x1024 samples
+            # are train, and the next 1024 are test.
+            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY) % 10 != 9
+        else:
+            is_train = None
+        return is_train
 
     def test_step(self, batch, batch_idx):
         """

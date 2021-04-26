@@ -1,5 +1,5 @@
-import time
 import os.path
+import time
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..")
