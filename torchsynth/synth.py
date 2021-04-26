@@ -188,7 +188,7 @@ class AbstractSynth(LightningModule):
 
     def forward(
         self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
-    ) -> Signal:  # pragma: no cover
+    ) -> Tuple[Signal, T]:  # pragma: no cover
         """
         Wrapper around `output`, which optionally randomizes the
         synth :class:`~torchsynth.parameter.ModuleParameter` values
@@ -212,11 +212,13 @@ class AbstractSynth(LightningModule):
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self.output(*args, **kwargs)
+                params = torch.stack([p.data for p in self.parameters()], dim=1)
+                return self.output(*args, **kwargs), params
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self.output(*args, **kwargs)
+            params = torch.stack([p.data for p in self.parameters()], dim=1)
+            return self.output(*args, **kwargs), params
 
     def test_step(self, batch, batch_idx):
         """
