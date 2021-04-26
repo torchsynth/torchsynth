@@ -19,14 +19,18 @@ from torchsynth.signal import Signal
 
 class SynthModule(nn.Module):
     """
-    A base class for synthesis modules. :class:`~.SynthModule` is primarily
-    responsible for feeding parameters and their values to the PyTorch backend.
-    All parameters are assumed to be
-    :attr:`~torchsynth.config.SynthConfig.batch_size`-length 1-D tensors.
+    A base class for synthesis modules. A :class:`~.SynthModule`
+    optionally take input from other :class:`~.SynthModule`s, and
+    use its (optional) input and its
+    :class:`~torchsynth.parameter.ModuleParameter`s to generate
+    output. All :class:`~torchsynth.parameter.ModuleParameter` of
+    the :class:`~.SynthModule` are assumed to be
+    :attr:`~torchsynth.config.SynthConfig.batch_size`-length 1-D
+    tensors.
 
-    All :class:`~.SynthModule` objects should be atomic, i.e., they should not
-    contain other :class:`~.SynthModule` objects. This design choice is in the
-    spirit of modular synthesis.
+    All :class:`~.SynthModule` objects should be atomic, i.e., they
+    should not contain other :class:`~.SynthModule` objects. This
+    design choice is in the spirit of modular synthesis.
 
     Args:
         synthconfig: An object containing synthesis settings that are shared
@@ -72,9 +76,7 @@ class SynthModule(nn.Module):
                     ModuleParameter(
                         value=None,
                         parameter_name=parameter_range.name,
-                        data=torch.rand(
-                            (self.synthconfig.batch_size,), device=device
-                        ),
+                        data=torch.rand((self.synthconfig.batch_size,), device=device),
                         parameter_range=parameter_range,
                     )
                     for parameter_range in self.parameter_ranges
