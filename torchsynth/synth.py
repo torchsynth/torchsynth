@@ -214,19 +214,7 @@ class AbstractSynth(LightningModule):
                 "Reproducible mode is on, you must "
                 "pass a batch index when calling this synth"
             )
-        # Determine which samples are training examples if batch_idx is provided
-        if batch_idx is not None:
-            idxs = torch.range(
-                self.batch_size * batch_idx,
-                (batch_idx + 1) * self.batch_size - 1,
-                device=self.device,
-            )
-            assert len(idxs) == self.batch_size
-            # As specified in our paper, the first 9x1024 samples
-            # are train, and the next 1024 are test.
-            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY) % 10 <= 9
-        else:
-            is_train = None
+        is_train = self._batch_idx_to_is_train(batch_idx)
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:
@@ -238,6 +226,26 @@ class AbstractSynth(LightningModule):
                 self.randomize(seed=batch_idx)
             params = torch.stack([p.data for p in self.parameters()], dim=1)
             return self.output(*args, **kwargs), params, is_train
+
+    def _batch_idx_to_is_train(
+        self, batch_idx: Union[None, int]
+    ) -> Union[None, torch.tensor]:
+        """
+        Determine which samples are training examples if batch_idx is provided
+        """
+        if batch_idx is not None:
+            idxs = torch.range(
+                self.batch_size * batch_idx,
+                self.batch_size * (batch_idx + 1) - 1,
+                device=self.device,
+            )
+            assert len(idxs) == self.batch_size
+            # As specified in our paper, the first 9x1024 samples
+            # are train, and the next 1024 are test.
+            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCILITY) % 10 != 9
+        else:
+            is_train = None
+        return is_train
 
     def test_step(self, batch, batch_idx):
         """
