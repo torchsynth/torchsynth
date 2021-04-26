@@ -24,7 +24,7 @@ If you change any of the defaults, *e.g.* in SynthConfig, please
 call that in your work, and use a variant of the name synth1B1.
 
 One tenth of the examples are designated as the test set. See
-[Reproducibility > Train vs. Test](reproducibility)
+[Reproducibility > Train vs. Test](../reproducibility/reproducibility)
 for more information.
 
 The nomenclature "synth1B1-312-6" denotes batch 312 (assuming
