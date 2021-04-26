@@ -132,3 +132,5 @@ print(
 
 for i in range(audio.shape[0] // 4):
     ipd.display(ipd.Audio(audio[i].cpu().numpy(), rate=int(synth.sample_rate.item())))
+
+# That's it for now -- Happy Patching!
