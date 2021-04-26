@@ -250,9 +250,33 @@ time_plot(envelope.clone().detach().cpu().T)
 # sine oscilator:`SineVCO`, a square/saw oscillator: `SquareSawVCO`, and an FM
 # oscillator: `FmVCO`. There is also a white noise generator: `Noise`.
 
-# +
-# %matplotlib inline
+# #### Sine VCO
 
+# +
+# Set up a Keyboard module
+keyboard = MonophonicKeyboard(
+    synthconfig, device, midi_f0=tensor([69.0, 50.0]), duration=note_on_duration
+)
+
+# Trigger the keyboard, which returns a midi_f0 and note duration
+midi_f0, duration = keyboard()
+
+# Instantiate the sine wave VCO with tuning set to zero
+sine_vco = SineVCO(
+    tuning=tensor([0.0, 0.0]),
+    synthconfig=synthconfig,
+).to(device)
+
+# Call the sine_vco with the midi_f0
+out = sine_vco(midi_f0)
+
+stft_plot(out[0].detach().cpu().numpy())
+ipd.display(ipd.Audio(out[0].detach().cpu().numpy(), rate=sine_vco.sample_rate.item()))
+# -
+
+# VCOs have an optional pitch modulation argument that can be passed in during generation. Let's create a sine vco modulated with an envelope.
+
+# +
 # Set up a Keyboard module
 keyboard = MonophonicKeyboard(
     synthconfig, device, midi_f0=tensor([69.0, 50.0]), duration=note_on_duration
@@ -465,22 +489,22 @@ ipd.Audio(out[0].cpu().detach().numpy(), rate=mixer.sample_rate.item())
 # +
 from torchsynth.module import LFO, ModulationMixer
 
-adsr = ADSR(synthconfig=synthconfig, device=device)
+lfo = LFO(synthconfig, device=device)
+lfo.set_parameter("mod_depth", tensor([10.0, 0.0]))
+lfo.set_parameter("frequency", tensor([1.0, 1.0]))
+out = lfo()
+
+# LFOs can also be triggered with a modulation signal that
+# controls the frequency over time
 
 # Trigger the keyboard, which returns a midi_f0 and note duration
 midi_f0, duration = keyboard()
 
+adsr = ADSR(synthconfig=synthconfig, device=device)
 envelope = adsr(duration)
-
-lfo = LFO(synthconfig, device=device)
-lfo.set_parameter("mod_depth", tensor([10.0, 0.0]))
-lfo.set_parameter("frequency", tensor([1.0, 1.0]))
-out = lfo(envelope)
 
 lfo2 = LFO(synthconfig, device=device)
 out2 = lfo2(envelope)
-
-print(out.shape)
 
 time_plot(out[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())
 time_plot(out2[0].detach().cpu().numpy(), sample_rate=lfo.control_rate.item())

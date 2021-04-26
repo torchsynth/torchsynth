@@ -539,7 +539,7 @@ class VCO(SynthModule):
         ),
     ]
 
-    def output(self, midi_f0: T, mod_signal: Signal) -> Signal:
+    def output(self, midi_f0: T, mod_signal: Optional[Signal] = None) -> Signal:
         """
         Generates audio signal from modulation signal.
 
@@ -561,7 +561,9 @@ class VCO(SynthModule):
         output = self.oscillator(cosine_argument, midi_f0)
         return output.as_subclass(Signal)
 
-    def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
+    def make_control_as_frequency(
+        self, midi_f0: T, mod_signal: Optional[Signal] = None
+    ) -> Signal:
         """
         Generates a time-varying control signal in frequency (Hz) from a midi
         fundamental pitch and pitch-modulation signal.
@@ -570,11 +572,20 @@ class VCO(SynthModule):
             midi_f0: Fundamental pitch value in midi.
             mod_signal: Pitch modulation signal in midi.
         """
+        midi_f0 = (midi_f0 + self.p("tuning")).unsqueeze(1)
+
+        # If there is no modulation, then convert the midi_f0 values to
+        # frequency and return an expanded view that contains buffer size
+        # number of values
+        if mod_signal is None:
+            control_hz = util.midi_to_hz(midi_f0)
+            return control_hz.expand(-1, self.buffer_size)
+
+        # If there is modulation, then add that to the fundamental,
+        # clamp to a range [0.0, 127.0], then return in frequency Hz.
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
-        control_as_midi = torch.clamp(
-            (midi_f0 + self.p("tuning")).unsqueeze(1) + modulation, 0.0, 127.0
-        )
-        return util.midi_to_hz(control_as_midi)
+        control = torch.clamp(midi_f0 + modulation, 0.0, 127.0)
+        return util.midi_to_hz(control)
 
     def make_argument(self, freq: Signal) -> Signal:
         """
@@ -631,7 +642,16 @@ class FmVCO(VCO):
     frequency, both in Hz.
     """
 
-    def make_control_as_frequency(self, midi_f0: T, mod_signal: Signal) -> Signal:
+    # We include this override to output to make mod_signal non-optional
+    def output(self, midi_f0: T, mod_signal: Signal) -> Signal:
+        """
+        Args:
+            midi_f0: note value in midi
+            mod_signal: audio rate frequency modulation signal
+        """
+        return super().output(midi_f0, mod_signal)
+
+    def make_control_as_frequency(self, midi_f0: T, mod_signal) -> Signal:
         """
         Creates a time-varying control signal in instantaneous frequency (Hz).
 
@@ -866,7 +886,7 @@ class LFO(ControlRateModule):
         super().__init__(synthconfig, **kwargs)
         self.exponent = exponent
 
-    def output(self, mod_signal: Signal) -> Signal:
+    def output(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
         Generates low frequency oscillator control signal.
 
@@ -875,7 +895,8 @@ class LFO(ControlRateModule):
                 depth of the LFO, use :class:`torchsynth.module.ControlRateVCA`.
         """
         # This module accepts signals at control rate!
-        assert mod_signal.shape == (self.batch_size, self.control_buffer_size)
+        if mod_signal is not None:
+            assert mod_signal.shape == (self.batch_size, self.control_buffer_size)
 
         # Create frequency signal
         frequency = self.make_control(mod_signal)
@@ -892,7 +913,7 @@ class LFO(ControlRateModule):
 
         return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
 
-    def make_control(self, mod_signal: Signal) -> Signal:
+    def make_control(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
         Applies the LFO-rate modulation signal to the LFO base frequency.
 
@@ -900,8 +921,15 @@ class LFO(ControlRateModule):
             mod_signal: Modulation signal in Hz. Positive values increase the
                 LFO base rate; negative values decrease it.
         """
+        frequency = self.p("frequency").unsqueeze(1)
+
+        # If no modulation, then return a view of the frequency of this
+        # LFO expanded to the control buffer size
+        if mod_signal is None:
+            return frequency.expand(-1, self.control_buffer_size)
+
         modulation = self.p("mod_depth").unsqueeze(1) * mod_signal
-        return torch.maximum(self.p("frequency").unsqueeze(1) + modulation, tensor(0.0))
+        return torch.maximum(frequency + modulation, tensor(0.0))
 
     def make_lfo_shapes(self, argument: Signal) -> Tuple[T, T, T, T, T]:
         """
