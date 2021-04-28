@@ -49,9 +49,9 @@ SquareSawVCO
     :undoc-members:
     :show-inheritance:
 
-TorchFmVCO
-==========
-.. autoclass:: torchsynth.module.TorchFmVCO
+FmVCO
+=====
+.. autoclass:: torchsynth.module.FmVCO
     :members:
     :undoc-members:
     :show-inheritance:
@@ -83,6 +83,7 @@ ControlRateModule
     :members:
     :undoc-members:
     :show-inheritance:
+    :exclude-members: sample_rate, buffer_size
 
 ADSR
 ====
@@ -90,7 +91,6 @@ ADSR
     :members:
     :undoc-members:
     :show-inheritance:
-    :private-members:
 
 ControlRateVCA
 ==============

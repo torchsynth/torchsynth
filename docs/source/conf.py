@@ -34,6 +34,7 @@ from torchsynth.parameter import ModuleParameterRange
 # If runs on ReadTheDocs environment
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
+
 # Hack for lacking git-lfs support ReadTheDocs
 if on_rtd:
     print("Fetching files with git_lfs")
@@ -47,6 +48,7 @@ if on_rtd:
     os.system("./git-lfs install")  # make lfs available in current repository
     os.system("./git-lfs fetch")  # download content from remote
     os.system("./git-lfs checkout")  # make local files to have the real content on them
+
 
 try:
     from torchsynth import __info__ as info
@@ -117,6 +119,13 @@ intersphinx_mapping = {
     "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
     "pytorch_lightning": ("https://pytorch-lightning.readthedocs.io/en/stable/", None),
 }
+
+# -- Options for link checking -------------------------------------------------
+# Ignore check on relative links and the link to the CMJ paper on SquareSaw osc
+linkcheck_ignore = [
+    r'^\.\./.*$',
+    r'^https://doi.org/10.1162/comj.2010.34.1.28$'
+]
 
 # -- Options for HTML output -------------------------------------------------
 
