@@ -1,9 +1,22 @@
-import sys
-import os
+"""
+:class:`~torchsynth.module.SynthModule` wired together form a modular synthesizer.
+:class:`~torchsynth.synth.Voice` is our default synthesizer, and is used to
+generate `synth1B1 <../reproducibility/synth1B1.html>`_.
+
+We base off pytorch-lightning :class:`~pytorch_lightning.core.lightning.LightningModule`
+because it makes `multi-GPU
+<https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html>`_
+inference easy. Nonetheless, you can treat each synth as a native
+torch :class:`~torch.nn.Module`.
+"""
+
 import json
-import pkg_resources
+import os
+import sys
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import pkg_resources
 
 if sys.version_info.major == 3 and sys.version_info.minor >= 8:
     from typing import OrderedDict as OrderedDictType
@@ -13,11 +26,10 @@ else:
     from typing import Dict as OrderedDictType
 
 import torch
-import torch.tensor as tensor
 from pytorch_lightning.core.lightning import LightningModule
 from torch import Tensor as T
 
-from torchsynth.config import SynthConfig
+from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY, SynthConfig
 from torchsynth.module import (
     ADSR,
     LFO,
@@ -38,12 +50,14 @@ from torchsynth.signal import Signal
 
 class AbstractSynth(LightningModule):
     """
-    Base class for synthesizers that combine one or more SynthModules
-    to create a full synth architecture.
+    Base class for synthesizers that combine one or more
+    :class:`~torchsynth.module.SynthModule` to create a full synth
+    architecture.
 
     Args:
-        sample_rate (int): sample rate to run this synth at
-        buffer_size (int): number of samples expected at output of child modules
+        synthconfig: Global configuration for this synth and all its
+            component :class:`~torchsynth.module.SynthModule`. If none
+            is provided, we use our defaults.
     """
 
     def __init__(self, synthconfig: Optional[SynthConfig] = None, *args, **kwargs):
@@ -78,12 +92,14 @@ class AbstractSynth(LightningModule):
         self, modules: List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]
     ):
         """
-        Add a set of named children TorchSynthModules to this synth. Registers them
-        with the torch nn.Module so that all parameters are recognized.
+        Add a set of named children :class:`~torchsynth.module.SynthModule`
+        to this synth.
+        Registers them with the torch :class:`~torch.nn.Module` so that
+        all parameters are recognized.
 
         Args:
-            modules List[Tuple[str, SynthModule, Optional[Dict[str, Any]]]]: A list of
-                SynthModule classes with their names and any parameters to pass to
+            modules: A list of :class:`~torchsynth.module.SynthModule`
+                classes with their names and any parameters to pass to
                 their constructor.
         """
 
@@ -105,8 +121,13 @@ class AbstractSynth(LightningModule):
         self, include_frozen: bool = False
     ) -> OrderedDictType[Tuple[str, str], ModuleParameter]:
         """
-        Returns a dictionary of ModuleParameters for this synth keyed
-        on a tuple of the SynthModule name and the parameter name
+        Returns a dictionary of
+        :class:`~torchsynth.parameter.ModuleParameterRange` for this synth,
+        keyed on a tuple of the :class:`~torchsynth.module.SynthModule` name
+        and the parameter name.
+
+        Args:
+            include_frozen: If some parameter is frozen, return it anyway.
         """
         parameters = []
 
@@ -127,10 +148,15 @@ class AbstractSynth(LightningModule):
 
         return OrderedDict(parameters)
 
-    def set_parameters(self, params: Dict[Tuple, T], freeze: Optional[bool] = False):
+    def set_parameters(
+        self, params: Dict[Tuple[str, str], T], freeze: Optional[bool] = False
+    ):
         """
-        Set parameters for synth by passing in a dictionary of modules and parameters.
-        Can optionally freeze a parameter at this value to prevent further updates.
+        Set various :class:`~torchsynth.parameter.ModuleParameter` for this synth.
+
+        Args:
+            params: Module and parameter strings, with the corresponding value.
+            freeze: Optionally, freeze these parameters to prevent further updates.
         """
         for (module_name, param_name), value in params.items():
             module = getattr(self, module_name)
@@ -139,20 +165,9 @@ class AbstractSynth(LightningModule):
             if freeze:
                 module.get_parameter(param_name).frozen = True
 
-    def set_frozen_parameters(self, params: Dict[Tuple, float]):
+    def freeze_parameters(self, params: List[Tuple[str, str]]):
         """
-        Sets specific parameters within this Synth. All params within the batch
-        will be set to the same value and frozen to prevent further updates.
-        """
-        params = {
-            key: tensor([value] * self.batch_size, device=self.device)
-            for key, value in params.items()
-        }
-        self.set_parameters(params, freeze=True)
-
-    def freeze_parameters(self, params: List[Tuple]):
-        """
-        Freeze a set of parameters by passing in a tuple of the module and param name
+        Freeze a set of parameters by passing in a tuple of the module and param name.
         """
         for module_name, param_name in params:
             module = getattr(self, module_name)
@@ -160,7 +175,7 @@ class AbstractSynth(LightningModule):
 
     def unfreeze_all_parameters(self):
         """
-        Unfreeze all parameters in this synth
+        Unfreeze all parameters in this synth.
         """
         for param in self.parameters():
             if isinstance(param, ModuleParameter):
@@ -168,41 +183,80 @@ class AbstractSynth(LightningModule):
 
     def output(self, *args: Any, **kwargs: Any) -> Signal:  # pragma: no cover
         """
-        Each AbstractSynth should override this.
+        Each `AbstractSynth` should override this.
         """
         raise NotImplementedError("Derived classes must override this method")
 
     def forward(
         self, batch_idx: Optional[int] = None, *args: Any, **kwargs: Any
-    ) -> Signal:  # pragma: no cover
+    ) -> Tuple[Signal, torch.Tensor, Union[torch.Tensor, None]]:  # pragma: no cover
         """
-        Each AbstractSynth should override this.
+        Wrapper around `output`, which optionally randomizes the
+        synth :class:`~torchsynth.parameter.ModuleParameter` values
+        in a deterministic way, and optionally disables gradient
+        computations. This all depends on
+        :attr:`~torchsynth.synth.AbstractSynth.synthconfig`.
 
         Args:
-            batch_idx (Optional[int])   - If provided, we set the parameters of this
-                                    synth for reproducibility, in a deterministic
-                                    random way. If None (default), we just use
-                                    the current module parameter settings.
+            batch_idx: If provided, we generate this batch, in a
+                deterministic random way, according to
+                :attr:`~torchsynth.config.SynthConfig.batch_size`.
+                If None (default), we just use the current
+                module parameter settings.
+
+        Returns:
+            audio, parameters, is_train as a Tuple.
+
+            (batch_size x buffer_size audio tensor,
+
+            batch_size x n_parameters [0, 1] parameters tensor,
+
+            batch_size Boolean tensor of is this example train [or test],
+            None if batch_idx is None)
         """
         if self.synthconfig.reproducible and batch_idx is None:
             raise ValueError(
                 "Reproducible mode is on, you must "
                 "pass a batch index when calling this synth"
             )
+        is_train = self._batch_idx_to_is_train(batch_idx)
         if self.synthconfig.no_grad:
             with torch.no_grad():
                 if batch_idx is not None:
                     self.randomize(seed=batch_idx)
-                return self.output(*args, **kwargs)
+                params = torch.stack([p.data for p in self.parameters()], dim=1)
+                return self.output(*args, **kwargs), params, is_train
         else:
             if batch_idx is not None:
                 self.randomize(seed=batch_idx)
-            return self.output(*args, **kwargs)
+            params = torch.stack([p.data for p in self.parameters()], dim=1)
+            return self.output(*args, **kwargs), params, is_train
+
+    def _batch_idx_to_is_train(
+        self, batch_idx: Union[None, int]
+    ) -> Union[None, torch.tensor]:
+        """
+        Determine which samples are training examples if batch_idx is provided
+        """
+        if batch_idx is not None:
+            idxs = torch.range(
+                self.batch_size * batch_idx,
+                self.batch_size * (batch_idx + 1) - 1,
+                device=self.device,
+            )
+            assert len(idxs) == self.batch_size
+            # As specified in our paper, the first 9x1024 samples
+            # are train, and the next 1024 are test.
+            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY) % 10 != 9
+        else:
+            is_train = None
+        return is_train
 
     def test_step(self, batch, batch_idx):
         """
-        This is boilerplate for lightning -- this is required by lightning Trainer
-        when calling test, which we use to forward Synths on multi-gpu platforms
+        This is boilerplate required by pytorch-lightning
+        :class:`~pytorch_lightning.LightningTrainer`
+        when calling test.
         """
         return 0.0
 
@@ -319,12 +373,31 @@ class AbstractSynth(LightningModule):
         for module in self.modules():
             if isinstance(module, SynthModule):
                 # TODO look into performance of calling to instead
-                module.update_device(self.device)
+                module._update_device(self.device)
 
 
 class Voice(AbstractSynth):
     """
-    In a synthesizer, one combination of VCO, VCA, VCF's is typically called a voice.
+    The default configuration in torchsynth is the Voice, which is
+    the architecture used in synth1B1. The Voice architecture
+    comprises the following modules: a
+    :class:`~torchsynth.module.MonophonicKeyboard`, two
+    :class:`~torchsynth.module.LFO`, six :class:`~torchsynth.module.ADSR`
+    envelopes (each :class:`~torchsynth.module.LFO` module includes
+    two dedicated :class:`~torchsynth.module.ADSR`: one for rate
+    modulation and another for amplitude modulation), one
+    :class:`~torchsynth.module.SineVCO`, one
+    :class:`~torchsynth.module.SquareSawVCO`, one
+    :class:`~torchsynth.module.Noise` generator,
+    :class:`~torchsynth.module.VCA`, a
+    :class:`~torchsynth.module.ModulationMixer` and an
+    :class:`~torchsynth.module.AudioMixer`. Modulation signals
+    generated from control modules (:class:`~torchsynth.module.ADSR`
+    and :class:`~torchsynth.module.LFO`) are upsampled to the audio
+    sample rate before being passed to audio rate modules.
+
+    You can find a diagram of Voice in `Synth Architectures documentation
+    <../modular-design/modular-principles.html#synth-architectures>`_.
     """
 
     def __init__(

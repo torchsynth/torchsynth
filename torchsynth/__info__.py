@@ -1,11 +1,11 @@
-import time
 import os.path
+import time
 
 PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..")
 
 _this_year = time.strftime("%Y")
-__version__ = "0.9.2"
+__version__ = "1.0.0"
 __author__ = "Jordie Shier, Joseph Turian, Max Henry"
 __author_email__ = "firstnamelastname@gmail.com"
 # __contact__ = ""

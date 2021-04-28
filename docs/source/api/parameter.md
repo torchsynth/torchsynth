@@ -2,8 +2,17 @@ torchsynth.parameter
 ====================
 
 ```{eval-rst}
-.. automodule:: torchsynth.parameter
-   :members:
-   :undoc-members:
-   :show-inheritance:
+ModuleParameter
+---------------
+.. autoclass:: torchsynth.parameter.ModuleParameter
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    
+ModuleParameterRange
+--------------------
+.. autoclass:: torchsynth.parameter.ModuleParameterRange
+    :members:
+    :undoc-members:
+    :show-inheritance:
 ```
