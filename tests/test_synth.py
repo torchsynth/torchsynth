@@ -263,16 +263,16 @@ class TestAbstractSynth:
         assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
 
         assert synth.adsr_1.p("attack").shape == (synth.batch_size,)
-        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
+        assert torch.allclose(synth.adsr_1.p("attack"), tensor([1.5, 1.5]))
 
         # Randomizing now shouldn't effect these parameters
         synth.randomize()
-        assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
-        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
+        assert torch.allclose(synth.vco_1.p("tuning"), tensor([0.0, 0.0]))
+        assert torch.allclose(synth.adsr_1.p("attack"), tensor([1.5, 1.5]))
 
         synth.randomize(1)
-        assert torch.all(synth.vco_1.p("tuning").eq(tensor([0.0, 0.0])))
-        assert torch.all(synth.adsr_1.p("attack").eq(tensor([1.5, 1.5])))
+        assert torch.allclose(synth.vco_1.p("tuning"), tensor([0.0, 0.0]))
+        assert torch.allclose(synth.adsr_1.p("attack"), tensor([1.5, 1.5]))
 
     def test_get_parameters(self):
         synthconfig = torchsynth.config.SynthConfig(batch_size=2, reproducible=False)
