@@ -29,45 +29,45 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.5.4
-        - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+        - python3 --version
+        - python3 -m pip install --upgrade pip
+        - python3 -m pip install --upgrade codecov pytest
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.6.8
-        - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+        - python3 --version
+        - python3 -m pip install --upgrade pip
+        - python3 -m pip install --upgrade codecov pytest
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
     - name: "Python 3.7.9 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.7.9
-        - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+        - python3 --version
+        - python3 -m pip install --upgrade pip
+        - python3 -m pip install --upgrade codecov pytest
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
     - name: "Python 3.8.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.8.8
-        - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+        - python3 --version
+        - python3 -m pip install --upgrade pip
+        - python3 -m pip install --upgrade codecov pytest
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
     - name: "Python 3.9.2 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.9.2
-        - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+        - python3 --version
+        - python3 -m pip install --upgrade pip
+        - python3 -m pip install --upgrade codecov pytest
       env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 
     - os: linux
@@ -911,14 +911,14 @@ matrix:
               
 
 before_install:
-  - python --version
-  - pip install -U pip
-  - pip install -U pytest codecov
-  - pip install $TORCH_PIP_PACKAGE --progress-bar off
+  - python3 --version
+  - pip3 install -U pip
+  - pip3 install -U pytest codecov
+  - pip3 install $TORCH_PIP_PACKAGE --progress-bar off
 install:
-  - pip install ".[test]" . # install package + test dependencies
+  - pip3 install ".[test]" . # install package + test dependencies
 script:
   - TORCHSYNTH_DEBUG=True pytest
-  - python examples/examples.py
+  - python3 examples/examples.py
 after_success:
   - bash <(curl -s https://codecov.io/bash)
