@@ -33,3 +33,4 @@ linkify-it-py
 sphinx>=3.0.4 # not directly required, pinned by Snyk to avoid a vulnerability
 myst-parser
 linkify-it-py
+scikit-learn>=0.24.2 # not directly required, pinned by Snyk to avoid a vulnerability
