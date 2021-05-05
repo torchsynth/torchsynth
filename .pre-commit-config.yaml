@@ -4,14 +4,14 @@ repos:
     hooks:
     -   id: nbstripout
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.10.3
+    rev: v1.11.2
     hooks:
     -   id: jupytext
         args: [--sync, --pipe, black]
         additional_dependencies:
-            - black==20.8b1 # Matches hook
+            - black==21.5b0 # Matches hook
 -   repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 21.5b0
     hooks:
     -   id: black
         language_version: python3
