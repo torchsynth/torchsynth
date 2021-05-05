@@ -29,6 +29,7 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.5.4
+        - refreshenv
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -38,6 +39,7 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.6.8
+        - refreshenv
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -47,6 +49,7 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.7.9
+        - refreshenv
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -56,6 +59,7 @@ matrix:
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
         - choco install python --version 3.8.8
+        - refreshenv
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
