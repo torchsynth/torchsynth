@@ -32,9 +32,13 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.5.4
-        - refreshenv
-        - export PATH="/c/Python35:/c/Python35/Scripts:$PATH"
+#        - choco install python --version 3.5.4
+#        - export PATH="/c/Python35:/c/Python35/Scripts:$PATH"
+        - git clone https://github.com/pyenv-win/pyenv-win.git $HOME/.pyenv
+        - export PATH="$HOME/.pyenv/pyenv-win/bin:$HOME/.pyenv/pyenv-win/shims:$PATH"
+        - pyenv install -q 3.5.4
+        - pyenv rehash
+        - pyenv local 3.5.4
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -44,9 +48,13 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.6.8
-        - refreshenv
-        - export PATH="/c/Python36:/c/Python36/Scripts:$PATH"
+#        - choco install python --version 3.6.8
+#        - export PATH="/c/Python36:/c/Python36/Scripts:$PATH"
+        - git clone https://github.com/pyenv-win/pyenv-win.git $HOME/.pyenv
+        - export PATH="$HOME/.pyenv/pyenv-win/bin:$HOME/.pyenv/pyenv-win/shims:$PATH"
+        - pyenv install -q 3.6.8
+        - pyenv rehash
+        - pyenv local 3.6.8
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -56,9 +64,13 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.7.9
-        - refreshenv
-        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+#        - choco install python --version 3.7.9
+#        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+        - git clone https://github.com/pyenv-win/pyenv-win.git $HOME/.pyenv
+        - export PATH="$HOME/.pyenv/pyenv-win/bin:$HOME/.pyenv/pyenv-win/shims:$PATH"
+        - pyenv install -q 3.7.9
+        - pyenv rehash
+        - pyenv local 3.7.9
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -68,9 +80,13 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.8.8
-        - refreshenv
-        - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+#        - choco install python --version 3.8.8
+#        - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+        - git clone https://github.com/pyenv-win/pyenv-win.git $HOME/.pyenv
+        - export PATH="$HOME/.pyenv/pyenv-win/bin:$HOME/.pyenv/pyenv-win/shims:$PATH"
+        - pyenv install -q 3.8.8
+        - pyenv rehash
+        - pyenv local 3.8.8
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
@@ -80,9 +96,14 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.9.2
-        - refreshenv
-        - export PATH="/c/Python39:/c/Python39/Scripts:$PATH"
+#        - choco install python --version 3.9.2
+#        - export PATH="/c/Python39:/c/Python39/Scripts:$PATH"
+        # https://travis-ci.community/t/python-support-on-windows/241/24?u=turian
+        - git clone https://github.com/pyenv-win/pyenv-win.git $HOME/.pyenv
+        - export PATH="$HOME/.pyenv/pyenv-win/bin:$HOME/.pyenv/pyenv-win/shims:$PATH"
+        - pyenv install -q 3.9.2
+        - pyenv rehash
+        - pyenv local 3.9.2
         - python3 --version
         - python3 -m pip install --upgrade pip
         - python3 -m pip install --upgrade codecov pytest
