@@ -958,7 +958,8 @@ before_install:
 install:
   - pip3 install ".[test]" . # install package + test dependencies
 script:
-  - TORCHSYNTH_DEBUG=True pytest
+#  - TORCHSYNTH_DEBUG=True pytest
+  - TORCHSYNTH_DEBUG=True python3 -m pytest
   - python3 examples/examples.py
 after_success:
   - bash <(curl -s https://codecov.io/bash)
