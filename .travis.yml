@@ -954,9 +954,10 @@ before_install:
   - python3 --version
   - pip3 install -U pip
   - pip3 install -U pytest codecov
-  - pip3 install $TORCH_PIP_PACKAGE --progress-bar off
 install:
-  - pip3 install ".[test]" . # install package + test dependencies
+  - pip3 install ".[test]" # install package + test dependencies
+  # Version of torch that is being tested -- override version installed with torchsynth
+  - pip3 install $TORCH_PIP_PACKAGE --progress-bar off
 script:
 #  - TORCHSYNTH_DEBUG=True pytest
   - TORCHSYNTH_DEBUG=True python3 -m pytest
