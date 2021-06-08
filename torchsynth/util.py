@@ -2,6 +2,8 @@
 Utility functions for torch DSP related things
 """
 
+import math
+
 import torch
 from torch import Tensor as T
 
@@ -83,6 +85,10 @@ def fft_convolve(signal: Signal, impulse_response: T) -> Signal:
     Implements fast convolution for time-varying signals
     """
     pass
+
+
+def next_power_of_two(value: int) -> int:
+    return int(math.pow(2, math.ceil(math.log2(value))))
 
 
 # Here are some old functions that we are not currently using but
