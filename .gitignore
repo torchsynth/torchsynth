@@ -69,7 +69,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+#docs/_build/
 
 # PyBuilder
 target/
@@ -148,3 +148,7 @@ dmypy.json
 .DS_Store
 
 lightning_logs
+
+optuna*db
+
+*.bak

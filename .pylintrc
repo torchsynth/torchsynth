@@ -4,3 +4,6 @@
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
 generated-members=numpy.*,torch.*
+
+# All torch.tensor as T things
+disable=not-callable
