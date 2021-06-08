@@ -450,6 +450,22 @@ stft_plot(out[0].detach().cpu().numpy())
 ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # -
 
+# ## Filters
+
+# +
+from torchsynth.filter import LowPassFilter
+
+lowpass = LowPassFilter(synthconfig)
+
+noise = Noise(synthconfig, seed=42, device=device)
+out = noise()
+
+noise_filtered = lowpass(out)
+
+stft_plot(out[0].detach().cpu().numpy())
+ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
+# -
+
 # ## Audio Mixer
 
 # +
