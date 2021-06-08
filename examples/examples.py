@@ -453,14 +453,17 @@ ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # ## Filters
 
 # +
-from torchsynth.filter import LowPassFilter
+from torchsynth.filter2d import VCF
 
-lowpass = LowPassFilter(synthconfig)
+lowpass = VCF(synthconfig, device=device)
 
 noise = Noise(synthconfig, seed=42, device=device)
 out = noise()
 
-noise_filtered = lowpass(out)
+# Filter cutoff control signal
+cutoff = torch.ones_like(out)
+
+noise_filtered = lowpass(out, cutoff)
 
 stft_plot(out[0].detach().cpu().numpy())
 ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
