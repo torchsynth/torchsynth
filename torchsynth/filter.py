@@ -1,323 +1,234 @@
+"""
+Time-varying filters.
+"""
+
+import math
+from typing import Dict, Optional
+
 import torch
-import torch.nn as nn
 import torch.tensor as T
 
 import torchsynth.util as util
-from torchsynth.default import DEFAULT_SAMPLE_RATE
-from torchsynth.deprecated import SynthModule0Ddeprecated
-from torchsynth.parameter import ModuleParameter, ModuleParameterRange
+from torchsynth.config import SynthConfig
+from torchsynth.module import SynthModule
+from torchsynth.signal import Signal
 
 
-class FIRLowPass(SynthModule0Ddeprecated):
+class TimeVaryingFIRBase(SynthModule):
     """
-    A finite impulse response low-pass filter. Uses convolution with a windowed
-    sinc function.
+    A base class for time-varying FIR filters that are computed using fast convolution.
+    Deriving classes must implement `get_impulse_matrix` which creates a matrix of
+    impulses based on modulation signals.
 
-    Parameters
-    ----------
-
-    cutoff (float)      :   cutoff frequency of low-pass in Hz, must be between 5 and
-                            half the sampling rate. Defaults to 1000Hz.
-    filter_length (int) :   The length of the filter in samples. A longer filter will
-                            result in a steeper filter cutoff. Should be greater than 4.
-                            Defaults to 512 samples.
-    sample_rate (int)   :   Sampling rate to run processing at.
-    """
-
-    def __init__(
-        self,
-        cutoff: float = 1000.0,
-        filter_length: int = 512,
-        sample_rate: int = DEFAULT_SAMPLE_RATE,
-    ):
-        super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
-            [
-                ModuleParameter(
-                    value=cutoff,
-                    parameter_name="cutoff",
-                    parameter_range=ModuleParameterRange(5.0, sample_rate / 2.0, 0.5),
-                ),
-                ModuleParameter(
-                    value=filter_length,
-                    parameter_name="length",
-                    parameter_range=ModuleParameterRange(4.0, 4096.0),
-                ),
-            ]
-        )
-
-    def _forward(self, audio_in: T) -> T:
-        """
-        Filter audio samples
-        TODO: Cutoff frequency modulation, if there is an efficient way to do it
-
-        Parameters
-        ----------
-
-        audio (T)  :   audio samples to filter
-        """
-
-        impulse = self.windowed_sinc(self.p("cutoff"), self.p("length"))
-        impulse = impulse.view(1, 1, impulse.size()[0])
-        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
-        y = nn.functional.conv1d(
-            audio_resized, impulse, padding=int(self.p("length") / 2)
-        )
-        return y[0][0]
-
-    def windowed_sinc(self, cutoff: T, length: T) -> T:
-        """
-        Calculates the impulse response for FIR low-pass filter using the
-        windowed sinc function method. Updated to allow for a fractional filter length.
-
-        Parameters
-        ----------
-
-        cutoff (T)      :   Low-pass cutoff frequency in Hz. Must be between 0 and
-                                half the sampling rate.
-        length (T) :   Length of the filter impulse response to create.
-        """
-
-        # Normalized frequency
-        omega = 2 * torch.pi * cutoff / self.sample_rate
-
-        # Create a sinc function
-        num_samples = torch.ceil(length)
-        half_length = (length - 1.0) / 2.0
-        t = torch.arange(num_samples.detach(), device=length.device)
-        ir = util.sinc((t - half_length) * omega)
-
-        return ir * util.blackman(length)
-
-
-class MovingAverage(SynthModule0Ddeprecated):
-    """
-    A finite impulse response moving average filter.
-
-    Parameters
-    ----------
-
-    filter_length (int) :   Length of filter and number of samples to take average over.
-                            Must be greater than 0. Defaults to 32.
-    sample_rate (int)   :   Sampling rate to run processing at.
-    """
-
-    def __init__(self, filter_length: int = 32, sample_rate: int = DEFAULT_SAMPLE_RATE):
-        super().__init__(sample_rate=sample_rate)
-        self.add_parameters(
-            [
-                ModuleParameter(
-                    value=filter_length,
-                    parameter_name="length",
-                    parameter_range=ModuleParameterRange(1.0, 4096.0),
-                )
-            ]
-        )
-
-    def _forward(self, audio_in: T) -> T:
-        """
-        Filter audio samples
-
-        Parameters
-        ----------
-
-        audio (T)  :   audio samples to filter
-        """
-        length = self.p("length")
-        impulse = torch.ones((1, 1, int(length)), device=length.device) / length
-
-        # For non-integer impulse lengths
-        if torch.sum(impulse) < 1.0:
-            additional = torch.ones(1, 1, 1, device=length.device)
-            additional *= 1.0 - torch.sum(impulse)
-            impulse = torch.cat((impulse, additional), dim=2)
-
-        audio_resized = audio_in.view(1, 1, audio_in.size()[0])
-        y = nn.functional.conv1d(
-            audio_resized, impulse, padding=int(impulse.size()[0] / 2)
-        )
-        return y[0][0]
-
-
-class SVF(SynthModule0Ddeprecated):
-    """
-    A State Variable Filter that can do low-pass, high-pass, band-pass, and
-    band-reject filtering. Allows modulation of the cutoff frequency and an
-    adjustable resonance parameter. Can self-oscillate to make a sinusoid
-    oscillator.
-
-    Parameters
-    ----------
-
-    mode (str)              :   filter type, one of LPF, HPF, BPF, or BSF
-    cutoff (float)          :   cutoff frequency in Hz must be between 5 and
-                                half the sample rate. Defaults to 1000Hz.
-    resonance (float)       :   filter resonance, or "Quality Factor". Higher
-                                values cause the filter to resonate more. Must
-                                be greater than 0.5. Defaults to 0.707.
-    mod_depth (float)       :   Amount of modulation to apply to the cutoff from
-                                the control input during processing. Can be negative
-                                or positive in Hertz. Defaults to zero.
+    Args:
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
+        device: An object representing the device on which the `torch` tensors
+            are to be allocated (as per PyTorch, broadly).
+        frame_size: input signals are split into non-overlapping frames of this size.
+        filter_len: the length of filter impulse responses. Generally, longer filters
+            will provide more accurate frequency response, especially with low frequency
+            content. However, shorter filters will be faster.
+        kwargs: keyword args to pass to base :class:`~torchsynth.module.SynthModule`
     """
 
     def __init__(
         self,
-        mode: str,
-        cutoff: float = 1000.0,
-        resonance: float = 0.707,
-        mod_depth: float = 0.0,
-        **kwargs
+        synthconfig: SynthConfig,
+        device: Optional[torch.device] = None,
+        frame_size: Optional[int] = 64,
+        filter_len: Optional[int] = 256,
+        **kwargs: Dict[str, T]
     ):
-        super().__init__(**kwargs)
+        super().__init__(synthconfig, device, **kwargs)
+        self.frame_size = frame_size
+        self.filter_len = filter_len
 
-        # Set the filter type
-        self.mode = mode.lower()
-        assert mode in ["lpf", "hpf", "bpf", "bsf"]
+        # Resulting signal length for acyclic convolution
+        # https://ccrma.stanford.edu/~jos/ReviewFourier/FFT_Convolution.html
+        output_size = self.frame_size + self.filter_len - 1
+        self.fft_size = util.next_power_of_two(output_size)
 
-        nyquist = self.sample_rate / 2.0
-        self.add_parameters(
-            [
-                ModuleParameter(
-                    value=cutoff,
-                    parameter_range=ModuleParameterRange(5.0, nyquist, 0.5),
-                    parameter_name="cutoff",
-                ),
-                ModuleParameter(
-                    value=resonance,
-                    parameter_range=ModuleParameterRange(0.01, 1000.0, 0.5),
-                    parameter_name="resonance",
-                ),
-                ModuleParameter(
-                    value=mod_depth,
-                    parameter_range=ModuleParameterRange(-nyquist, nyquist, 0.5),
-                    parameter_name="mod_depth",
-                ),
-            ]
-        )
-
-    def _forward(
-        self,
-        audio_in: T,
-        control_in: T = None,
-    ) -> T:
+    def output(self, signal: Signal, *args: Signal) -> Signal:
         """
-        Process audio samples and return filtered results.
+        Applies filtering to input signal.
 
-        Parameters
-        ----------
+        Args:
+            signal: a batch of audio signals to be filtered
+            *args: modulation signals that will modify how impulses are generated,
+                these are downsampled so there is one value per frame_size number of
+                input samples, then passed through to `get_impulse_matrix`.
 
-        audio (torch.tensor)          :   Audio samples to filter
-        cutoff_mod (torch.tensor)     :   Control signal used to modulate the filter
-                                        cutoff. Values must be in range [0,1]
+        Returns:
+            Filter audio
         """
+        n_samples = signal.shape[1]
+        for mod_signal in args:
+            assert signal.shape == mod_signal.shape
 
-        h0 = 0.0
-        h1 = 0.0
-        y = torch.zeros_like(audio_in, device=audio_in.device)
+        # Cut up the input signal into frames
+        framed_signal = self.frame_signal(signal)
 
-        if control_in is None:
-            control_in = torch.zeros_like(audio_in, device=audio_in.device)
-        else:
-            assert control_in.size() == audio_in.size()
+        # Downsample the modulation signals and create impulse response matrix
+        mod_signals = [mod[:, :: self.frame_size] for mod in args]
+        impulse_matrix = self.get_impulse_matrix(*mod_signals)
 
-        cutoff = self.p("cutoff")
-        mod_depth = self.p("mod_depth")
-        res_coefficient = 1.0 / self.p("resonance")
+        # Convolve the frames of input signals with the time-varying impulses
+        convolved_frames = self.fast_convolve(framed_signal, impulse_matrix)
+        y = self.overlap_add(convolved_frames)
 
-        # Processing loop
-        for i in range(len(audio_in)):
-            # If there is a cutoff modulation envelope, update coefficients
-            cutoff_val = cutoff + control_in[i] * mod_depth
-            coeff0, coeff1, rho = SVF.svf_coefficients(
-                cutoff_val, res_coefficient, self.sample_rate
-            )
-
-            # Calculate each of the filter components
-            hpf = coeff0 * (audio_in[i] - rho * h0 - h1)
-            bpf = coeff1 * hpf + h0
-            lpf = coeff1 * bpf + h1
-
-            # Feedback samples
-            h0 = coeff1 * hpf + bpf
-            h1 = coeff1 * bpf + lpf
-
-            if self.mode == "lpf":
-                y[i] = lpf
-            elif self.mode == "bpf":
-                y[i] = bpf
-            elif self.mode == "bsf":
-                y[i] = hpf + lpf
-            else:
-                y[i] = hpf
+        # Remove samples at beginning delay caused by convolution and samples at the
+        # end to fix to length of input signal.
+        delay = self.fft_size // 2
+        y = y[:, delay : n_samples + delay]
 
         return y
 
-    @staticmethod
-    def svf_coefficients(cutoff, res_coefficient, sample_rate):
+    def frame_signal(self, signal: Signal) -> T:
         """
-        Calculates the filter coefficients for SVF.
+        Chop up a signal into non-overlapping frames with self.frame_size length.
+        Zero-pads before slicing if an even number of frames can't be computed
 
-        Parameters
-        ----------
-        cutoff (T)  :   Filter cutoff frequency in Hz.
-        resonance (T) : Filter resonance
-        sample_rate (T) : Sample rate to process at
+        Args:
+            signal: input signal to slice into frames
+
+        Returns:
+            A tensor of shape (batch_size, num_frames, frame_size)
         """
+        pad = self.frame_size - (signal.shape[1] % self.frame_size)
+        if pad != self.frame_size:
+            signal = torch.nn.functional.pad(signal, (0, pad))
 
-        g = torch.tan(torch.pi * cutoff / sample_rate)
-        coeff0 = 1.0 / (1.0 + res_coefficient * g + g * g)
-        rho = res_coefficient + g
+        num_frames = signal.shape[1] // self.frame_size
+        return signal.view(self.batch_size, num_frames, self.frame_size)
 
-        return coeff0, g, rho
+    def fast_convolve(self, input1: T, input2: T) -> T:
+        """
+        Multiply spectra of two signals. Returns array of overlapping frames.
+
+        Args:
+            input1: tensor of audio frames.
+            input2: tensor of audio frames.
+
+        Returns:
+            A tensor with shape (batch_size, num_frames, fft_size).
+        """
+        # Must have the same batch_size and number of frames
+        assert input1.shape[0] == input2.shape[0]
+        assert input1.shape[1] == input2.shape[1]
+
+        # The size of the fft must be larger than the output size
+        # resulting from acyclic convolution of the two frames sizes
+        assert self.fft_size >= input1.shape[2] + input1.shape[2] - 1
+
+        # Perform FFT convolution
+        fft1 = torch.fft.rfft(input1, n=self.fft_size)
+        fft2 = torch.fft.rfft(input2, n=self.fft_size)
+        return torch.fft.irfft(fft1 * fft2)
+
+    def overlap_add(self, frames: T) -> T:
+        """
+        Takes a set of overlapping and adds them back together using the original
+        frame_size that was used to chop them up prior to convolution.
+
+        Args:
+            frames: Tensor of frames that have a shape
+                (batch_size, num_frames, fft_size). This will be overlapped and added
+                together using the input frame_size.
+
+        Returns:
+            A tensor of signals that have been reconstructed with overlap add
+        """
+        num_frames, fft_size = frames.shape[1:]
+        assert self.fft_size == fft_size
+
+        # Need to swap the frame / signal dimensions for strides to be calculated
+        # in the correct direction with torch.nn.functional.fold
+        frames = frames.swapaxes(1, 2)
+
+        # The resulting output signals will be the length of frame_size x num_frames,
+        # which is the length of the input signal prior to convolution, plus the
+        # additional signal that is added by the acyclic convolution process.
+        output_len = self.frame_size * num_frames + self.fft_size - self.frame_size
+
+        # We can use fold to achieve overlap add. This expects a batch of images, so we
+        # fake that for audio by setting one of the image dimensions to 1. The fft_size
+        # is the kernel size and the frame_size used to initially split the input signal
+        # is the hop_length, or stride.
+        frames = torch.nn.functional.fold(
+            frames, (1, output_len), (1, self.fft_size), stride=(1, self.frame_size)
+        )
+
+        # Fold returns a 4D tensor with two dimensions with a size of 1, flatten those.
+        frames = frames.squeeze(1).squeeze(1)
+
+        return frames
+
+    def get_impulse_matrix(self, *args: Signal) -> T:
+        """
+        Make a matrix of impulse responses for time-varying filter based
+        on the input modulation signals. Must be implemented by children.
+        The type of impulses return will define what kind of filter this is.
+
+        Args:
+            *args: modulation signals to use to calculate the impulses
+
+        Returns:
+            A matrix of impulse responses of shape `(num_frames x filter_len)`
+        """
+        raise NotImplementedError
 
 
-class TorchLowPassSVF(SVF):
+class LowPassSinc(TimeVaryingFIRBase):
     """
-    IIR Low-pass using SVF architecture
+    Implements a lowpass filter using the the windowed sinc method.
 
-    Parameters
-    ----------
-    kwargs: see SVF
+    Args:
+    synthconfig: An object containing synthesis settings that are shared
+        across all modules, typically specified by
+        :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+        :class:`~torchsynth.synth.AbstractSynth` subclass.
+    device: An object representing the device on which the `torch` tensors
+        are to be allocated (as per PyTorch, broadly).
+    frame_size: input signals are split into non-overlapping frames of this size.
+    filter_len: the length of filter impulse responses. Generally, longer filters
+        will provide more accurate frequency response, especially with low frequency
+        content. However, shorter filters will be faster.
+    kwargs: keyword args to pass to base :class:`~torchsynth.module.SynthModule`
     """
 
-    def __init__(self, **kwargs):
-        super().__init__("lpf", **kwargs)
+    def __init__(
+        self,
+        synthconfig: SynthConfig,
+        device: Optional[torch.device] = None,
+        frame_size: Optional[int] = 64,
+        filter_len: Optional[int] = 256,
+        **kwargs: Dict[str, T]
+    ):
+        super().__init__(synthconfig, device, frame_size, filter_len, **kwargs)
 
+        # Normalized windowing function to be applied to impulses
+        window = torch.hamming_window(self.filter_len, device=self.device)
+        window = window / math.sqrt(self.filter_len)
+        self.register_buffer("window", window)
 
-class TorchHighPassSVF(SVF):
-    """
-    IIR High-pass using SVF architecture
+        # Timestamp buffer for calculating sinc impulses
+        half_frame_time = (self.filter_len / self.sample_rate) / 2
+        t = torch.arange(self.filter_len, device=self.device) / self.sample_rate
+        t = t - half_frame_time
+        self.register_buffer("window_time", t)
 
-    Parameters
-    ----------
-    kwargs: see SVF
-    """
+    def get_impulse_matrix(self, cutoff: T) -> T:
+        """
+        Make matrix of impulse responses for time-varying LP filter.
 
-    def __init__(self, **kwargs):
-        super().__init__("hpf", **kwargs)
+        Args:
+            cutoff: time-varying cutoff values in Hz
 
-
-class TorchBandPassSVF(SVF):
-    """
-    IIR Band-pass using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see SVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__("bpf", **kwargs)
-
-
-class TorchBandStopSVF(SVF):
-    """
-    IIR Band-stop using SVF architecture
-
-    Parameters
-    ----------
-    kwargs: see SVF
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__("bsf", **kwargs)
+        Returns:
+            A matrix of impulse responses of shape `(num_frames x filter_len)`
+        """
+        cutoff = cutoff.unsqueeze(2)
+        return torch.sinc(2 * cutoff * self.window_time) * self.window
