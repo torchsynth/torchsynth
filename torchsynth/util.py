@@ -56,37 +56,6 @@ def normalize(signal: Signal) -> Signal:
     return signal / max_sample
 
 
-def sinc(x: T) -> T:
-    return torch.where(x == 0, T(1.0, device=x.device), torch.sin(x) / x)
-
-
-def blackman(length: T) -> T:
-    num_samples = torch.ceil(length)
-    diff = num_samples - length
-    n = torch.arange(num_samples.detach() - (diff.detach() / 2), device=length.device)
-    cos_a = torch.cos(2 * math.pi * n / (length - 1))
-    cos_b = torch.cos(4 * math.pi * n / (length - 1))
-    window = 0.42 - 0.5 * cos_a + 0.08 * cos_b
-
-    # Linearly interpolate the ends of the window to achieve fractional length
-    window = torch.cat(
-        (
-            T([0.0 * diff + window[0] * (1.0 - diff)], device=length.device),
-            window[1:-1],
-            T([0.0 * diff + window[-1] * (1.0 - diff)], device=length.device),
-        )
-    )
-
-    return window
-
-
-def fft_convolve(signal: Signal, impulse_response: T) -> Signal:
-    """
-    Implements fast convolution for time-varying signals
-    """
-    pass
-
-
 def next_power_of_two(value: int) -> int:
     return int(math.pow(2, math.ceil(math.log2(value))))
 
