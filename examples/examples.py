@@ -451,24 +451,27 @@ ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # -
 
 # ## Filters
+# Time-varying filters implemented using overlap add fast convolution.
 
 # +
 from torchsynth.filter import LowPassSinc
 
+# Lowpass & Highpass filters:
 lowpass = LowPassSinc(synthconfig, device=device)
+
 noise = Noise(synthconfig, seed=42, device=device)
 out = noise()
 
 # Filter cutoff control signal
 cutoff = (
     torch.linspace(1.0, 0.0, out.shape[1], device=device).expand((out.shape[0], -1))
-    * 16000
+    * 2048
 )
-out = lowpass(out, cutoff)
 
+out_lp = lowpass(out, cutoff)
 
-stft_plot(out[0].detach().cpu().numpy())
-ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
+stft_plot(out_lp[0].detach().cpu().numpy())
+ipd.display(ipd.Audio(out_lp[0].detach().cpu().numpy(), rate=noise.sample_rate.item()))
 # -
 
 # ## Audio Mixer

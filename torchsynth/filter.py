@@ -2,7 +2,6 @@
 Time-varying filters.
 """
 
-import math
 from typing import Dict, Optional
 
 import torch
@@ -181,9 +180,15 @@ class TimeVaryingFIRBase(SynthModule):
         raise NotImplementedError
 
 
-class LowPassSinc(TimeVaryingFIRBase):
+class SincFilterBase(TimeVaryingFIRBase):
     """
-    Implements a lowpass filter using the the windowed sinc method.
+    Implements filters using the the windowed sinc method.
+
+    TODO: Would be nice to have a cutoff and mod_depth parameter -- and then have
+        the cutoff control signal be optional (like a filter module that is optionally
+        modulate-able). Also, maybe have the modulation CV be 0-1 range (which is what
+        most of our control signals operate at) -- and then scale that to log frequency
+        in a range from 0 - nyquist.
 
     Args:
     synthconfig: An object containing synthesis settings that are shared
@@ -209,20 +214,25 @@ class LowPassSinc(TimeVaryingFIRBase):
     ):
         super().__init__(synthconfig, device, frame_size, filter_len, **kwargs)
 
-        # Normalized windowing function to be applied to impulses
+        # Windowing function to be applied to impulses
         window = torch.hamming_window(self.filter_len, device=self.device)
-        window = window / math.sqrt(self.filter_len)
         self.register_buffer("window", window)
 
         # Timestamp buffer for calculating sinc impulses
-        half_frame_time = (self.filter_len / self.sample_rate) / 2
-        t = torch.arange(self.filter_len, device=self.device) / self.sample_rate
-        t = t - half_frame_time
+        t = torch.arange(self.filter_len, dtype=torch.float, device=self.device)
+        t = (t - self.filter_len / 2) / self.sample_rate
         self.register_buffer("window_time", t)
+
+
+class LowPassSinc(SincFilterBase):
+    """
+    Implements a lowpass filter using the the windowed sinc method.
+    """
 
     def get_impulse_matrix(self, cutoff: T) -> T:
         """
-        Make matrix of impulse responses for time-varying LP filter.
+        Make matrix of impulse responses for time-varying LP filter using a windowed
+        sinc function.
 
         Args:
             cutoff: time-varying cutoff values in Hz
@@ -231,4 +241,12 @@ class LowPassSinc(TimeVaryingFIRBase):
             A matrix of impulse responses of shape `(num_frames x filter_len)`
         """
         cutoff = cutoff.unsqueeze(2)
-        return torch.sinc(2 * cutoff * self.window_time) * self.window
+        cutoff = cutoff * 2
+        ir = (cutoff / self.sample_rate) * torch.sinc(cutoff * self.window_time)
+        return ir * self.window
+
+
+# TODO:
+#   - Add other types of sinc filters
+#   - sample IRs from resonant filters and make a look-up table
+#       This may be helpful: https://ieeexplore.ieee.org/document/1164348
