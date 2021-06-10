@@ -15,9 +15,10 @@ from torchsynth.signal import Signal
 
 class TimeVaryingFIRBase(SynthModule):
     """
-    A base class for time-varying FIR filters that are computed using fast convolution.
-    Deriving classes must implement `get_impulse_matrix` which creates a matrix of
-    impulses based on modulation signals.
+    An abstract base class for time-varying FIR filters that are computed using fast
+    convolution. Deriving classes must implement
+    :meth:`~torchsynth.filter.TimeVaryingFIRBase.get_impulse_matrix`, which creates a
+    matrix of impulses based on input modulation signals.
 
     Args:
         synthconfig: An object containing synthesis settings that are shared
@@ -57,11 +58,11 @@ class TimeVaryingFIRBase(SynthModule):
         Args:
             signal: a batch of audio signals to be filtered
             *args: modulation signals that will modify how impulses are generated,
-                these are downsampled so there is one value per frame_size number of
-                input samples, then passed through to `get_impulse_matrix`.
+                these are downsampled to one value per frame_size number of
+                input samples.
 
         Returns:
-            Filter audio
+            Filtered audio.
         """
         n_samples = signal.shape[1]
         for mod_signal in args:
@@ -105,7 +106,7 @@ class TimeVaryingFIRBase(SynthModule):
 
     def fast_convolve(self, input1: T, input2: T) -> T:
         """
-        Multiply spectra of two signals. Returns array of overlapping frames.
+        Multiply spectra of two signals. Returns an array of overlapping frames.
 
         Args:
             input1: tensor of audio frames.
@@ -129,16 +130,16 @@ class TimeVaryingFIRBase(SynthModule):
 
     def overlap_add(self, frames: T) -> T:
         """
-        Takes a set of overlapping and adds them back together using the original
-        frame_size that was used to chop them up prior to convolution.
+        Reconstructs signal from array of overlapping frames. The hop-size used
+        is equivalent to the frame-size used to initially separate
+        the input audio into non-overlapping frames prior to convolution.
 
         Args:
             frames: Tensor of frames that have a shape
-                (batch_size, num_frames, fft_size). This will be overlapped and added
-                together using the input frame_size.
+                (batch_size, num_frames, fft_size).
 
         Returns:
-            A tensor of signals that have been reconstructed with overlap add
+            A tensor of signals that have been reconstructed with overlap add.
         """
         num_frames, fft_size = frames.shape[1:]
         assert self.fft_size == fft_size
@@ -167,22 +168,21 @@ class TimeVaryingFIRBase(SynthModule):
 
     def get_impulse_matrix(self, *args: Signal) -> T:
         """
-        Make a matrix of impulse responses for time-varying filter based
+        Make a matrix of impulse responses for a time-varying filter based
         on the input modulation signals. Must be implemented by children.
-        The type of impulses return will define what kind of filter this is.
 
         Args:
-            *args: modulation signals to use to calculate the impulses
+            *args: modulation signals that will modify how impulses are calculated.
 
         Returns:
-            A matrix of impulse responses of shape `(num_frames x filter_len)`
+            A matrix of impulse responses of shape `(num_frames x filter_len)`.
         """
         raise NotImplementedError
 
 
 class SincFilterBase(TimeVaryingFIRBase):
     """
-    Implements filters using the the windowed sinc method.
+    Implements filters using the the windowed sinc method to generate impulses.
 
     TODO: Would be nice to have a cutoff and mod_depth parameter -- and then have
         the cutoff control signal be optional (like a filter module that is optionally
@@ -191,17 +191,17 @@ class SincFilterBase(TimeVaryingFIRBase):
         in a range from 0 - nyquist.
 
     Args:
-    synthconfig: An object containing synthesis settings that are shared
-        across all modules, typically specified by
-        :class:`~torchsynth.synth.Voice`, or some other, possibly custom
-        :class:`~torchsynth.synth.AbstractSynth` subclass.
-    device: An object representing the device on which the `torch` tensors
-        are to be allocated (as per PyTorch, broadly).
-    frame_size: input signals are split into non-overlapping frames of this size.
-    filter_len: the length of filter impulse responses. Generally, longer filters
-        will provide more accurate frequency response, especially with low frequency
-        content. However, shorter filters will be faster.
-    kwargs: keyword args to pass to base :class:`~torchsynth.module.SynthModule`
+        synthconfig: An object containing synthesis settings that are shared
+            across all modules, typically specified by
+            :class:`~torchsynth.synth.Voice`, or some other, possibly custom
+            :class:`~torchsynth.synth.AbstractSynth` subclass.
+        device: An object representing the device on which the `torch` tensors
+            are to be allocated (as per PyTorch, broadly).
+        frame_size: input signals are split into non-overlapping frames of this size.
+        filter_len: the length of filter impulse responses. Generally, longer filters
+            will provide more accurate frequency response, especially with low frequency
+            content. However, shorter filters will be faster.
+        kwargs: keyword args to pass to base :class:`~torchsynth.module.SynthModule`
     """
 
     def __init__(
