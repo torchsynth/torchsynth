@@ -25,21 +25,21 @@ class TimeVaryingFIRBase(SynthModule):
             across all modules, typically specified by
             :class:`~torchsynth.synth.Voice`, or some other, possibly custom
             :class:`~torchsynth.synth.AbstractSynth` subclass.
-        device: An object representing the device on which the `torch` tensors
-            are to be allocated (as per PyTorch, broadly).
         frame_size: input signals are split into non-overlapping frames of this size.
         filter_len: the length of filter impulse responses. Generally, longer filters
             will provide more accurate frequency response, especially with low frequency
             content. However, shorter filters will be faster.
+        device: An object representing the device on which the `torch` tensors
+            are to be allocated (as per PyTorch, broadly).
         kwargs: keyword args to pass to base :class:`~torchsynth.module.SynthModule`
     """
 
     def __init__(
         self,
         synthconfig: SynthConfig,
+        frame_size: int,
+        filter_len: int,
         device: Optional[torch.device] = None,
-        frame_size: Optional[int] = 64,
-        filter_len: Optional[int] = 256,
         **kwargs: Dict[str, T]
     ):
         super().__init__(synthconfig, device, **kwargs)
@@ -124,9 +124,10 @@ class TimeVaryingFIRBase(SynthModule):
         assert self.fft_size >= input1.shape[2] + input1.shape[2] - 1
 
         # Perform FFT convolution
-        fft1 = torch.fft.rfft(input1, n=self.fft_size)
-        fft2 = torch.fft.rfft(input2, n=self.fft_size)
-        return torch.fft.irfft(fft1 * fft2)
+        return torch.fft.irfft(
+            torch.fft.rfft(input1, n=self.fft_size)
+            * torch.fft.rfft(input2, n=self.fft_size)
+        )
 
     def overlap_add(self, frames: T) -> T:
         """
@@ -207,12 +208,12 @@ class SincFilterBase(TimeVaryingFIRBase):
     def __init__(
         self,
         synthconfig: SynthConfig,
+        frame_size: Optional[int] = 256,
+        filter_len: Optional[int] = 128,
         device: Optional[torch.device] = None,
-        frame_size: Optional[int] = 64,
-        filter_len: Optional[int] = 256,
         **kwargs: Dict[str, T]
     ):
-        super().__init__(synthconfig, device, frame_size, filter_len, **kwargs)
+        super().__init__(synthconfig, frame_size, filter_len, device, **kwargs)
 
         # Windowing function to be applied to impulses
         window = torch.hamming_window(self.filter_len, device=self.device)
