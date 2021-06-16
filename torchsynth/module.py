@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.tensor as tensor
+from torch import tensor
 from torch import Tensor as T
 
 import torchsynth.util as util

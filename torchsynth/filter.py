@@ -5,7 +5,7 @@ Time-varying filters.
 from typing import Dict, Optional
 
 import torch
-import torch.tensor as T
+from torch import Tensor as T
 
 import torchsynth.util as util
 from torchsynth.config import SynthConfig
