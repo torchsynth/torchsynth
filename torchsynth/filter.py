@@ -209,7 +209,7 @@ class SincFilterBase(TimeVaryingFIRBase):
         self,
         synthconfig: SynthConfig,
         frame_size: Optional[int] = 256,
-        filter_len: Optional[int] = 128,
+        filter_len: Optional[int] = 256,
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T]
     ):

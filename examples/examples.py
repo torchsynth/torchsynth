@@ -450,18 +450,25 @@ ipd.Audio(out[0].detach().cpu().numpy(), rate=noise.sample_rate.item())
 # -
 
 # ## Filters
-# Time-varying filters implemented using overlap add fast convolution.
+# Time-varying filters implemented using overlap add fast convolution. Currently a lowpass filter is implemented using the windowed sinc method is available.
+#
+# The LowPassSinc accepts two arguments that control performance:
+# - `frame_size` is the number of samples per frame that the input is sliced into (non-overlapping frames). A smaller
+#     value gives higher resolution for fast modulation, but will result in high computation and memory consumption.
+# - `filter_len` is determines how many coefficients the filter will have. A longer filter (more coefficients) will provide
+#     a more accurate frequency response, especially for low frequencies, but will consume more memory.
 
 # +
 from torchsynth.filter import LowPassSinc
 
-# Lowpass & Highpass filters:
-lowpass = LowPassSinc(synthconfig, device=device)
+# Create a lowpass filter.
+lowpass = LowPassSinc(synthconfig, device=device, frame_size=256, filter_len=256)
 
+# Noise to filter
 noise = Noise(synthconfig, seed=42, device=device)
 out = noise()
 
-# Filter cutoff control signal
+# Filter cutoff control signal - decreasing linearly in Hz from 2048Hz to 0Hz over clip
 cutoff = (
     torch.linspace(1.0, 0.0, out.shape[1], device=device).expand((out.shape[0], -1))
     * 2048
