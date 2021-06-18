@@ -183,13 +183,8 @@ class TimeVaryingFIRBase(SynthModule):
 
 class SincFilterBase(TimeVaryingFIRBase):
     """
-    Implements filters using the the windowed sinc method to generate impulses.
-
-    TODO: Would be nice to have a cutoff and mod_depth parameter -- and then have
-        the cutoff control signal be optional (like a filter module that is optionally
-        modulate-able). Also, maybe have the modulation CV be 0-1 range (which is what
-        most of our control signals operate at) -- and then scale that to log frequency
-        in a range from 0 - nyquist.
+    Abstract base class for filters using the the windowed sinc method to generate
+    impulses.
 
     Args:
         synthconfig: An object containing synthesis settings that are shared
@@ -213,6 +208,12 @@ class SincFilterBase(TimeVaryingFIRBase):
         device: Optional[torch.device] = None,
         **kwargs: Dict[str, T]
     ):
+        # TODO: Would be nice to have a cutoff and mod_depth parameter -- and then have
+        #   the cutoff control signal be optional (like a filter module that is
+        #   optionally modulate-able). Also, maybe have the modulation CV be 0-1 range
+        #   (which is what most of our control signals operate at) -- and then scale
+        #   that to log frequency in a range from 0 - nyquist.
+
         super().__init__(synthconfig, frame_size, filter_len, device, **kwargs)
 
         # Windowing function to be applied to impulses
@@ -223,6 +224,22 @@ class SincFilterBase(TimeVaryingFIRBase):
         t = torch.arange(self.filter_len, dtype=torch.float, device=self.device)
         t = (t - self.filter_len / 2) / self.sample_rate
         self.register_buffer("window_time", t)
+
+    def get_impulse_matrix(self, *args: Signal) -> T:
+        """
+        **Must be implemented by deriving classes.** Creates a matrix of impulse
+        responses for a time-varying filter based on the input modulation signals.
+        Specifically for windowed sinc filters as this class has buffers containing
+        timestamps for generating sinc functions and a pre-computed hamming window,
+        both of which will be automatically moved to the correct device.
+
+        Args:
+            *args: modulation signals that will modify how impulses are calculated.
+
+        Returns:
+            A matrix of impulse responses of shape `(num_frames x filter_len)`.
+        """
+        raise NotImplementedError
 
 
 class LowPassSinc(SincFilterBase):
