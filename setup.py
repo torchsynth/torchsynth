@@ -62,6 +62,7 @@ setup(
             "pytest-cov",
             "ipython",
             "librosa",
+            "scikit-learn>=0.24.2",  # not directly required, pinned by Snyk to avoid a vulnerability
             "matplotlib",
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
