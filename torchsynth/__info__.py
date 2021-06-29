@@ -5,7 +5,7 @@ PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 PATH_ROOT = os.path.join(PATH_HERE, "..")
 
 _this_year = time.strftime("%Y")
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Jordie Shier, Joseph Turian, Max Henry"
 __author_email__ = "firstnamelastname@gmail.com"
 # __contact__ = ""
