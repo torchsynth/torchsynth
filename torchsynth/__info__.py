@@ -12,7 +12,7 @@ __author_email__ = "firstnamelastname@gmail.com"
 __license__ = "Apache-2.0"
 __copyright__ = f"Copyright (c) 2020-{_this_year}, {__author__}."
 __homepage__ = "https://github.com/torchsynth/torchsynth"
-__docs_url__ = "https://torchsynth.readthedocs.io/en/stable/"
+__docs_url__ = "https://torchsynth.readthedocs.io/"
 # this has to be simple string, see: https://github.com/pypa/twine/issues/522
 __docs__ = "A modular synthesizer in pytorch, GPU-optional and differentiable"
 # ptl gets fancy and replaces the shields 'master' with '__version__'
