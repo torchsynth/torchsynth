@@ -53,3 +53,18 @@ If you'd like to hear torchsynth, check out
 1024 4-second sounds rendered from the
 [Voice](https://torchsynth.readthedocs.io/en/latest/api/synth.html#torchsynth.synth.Voice)
 synthesizer, or listen [on SoundCloud](https://soundcloud.com/user-357924775/synth1k1).
+
+## Citation
+
+If you use this work in your research, please cite:
+
+```
+@inproceedings{turian2021torchsynth,
+	title        = {One Billion Audio Sounds from {GPU}-enabled Modular Synthesis},
+	author       = {Joseph Turian and Jordie Shier and George Tzanetakis and Kirk McNally and Max Henry},
+	year         = 2021,
+	month        = Sep,
+	booktitle    = {Proceedings of the 23rd International Conference on Digital Audio Effects (DAFx2020)},
+	location     = {Vienna, Austria}
+}
+```
