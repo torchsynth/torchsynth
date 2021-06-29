@@ -6,7 +6,7 @@ import os
 import json
 import pytest
 import torch.nn
-import torch.tensor as tensor
+from torch import tensor
 
 import torchsynth.config
 import torchsynth.module as synthmodule
