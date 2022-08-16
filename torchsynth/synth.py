@@ -5,7 +5,7 @@ generate `synth1B1 <../reproducibility/synth1B1.html>`_.
 
 We base off pytorch-lightning :class:`~pytorch_lightning.core.lightning.LightningModule`
 because it makes `multi-GPU
-<https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html>`_
+<https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu.html>`_
 inference easy. Nonetheless, you can treat each synth as a native
 torch :class:`~torch.nn.Module`.
 """
