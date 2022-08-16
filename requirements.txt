@@ -24,6 +24,7 @@ pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
 unofficial-pt-lightning-sphinx-theme
 #git+https://github.com/PyTorchLightning/lightning_sphinx_theme
 #https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme
+MarkupSafe<2.1.0    # https://github.com/aws/aws-sam-cli/issues/3661
 sphinxcontrib-napoleon
 sphinx-autodoc-typehints
 mock
@@ -31,7 +32,6 @@ sphinx_rtd_theme
 myst_parser
 linkify-it-py
 sphinx>=3.0.4 # not directly required, pinned by Snyk to avoid a vulnerability
-sphinxcontrib-napoleon
 myst-parser
 linkify-it-py
 scikit-learn>=0.24.2 # not directly required, pinned by Snyk to avoid a vulnerability
