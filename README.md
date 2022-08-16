@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # torchsynth
 
 The fastest synth in the universe.
