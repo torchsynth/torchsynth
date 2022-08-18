@@ -100,7 +100,9 @@ exclude_patterns = []
 
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinxcontrib.napoleon",
+    # https://github.com/sphinx-doc/sphinx/issues/10378
+    "sphinx.ext.napoleon",
+    #    "sphinxcontrib.napoleon",
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx_rtd_theme",
@@ -122,10 +124,7 @@ intersphinx_mapping = {
 
 # -- Options for link checking -------------------------------------------------
 # Ignore check on relative links and the link to the CMJ paper on SquareSaw osc
-linkcheck_ignore = [
-    r'^\.\./.*$',
-    r'^https://doi.org/10.1162/comj.2010.34.1.28$'
-]
+linkcheck_ignore = [r"^\.\./.*$", r"^https://doi.org/10.1162/comj.2010.34.1.28$"]
 
 # -- Options for HTML output -------------------------------------------------
 

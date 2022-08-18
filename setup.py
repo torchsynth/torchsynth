@@ -43,6 +43,8 @@ setup(
         "scipy",
         "torch",
         "pytorch-lightning",
+        #        "torch>=1.8",
+        #        "pytorch-lightning>=1.4",
         # pypi release (only master) doesn't support OrderedDict typing
         # "typing-extensions",
     ],
@@ -71,6 +73,7 @@ setup(
             "unofficial-pt-lightning-sphinx-theme",
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
+            "MarkupSafe<2.1.0",  # https://github.com/aws/aws-sam-cli/issues/3661
             "sphinxcontrib-napoleon",
             "sphinx-autodoc-typehints",
             "mock",
