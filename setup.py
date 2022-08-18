@@ -41,7 +41,7 @@ setup(
         "numpy",
         "scipy",
         "torch>=1.8",
-        "pytorch-lightning",
+        "pytorch-lightning>=1.4",
         # pypi release (only master) doesn't support OrderedDict typing
         # "typing-extensions",
     ],
