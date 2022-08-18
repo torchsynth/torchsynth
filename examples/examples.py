@@ -59,9 +59,8 @@ import random
 
 import numpy as np
 import numpy.random
-import torch.fft
-import torch.tensor as tensor
-from torch import Tensor as T
+import torch
+from torch import tensor
 
 from torchsynth.config import SynthConfig
 from torchsynth.module import (

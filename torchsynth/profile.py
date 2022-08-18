@@ -110,7 +110,7 @@ def run_lightning_module(
         # Run module with profiling
         pr = cProfile.Profile()
         pr.enable()
-        trainer.test(module, test_dataloaders=dataloader)
+        trainer.test(module, dataloaders=dataloader)
         pr.disable()
 
         s = io.StringIO()
@@ -132,7 +132,7 @@ def run_lightning_module(
             print(s.getvalue())
 
     else:
-        trainer.test(module, test_dataloaders=dataloader)
+        trainer.test(module, dataloaders=dataloader)
 
 
 def main():

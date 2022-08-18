@@ -2,11 +2,6 @@
 Tests for torch synths
 """
 
-
-import pytest
-import torch.tensor as tensor
-from torch import Tensor as T
-
 from torchsynth.config import DEFAULT_BATCH_SIZE, SynthConfig
 
 
