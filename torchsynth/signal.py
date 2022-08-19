@@ -20,3 +20,9 @@ class Signal(torch.Tensor):
     def num_samples(self):
         assert self.ndim == 2
         return self.shape[1]
+
+    def new_empty(self, *args, **kwargs):
+        """
+        Implement (torch.Tensor.new_empty)[https://pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html]
+        """
+        return super().new_empty(*args, **kwargs).as_subclass(self.__class__)
