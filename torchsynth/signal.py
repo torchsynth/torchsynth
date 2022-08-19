@@ -29,4 +29,5 @@ class Signal(torch.Tensor):
         so that Signal can be
         [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)ed.
         """
+
         return super().new_empty(*args, **kwargs).as_subclass(self.__class__)
