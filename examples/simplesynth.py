@@ -11,19 +11,18 @@
 # +
 from typing import Optional
 
-import torch
 import IPython.display as ipd
+import torch
 
+from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig
 from torchsynth.module import (
     ADSR,
+    VCA,
     ControlRateUpsample,
     MonophonicKeyboard,
     SquareSawVCO,
-    VCA,
 )
 from torchsynth.synth import AbstractSynth
-from torchsynth.config import SynthConfig, BASE_REPRODUCIBLE_BATCH_SIZE
-
 
 # -
 
