@@ -2,6 +2,7 @@
 
 # torchsynth
 
+
 The fastest synth in the universe.
 
 <img width="450px" src="https://raw.githubusercontent.com/torchsynth/torchsynth/main/assets/logo-with-caption.jpg">
