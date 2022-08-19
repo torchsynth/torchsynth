@@ -5,7 +5,7 @@ generate `synth1B1 <../reproducibility/synth1B1.html>`_.
 
 We base off pytorch-lightning :class:`~pytorch_lightning.core.lightning.LightningModule`
 because it makes `multi-GPU
-<https://pytorch-lightning.readthedocs.io/en/latest/advanced/multi_gpu.html>`_
+<https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu.html>`_
 inference easy. Nonetheless, you can treat each synth as a native
 torch :class:`~torch.nn.Module`.
 """
@@ -239,15 +239,30 @@ class AbstractSynth(LightningModule):
         Determine which samples are training examples if batch_idx is provided
         """
         if batch_idx is not None:
-            idxs = torch.range(
+            idxs = torch.arange(
                 self.batch_size * batch_idx,
-                self.batch_size * (batch_idx + 1) - 1,
+                self.batch_size * (batch_idx + 1),
                 device=self.device,
             )
             assert len(idxs) == self.batch_size
             # As specified in our paper, the first 9x1024 samples
             # are train, and the next 1024 are test.
-            is_train = (idxs // N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY) % 10 != 9
+            # __floordiv__ is deprecated, and its behavior will
+            # change in a future version of pytorch. It currently
+            # rounds toward 0 (like the 'trunc' function NOT 'floor').
+            # This results in incorrect rounding for negative values.
+            # To keep the current behavior, use torch.div(a, b,
+            # rounding_mode='trunc'), or for actual floor division,
+            # use torch.div(a, b, rounding_mode='floor').
+            is_train = (
+                torch.div(
+                    idxs,
+                    N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY,
+                    rounding_mode="trunc",
+                )
+                % 10
+                != 9
+            )
         else:
             is_train = None
         return is_train
