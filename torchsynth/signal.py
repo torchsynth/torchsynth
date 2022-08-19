@@ -26,8 +26,9 @@ class Signal(torch.Tensor):
         """
             Implement
         [torch.Tensor.new_empty](https://pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html)
-        so that Signal can be
-        [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)ed.
+        so that
+        [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)
+        can be run on Signal objects.
         """
 
         return super().new_empty(*args, **kwargs).as_subclass(self.__class__)
