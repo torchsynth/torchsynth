@@ -22,7 +22,11 @@ class Signal(torch.Tensor):
         return self.shape[1]
 
     def new_empty(self, *args, **kwargs):
+        # noqa: E501
         """
-        Implement [torch.Tensor.new_empty](https://pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html) so that Signal can be [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)ed.
+            Implement
+        [torch.Tensor.new_empty](https://pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html)
+        so that Signal can be
+        [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)ed.
         """
         return super().new_empty(*args, **kwargs).as_subclass(self.__class__)
