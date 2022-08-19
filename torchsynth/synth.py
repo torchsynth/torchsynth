@@ -263,7 +263,6 @@ class AbstractSynth(LightningModule):
                 % 10
                 != 9
             )
-            # is_train = torch.div(idxs, N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY, rounding_mode="floor") % 10 != 9
         else:
             is_train = None
         return is_train
