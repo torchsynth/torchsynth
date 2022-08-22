@@ -81,7 +81,7 @@ class TimeVaryingFIRBase(SynthModule):
 
         # Remove samples added through the convolution process and compensate for
         # the delay added through convolution with the particular impulse response.
-        y = y[:, delay: n_samples + delay]
+        y = y[:, delay : n_samples + delay]
 
         return y
 
