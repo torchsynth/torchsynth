@@ -2,7 +2,7 @@
 Time-varying filters.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import torch
 from torch import Tensor as T
@@ -73,16 +73,15 @@ class TimeVaryingFIRBase(SynthModule):
 
         # Downsample the modulation signals and create impulse response matrix
         mod_signals = [mod[:, :: self.frame_size] for mod in args]
-        impulse_matrix = self.get_impulse_matrix(*mod_signals)
+        impulse_matrix, delay = self.get_impulse_matrix(*mod_signals)
 
         # Convolve the frames of input signals with the time-varying impulses
         convolved_frames = self.fast_convolve(framed_signal, impulse_matrix)
         y = self.overlap_add(convolved_frames)
 
-        # Remove samples at beginning delay caused by convolution and samples at the
-        # end to fix to length of input signal.
-        delay = self.fft_size // 2
-        y = y[:, delay : n_samples + delay]
+        # Remove samples added through the convolution process and compensate for
+        # the delay added through convolution with the particular impulse response.
+        y = y[:, delay: n_samples + delay]
 
         return y
 
@@ -167,7 +166,7 @@ class TimeVaryingFIRBase(SynthModule):
 
         return frames
 
-    def get_impulse_matrix(self, *args: Signal) -> T:
+    def get_impulse_matrix(self, *args: Signal) -> Tuple[T, int]:
         """
         Make a matrix of impulse responses for a time-varying filter based
         on the input modulation signals. Must be implemented by children.
@@ -176,7 +175,9 @@ class TimeVaryingFIRBase(SynthModule):
             *args: modulation signals that will modify how impulses are calculated.
 
         Returns:
-            A matrix of impulse responses of shape `(num_frames x filter_len)`.
+            A list which contains 1, a matrix of impulse responses of
+            shape `(batch_size, num_frames, filter_len)`, and 2, the delay that will be
+            added to a signal through convolution with the impulse response.
         """
         raise NotImplementedError
 
@@ -225,19 +226,18 @@ class SincFilterBase(TimeVaryingFIRBase):
         t = (t - self.filter_len / 2) / self.sample_rate
         self.register_buffer("window_time", t)
 
-    def get_impulse_matrix(self, *args: Signal) -> T:
+    def get_impulse_matrix(self, *args: Signal) -> Tuple[T, int]:
         """
-        **Must be implemented by deriving classes.** Creates a matrix of impulse
-        responses for a time-varying filter based on the input modulation signals.
-        Specifically for windowed sinc filters as this class has buffers containing
-        timestamps for generating sinc functions and a pre-computed hamming window,
-        both of which will be automatically moved to the correct device.
+        Make a matrix of impulse responses for a time-varying filter based
+        on the input modulation signals. Must be implemented by children.
 
         Args:
             *args: modulation signals that will modify how impulses are calculated.
 
         Returns:
-            A matrix of impulse responses of shape `(num_frames x filter_len)`.
+            A list which contains 1, a matrix of impulse responses of
+            shape `(batch_size, num_frames, filter_len)`, and 2, the delay that will be
+            added to a signal through convolution with the impulse response.
         """
         raise NotImplementedError
 
@@ -247,7 +247,7 @@ class LowPassSinc(SincFilterBase):
     Implements a lowpass filter using the the windowed sinc method.
     """
 
-    def get_impulse_matrix(self, cutoff: T) -> T:
+    def get_impulse_matrix(self, cutoff: T) -> Tuple[T, int]:
         """
         Make matrix of impulse responses for time-varying LP filter using a windowed
         sinc function.
@@ -256,12 +256,15 @@ class LowPassSinc(SincFilterBase):
             cutoff: time-varying cutoff values in Hz
 
         Returns:
-            A matrix of impulse responses of shape `(num_frames x filter_len)`
+            A matrix of impulse responses of shape
+            `(batch_size, num_frames, filter_len)` and the delay added by convolution
+            with this impulse response, which is half the length of the frame.
         """
         cutoff = cutoff.unsqueeze(2)
         cutoff = cutoff * 2
         ir = (cutoff / self.sample_rate) * torch.sinc(cutoff * self.window_time)
-        return ir * self.window
+
+        return ir * self.window, self.fft_size // 2
 
 
 # TODO:
