@@ -67,10 +67,10 @@ from torchsynth.module import (
     ADSR,
     VCA,
     ControlRateUpsample,
+    FmVCO,
     MonophonicKeyboard,
     Noise,
     SineVCO,
-    FmVCO,
 )
 from torchsynth.parameter import ModuleParameterRange
 
