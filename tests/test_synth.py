@@ -2,8 +2,9 @@
 Tests for torch synths
 """
 
-import os
 import json
+import os
+
 import pytest
 import torch.nn
 from torch import tensor

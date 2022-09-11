@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import tensor
 from torch import Tensor as T
+from torch import tensor
 
 import torchsynth.util as util
 from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig

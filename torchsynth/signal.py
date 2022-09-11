@@ -20,3 +20,15 @@ class Signal(torch.Tensor):
     def num_samples(self):
         assert self.ndim == 2
         return self.shape[1]
+
+    def new_empty(self, *args, **kwargs):
+        # noqa: E501
+        """
+            Implement
+        [torch.Tensor.new_empty](https://pytorch.org/docs/stable/generated/torch.Tensor.new_empty.html)
+        so that
+        [`deepcopy`](https://docs.python.org/3/library/copy.html#copy.deepcopy)
+        can be run on Signal objects.
+        """
+
+        return super().new_empty(*args, **kwargs).as_subclass(self.__class__)
