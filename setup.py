@@ -54,7 +54,7 @@ setup(
         ],
         "dev": [
             "pre-commit",
-            "nbstripout==0.6.0",  # Used in precommit hooks
+            "nbstripout==0.6.1",  # Used in precommit hooks
             "black==22.6.0",  # Used in precommit hooks
             "jupytext==v1.10.3",  # Used in precommit hooks
             "pytest",
