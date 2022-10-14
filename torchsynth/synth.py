@@ -148,27 +148,18 @@ class AbstractSynth(LightningModule):
 
         return OrderedDict(parameters)
 
-    def get_raw_parameter_values(self, include_frozen=True):
+    def get_raw_parameter_values(self):
         """
         Returns a 2D `torch.Tensor` containing raw parameter values in [0,1] range.
         Dimensions of the returned tensor are (batch_size, num_parameters).
-
-        Args:
-            include_frozen: If a parameter is frozen, return it anyway. Defaults
-                to True.
         """
-        parameters = self.get_parameters(include_frozen=include_frozen).values()
-        return torch.stack([p.data for p in parameters], dim=1)
+        return torch.stack([p.data for p in self.parameters()], dim=1)
 
-    def get_parameter_names(self, include_frozen=True):
+    def get_parameter_names(self):
         """
         Get a list of all the parameter names.
-
-        Args:
-            include_frozen: Whether or not to include frozen parameters in this list.
-                Defaults to True.
         """
-        return list(self.get_parameters(include_frozen=include_frozen).keys())
+        return [p[0] for p in self.named_parameters()]
 
     def set_parameters(
         self, params: Dict[Tuple[str, str], T], freeze: Optional[bool] = False
@@ -187,7 +178,7 @@ class AbstractSynth(LightningModule):
             if freeze:
                 module.get_parameter(param_name).frozen = True
 
-    def set_raw_parameter_values(self, x, include_frozen=True):
+    def set_raw_parameter_values(self, x):
         """
         Directly set the values for all synth parameters. Expects a 2D `torch.Tensor`
         with a shape of (batch_size, num_parameters) containing raw parameter
@@ -196,12 +187,8 @@ class AbstractSynth(LightningModule):
         Args:
             x: `torch.Tensor` containing new parameter values. Expected shape is
                 (batch_size, num_parameters).
-            include_frozen: Whether or not to include frozen parameters when setting
-                new parameters. If this is False, num_parameters is equal to the
-                number of unfrozen parameters.
         """
-        parameters = self.get_parameters(include_frozen=include_frozen).values()
-        for param, new_value in zip(parameters, x.T):
+        for param, new_value in zip(self.parameters(), x.T):
             if param.shape != new_value.shape:
                 raise AssertionError(
                     f"Batch size mismatch. Expected {param.shape} "
