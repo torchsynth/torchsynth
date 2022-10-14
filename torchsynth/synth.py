@@ -160,6 +160,16 @@ class AbstractSynth(LightningModule):
         parameters = self.get_parameters(include_frozen=include_frozen).values()
         return torch.stack([p.data for p in parameters], dim=1)
 
+    def get_parameter_names(self, include_frozen=True):
+        """
+        Get a list of all the parameter names.
+
+        Args:
+            include_frozen: Whether or not to include frozen parameters in this list.
+                Defaults to True.
+        """
+        return list(self.get_parameters(include_frozen=include_frozen).keys())
+
     def set_parameters(
         self, params: Dict[Tuple[str, str], T], freeze: Optional[bool] = False
     ):
