@@ -148,6 +148,18 @@ class AbstractSynth(LightningModule):
 
         return OrderedDict(parameters)
 
+    def get_raw_parameter_values(self, include_frozen=True):
+        """
+        Returns a 2D `torch.Tensor` containing raw parameter values in [0,1] range.
+        Dimensions of the returned tensor are (batch_size, num_parameters).
+
+        Args:
+            include_frozen: If a parameter is frozen, return it anyway. Defaults
+                to True.
+        """
+        parameters = self.get_parameters(include_frozen=include_frozen).values()
+        return torch.stack([p.data for p in parameters], dim=1)
+
     def set_parameters(
         self, params: Dict[Tuple[str, str], T], freeze: Optional[bool] = False
     ):
@@ -164,6 +176,29 @@ class AbstractSynth(LightningModule):
             # Freeze this parameter at this value now if freeze is True
             if freeze:
                 module.get_parameter(param_name).frozen = True
+
+    def set_raw_parameter_values(self, x, include_frozen=True):
+        """
+        Directly set the values for all synth parameters. Expects a 2D `torch.Tensor`
+        with a shape of (batch_size, num_parameters) containing raw parameter
+        values in the range [0,1].
+
+        Args:
+            x: `torch.Tensor` containing new parameter values. Expected shape is
+                (batch_size, num_parameters).
+            include_frozen: Whether or not to include frozen parameters when setting
+                new parameters. If this is False, num_parameters is equal to the
+                number of unfrozen parameters.
+        """
+        parameters = self.get_parameters(include_frozen=include_frozen).values()
+        for param, new_value in zip(parameters, x.T):
+            if param.shape != new_value.shape:
+                raise AssertionError(
+                    f"Batch size mismatch. Expected {param.shape} "
+                    f"== {new_value.shape}"
+                )
+
+            param.data = new_value.detach()
 
     def freeze_parameters(self, params: List[Tuple[str, str]]):
         """
