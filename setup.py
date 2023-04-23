@@ -36,12 +36,15 @@ setup(
     package_data={"torchsynth": ["nebulae/voice/*.json"]},
     # package_dir={"": "src"},
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
-    python_requires=">=3.7",
+    # python_requires=">=3.6",
+    python_requires=">=3.4",
     install_requires=[
         "numpy",
         "scipy",
-        "torch>=1.8",
-        "pytorch-lightning>=1.4",
+        "torch",
+        "pytorch-lightning",
+        #        "torch>=1.8",
+        #        "pytorch-lightning>=1.4",
         # pypi release (only master) doesn't support OrderedDict typing
         # "typing-extensions",
     ],
