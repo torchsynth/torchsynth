@@ -4,6 +4,7 @@ Tests for torch synths
 
 import json
 import os
+import re
 
 import pytest
 import torch.nn
@@ -211,11 +212,18 @@ class TestAbstractSynth:
         assert torch.all(synth.keyboard.p("duration").isclose(dur_val))
 
         # Test randomization with synth with non-ModuleParameters raises error
-        synth.register_parameter("param", torch.nn.Parameter(tensor(0.0)))
-        with pytest.raises(ValueError, match="Param 0.0 is not a ModuleParameter"):
+        new_param = torch.nn.Parameter(tensor(0.0))
+        synth.register_parameter("param", new_param)
+        with pytest.raises(
+            ValueError,
+            match=re.escape(f"Param {repr(new_param)} is not a ModuleParameter"),
+        ):
             synth.randomize()
 
-        with pytest.raises(ValueError, match="Param 0.0 is not a ModuleParameter"):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(f"Param {repr(new_param)} is not a ModuleParameter"),
+        ):
             synth.randomize(1)
 
     def test_freeze_parameters(self):

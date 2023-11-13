@@ -18,12 +18,10 @@ Args:
 import argparse
 import cProfile
 import io
-import multiprocessing
 import pstats
 import sys
-from typing import Any
-
-import pytorch_lightning as pl
+from typing import Any, Optional
+import lightning as pl
 import torch
 
 import torchsynth.synth  # noqa: E402
@@ -32,10 +30,8 @@ from torchsynth.synth import AbstractSynth
 
 # TODO: Disable DEBUG
 
-
 # Check for available GPUs and processing cores
 GPUS = torch.cuda.device_count()
-NCORES = multiprocessing.cpu_count()
 
 
 class BatchIDXDataset(torch.utils.data.Dataset):
@@ -57,7 +53,7 @@ class TorchSynthCallback(pl.Callback):
         outputs: Any,
         batch: Any,
         batch_idx: int,
-        dataloader_idx: int,
+        dataloader_idx: Optional[int] = 0,
     ) -> None:
         _ = pl_module(batch_idx)
 
@@ -80,30 +76,32 @@ def run_lightning_module(
 ):
     mock_dataset = BatchIDXDataset(batch_size * n_batches)
     dataloader = torch.utils.data.DataLoader(
-        mock_dataset, num_workers=NCORES, batch_size=batch_size
+        mock_dataset, num_workers=1, batch_size=batch_size, persistent_workers=True
     )
 
     if GPUS == 0 and device == "cuda":
         raise SystemExit("cuda specified but no gpus are avaiable")
 
-    accelerator = None
+    # Default to cpu
+    accelerator = "cpu"
     if GPUS == 0 or device == "cpu":
-        use_gpus = None
+        devices = "auto"
     else:  # pragma: no cover
-        # specifies all available GPUs (if only one GPU is not occupied,
-        # auto_select_gpus=True uses one gpu)
-        use_gpus = -1
+        # specifies all available GPUs
+        accelerator = "gpu"
+        devices = -1
         if GPUS > 1:
-            accelerator = "ddp"
+            accelerator = "ddp"  # TODO: not sure if Lightning still accepts this
 
+    print(f"Running on {accelerator} with {GPUS} GPUs")
     # Use deterministic?
     trainer = pl.Trainer(
-        gpus=use_gpus,
-        auto_select_gpus=True,
+        devices=devices,
         accelerator=accelerator,
         deterministic=True,
         max_epochs=0,
         callbacks=[TorchSynthCallback()],
+        logger=False,
     )
 
     if profile:
