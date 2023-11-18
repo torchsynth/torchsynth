@@ -36,7 +36,7 @@ setup(
     package_data={"torchsynth": ["nebulae/voice/*.json"]},
     # package_dir={"": "src"},
     entry_points={"console_scripts": ["torchsynth.profile=torchsynth.profile:main"]},
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "numpy",
         "scipy",
@@ -66,17 +66,18 @@ setup(
             "numba>=0.49.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pygments>=2.7.4",  # not directly required, pinned by Snyk to avoid a vulnerability
             "pytest-env",
-            "sphinx>=3.0.4",  # not directly required, pinned by Snyk to avoid a vulnerability
+        ],
+        "docs": [
+            "sphinx~=4.2.0",  # not directly required, pinned by Snyk to avoid a vulnerability
             "unofficial-pt-lightning-sphinx-theme",
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
-            "MarkupSafe<2.1.0",  # https://github.com/aws/aws-sam-cli/issues/3661
             "sphinxcontrib-napoleon",
             "sphinx-autodoc-typehints",
-            "mock",
             "sphinx_rtd_theme",
             "myst_parser",
             "linkify-it-py",
+            "mock",
         ],
     },
     classifiers=[
