@@ -6,17 +6,19 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: ammaraskar/sphinx-action@0.4
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v3
       with:
-        docs-folder: "docs/"
-#        pre-build-command: "apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
-#        build-command: "make latexpdf"
-    - uses: actions/upload-artifact@v1
-      with:
-        name: DocumentationHTML
-        path: docs/build/html/
-#    - uses: actions/upload-artifact@v1
-#      with:
-#        name: DocumentationPDF
-#        path: docs/build/pdf/
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -e ".[docs]"
+    
+    - name: Make Docs
+      shell: bash -l {0}
+      run: |
+        cd docs && make html
