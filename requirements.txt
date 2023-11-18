@@ -10,7 +10,7 @@ jupytext==v1.10.3   # Used in precommit hooks
 numpy
 scipy
 torch>=1.8
-pytorch-lightning
+lightning
 # Doesn't support OrderedDict yet
 #typing-extensions
 pytest
