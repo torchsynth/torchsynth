@@ -3,7 +3,7 @@
 :class:`~torchsynth.synth.Voice` is our default synthesizer, and is used to
 generate `synth1B1 <../reproducibility/synth1B1.html>`_.
 
-We base off pytorch-lightning :class:`~pytorch_lightning.core.lightning.LightningModule`
+We base off pytorch-lightning :class:`~lightning.LightningModule`
 because it makes `multi-GPU
 <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu.html>`_
 inference easy. Nonetheless, you can treat each synth as a native
@@ -26,7 +26,7 @@ else:
     from typing import Dict as OrderedDictType
 
 import torch
-from pytorch_lightning.core.lightning import LightningModule
+from lightning import LightningModule
 from torch import Tensor as T
 
 from torchsynth.config import N_BATCHSIZE_FOR_TRAIN_TEST_REPRODUCIBILITY, SynthConfig
@@ -270,8 +270,7 @@ class AbstractSynth(LightningModule):
     def test_step(self, batch, batch_idx):
         """
         This is boilerplate required by pytorch-lightning
-        :class:`~pytorch_lightning.LightningTrainer`
-        when calling test.
+        :class:`~lightning.Trainer` when calling test.
         """
         return 0.0
 
