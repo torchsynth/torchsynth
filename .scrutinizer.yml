@@ -1,4 +1,3 @@
 build:
-    environment:
-        python:
-            version: "3.10.13"
+  environment:
+    python: 3.8.0
