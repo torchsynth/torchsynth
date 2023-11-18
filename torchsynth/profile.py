@@ -76,7 +76,7 @@ def run_lightning_module(
 ):
     mock_dataset = BatchIDXDataset(batch_size * n_batches)
     dataloader = torch.utils.data.DataLoader(
-        mock_dataset, num_workers=1, batch_size=batch_size, persistent_workers=True
+        mock_dataset, num_workers=0, batch_size=batch_size
     )
 
     if GPUS == 0 and device == "cuda":
@@ -90,8 +90,6 @@ def run_lightning_module(
         # specifies all available GPUs
         accelerator = "gpu"
         devices = -1
-        if GPUS > 1:
-            accelerator = "ddp"  # TODO: not sure if Lightning still accepts this
 
     print(f"Running on {accelerator} with {GPUS} GPUs")
     # Use deterministic?
