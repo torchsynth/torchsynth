@@ -9,7 +9,7 @@ black==22.6.0       # Used in precommit hooks
 jupytext==v1.10.3   # Used in precommit hooks
 numpy
 scipy
-torch>=1.8
+torch>=2.2.0
 lightning
 # Doesn't support OrderedDict yet
 #typing-extensions
