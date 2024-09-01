@@ -1258,6 +1258,30 @@ class HardModeSelector(SynthModule):
         return F.one_hot(idx, num_classes=origparams.shape[0]).T
 
 
+class SimpleWaveshape(SynthModule):
+    """
+    Simple Tanh waveshaping module
+    """
+
+    default_parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            -24.0,
+            24.0,
+            name="drive",
+            description="drive in decibels",
+            curve=1.0,
+        ),
+    ]
+
+    def __init__(self, synthconfig: SynthConfig, **kwargs: Dict[str, T]):
+        super().__init__(synthconfig=synthconfig, **kwargs)
+
+    def output(self, x: Signal):
+        drive = self.p("drive")
+        drive = torch.pow(10.0, drive / 20.0)
+        return torch.tanh(x * drive[..., None])
+
+
 # Time-varying resonant Lowpass filter
 # From: https://github.com/DiffAPF/TB-303
 def calc_lp_biquad_coeff(w: T, q: T, eps: float = 1e-3) -> Tuple[T, T]:
