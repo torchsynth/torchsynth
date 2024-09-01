@@ -854,6 +854,7 @@ class LFO(ControlRateModule):
             soft-max selector for LFO shapes. Higher values will tend to favour
             one LFO shape over all others. Lower values will result in a more
             even blend of LFO shapes.
+        bipolar: Whether the LFO values should return [-1.0, 1.0]
     """
 
     default_ranges: List[ModuleParameterRange] = [
@@ -884,6 +885,7 @@ class LFO(ControlRateModule):
         self,
         synthconfig: SynthConfig,
         exponent: T = tensor(2.718281828),  # e
+        bipolar: bool = False,
         **kwargs: Dict[str, T],
     ):
         self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
@@ -899,6 +901,7 @@ class LFO(ControlRateModule):
             )
         super().__init__(synthconfig, **kwargs)
         self.exponent = exponent
+        self.bipolar = bipolar
 
     def output(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
@@ -925,7 +928,10 @@ class LFO(ControlRateModule):
         mode = torch.pow(mode, self.exponent)
         mode = mode / torch.sum(mode, dim=1, keepdim=True)
 
-        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
+        lfo = torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
+        if self.bipolar:
+            lfo = lfo * 2.0 - 1.0
+        return lfo
 
     def make_control(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
@@ -1252,6 +1258,8 @@ class HardModeSelector(SynthModule):
         return F.one_hot(idx, num_classes=origparams.shape[0]).T
 
 
+# Time-varying resonant Lowpass filter
+# From: https://github.com/DiffAPF/TB-303
 def calc_lp_biquad_coeff(w: T, q: T, eps: float = 1e-3) -> Tuple[T, T]:
     assert w.ndim == 2
     assert q.ndim == 2
@@ -1322,6 +1330,13 @@ class LowpassFilter(SynthModule):
             name="q",
             description="filter resonance",
         ),
+        ModuleParameterRange(
+            0.0,
+            20000.0,
+            curve=0.2,
+            name="mod_depth",
+            description="depth of the cutoff frequency modulation in frequency",
+        ),
     ]
 
     def __init__(
@@ -1329,7 +1344,7 @@ class LowpassFilter(SynthModule):
     ):
         super().__init__(synthconfig=synthconfig, device=device, **kwargs)
 
-    def output(self, x: T) -> Signal:
+    def output(self, x: Signal, mod_signal: Optional[Signal] = None) -> Signal:
         """
         Apply a time-varying resonant low-pass filter to signal
 
@@ -1343,60 +1358,51 @@ class LowpassFilter(SynthModule):
         frequency = self.p("cutoff")
         resonance = self.p("q")
 
-        # Convert to angular frequency and clamp parameter ranges
+        if mod_signal is not None and mod_signal.shape != (
+            self.batch_size,
+            self.buffer_size,
+        ):
+            raise ValueError(
+                "mod_signal has incorrect shape. Expected "
+                f"{torch.Size([self.batch_size, self.buffer_size])}, "
+                f"and received {mod_signal.shape}. Make sure the mod_signal "
+                "being passed in is at full audio sampling rate."
+            )
+
+        # Convert to angular frequency
+        # Turn freqeuncy into a sample rate envelope
         omega = self.frequency_to_angular(frequency)
+        if mod_signal is None:
+            w = torch.ones_like(x) * omega[..., None]
+        else:
+            w = self.apply_cutoff_modulation(omega, mod_signal)
 
         # Convert to signals of filter coefficients
-        w = torch.ones_like(x) * omega[..., None]
         q = torch.ones_like(x) * resonance[..., None]
         a_coeff, b_coeff = calc_lp_biquad_coeff(w, q)
 
         y_a = sample_wise_lpc(x, a_coeff)
         assert not torch.isinf(y_a).any()
         assert not torch.isnan(y_a).any()
-
         y_ab = time_varying_fir(y_a, b_coeff)
-
         return y_ab.as_subclass(Signal)
 
-    def frequency_to_angular(self, frequency) -> T:
+    def frequency_to_angular(
+        self, frequency, expected_min=0.0, expected_max=torch.pi
+    ) -> T:
         """
         Convert from frequency in Hertz to angular frequency (rads/sample)
         """
         omega = 2.0 * torch.pi * (frequency / self.synthconfig.sample_rate)
-        assert omega.min() >= 0.0
-        assert omega.max() <= torch.pi, "Cutoff frequency above nyquist"
+        assert omega.min() >= expected_min
+        assert omega.max() <= expected_max
         return omega
 
-    # def output(self, midi_f0: T, mod_signal: Optional[Signal] = None) -> Signal:
-    #     """
-    #     Generates audio signal from modulation signal.
-
-    #     Args:
-    #         midi_f0: Fundamental of note in midi note value (0-127).
-    #         mod_signal: Modulation signal to apply to the pitch.
-    #     """
-    #     assert midi_f0.shape == (self.batch_size,)
-
-    #     if mod_signal is not None and mod_signal.shape != (
-    #         self.batch_size,
-    #         self.buffer_size,
-    #     ):
-    #         raise ValueError(
-    #             "mod_signal has incorrect shape. Expected "
-    #             f"{torch.Size([self.batch_size, self.buffer_size])}, "
-    #             f"and received {mod_signal.shape}. Make sure the mod_signal "
-    #             "being passed in is at full audio sampling rate."
-    #         )
-
-    #     control_as_frequency = self.make_control_as_frequency(midi_f0, mod_signal)
-
-    #     if self.synthconfig.debug:
-    #         assert (control_as_frequency >= 0).all() and (
-    #             control_as_frequency <= self.nyquist
-    #         ).all()
-
-    #     cosine_argument = self.make_argument(control_as_frequency)
-    #     cosine_argument += self.p("initial_phase").unsqueeze(1)
-    #     output = self.oscillator(cosine_argument, midi_f0)
-    #     return output.as_subclass(Signal)
+    def apply_cutoff_modulation(self, omega: T, mod: Optional[Signal] = None):
+        depth = self.p("mod_depth")
+        mod_omega = self.frequency_to_angular(
+            mod * depth[..., None], expected_min=-torch.pi
+        )
+        omega = omega[..., None] + mod_omega
+        omega = torch.clamp(omega, 0.0, torch.pi)
+        return omega
