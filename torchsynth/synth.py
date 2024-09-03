@@ -37,9 +37,11 @@ from torchsynth.module import (
     AudioMixer,
     ControlRateUpsample,
     ControlRateVCA,
+    LowpassFilter,
     ModulationMixer,
     MonophonicKeyboard,
     Noise,
+    SimpleWaveshape,
     SineVCO,
     SquareSawVCO,
     SynthModule,
@@ -508,3 +510,109 @@ class Voice(AbstractSynth):
         noise_out = self.vca(self.noise(), self.control_upsample(noise_amp))
 
         return self.mixer(vco_1_out, vco_2_out, noise_out)
+
+
+class SubtractiveVoice(AbstractSynth):
+    def __init__(
+        self,
+        synthconfig: Optional[SynthConfig] = None,
+        nebula: Optional[str] = "default",
+        *args,
+        **kwargs,
+    ):
+        AbstractSynth.__init__(self, synthconfig=synthconfig, *args, **kwargs)
+
+        self.add_synth_modules(
+            [
+                ("keyboard", MonophonicKeyboard),
+                ("adsr_1", ADSR),
+                ("adsr_2", ADSR),
+                ("lfo_1", LFO, {"bipolar": True}),
+                ("lfo_2", LFO, {"bipolar": True}),
+                ("control_vca", ControlRateVCA),
+                ("control_upsample", ControlRateUpsample),
+                (
+                    "vco_mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 4,
+                        "n_output": 1,
+                        "input_names": ["adsr_1", "adsr_2", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "vco_mod",
+                        ],
+                    },
+                ),
+                (
+                    "filter_mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 3,
+                        "n_output": 1,
+                        "input_names": ["adsr_1", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "filter_mod",
+                        ],
+                    },
+                ),
+                (
+                    "amp_mod_matrix",
+                    ModulationMixer,
+                    {
+                        "n_input": 3,
+                        "n_output": 1,
+                        "input_names": ["adsr_2", "lfo_1", "lfo_2"],
+                        "output_names": [
+                            "amp_mod",
+                        ],
+                    },
+                ),
+                ("vco_1", SquareSawVCO),
+                ("vco_2", SquareSawVCO),
+                ("noise", Noise, {"seed": 13}),
+                (
+                    "mixer",
+                    AudioMixer,
+                    {
+                        "n_input": 3,
+                        "curves": [1.0, 1.0, 0.025],
+                        "names": ["vco_1", "vco_2", "noise"],
+                    },
+                ),
+                ("filter", LowpassFilter),
+                ("drive", SimpleWaveshape),
+                ("vca", VCA),
+            ]
+        )
+
+        # Load the nebula
+        self.load_hyperparameters(nebula)
+
+    def output(self) -> T:
+
+        # The convention for triggering a note event is that it has
+        # the same note_on_duration for both ADSRs.
+        midi_f0, note_on_duration = self.keyboard()
+
+        # Compute LFOs
+        lfo_1 = self.lfo_1()
+        lfo_2 = self.lfo_2()
+
+        # ADSRs for Oscillators and noise
+        adsr_1 = self.adsr_1(note_on_duration)
+        adsr_2 = self.adsr_2(note_on_duration)
+
+        (vco_pitch_mod,) = self.vco_mod_matrix(adsr_1, adsr_2, lfo_1, lfo_2)
+        (filter_mod,) = self.filter_mod_matrix(adsr_1, lfo_1, lfo_2)
+        (vca_mod,) = self.amp_mod_matrix(adsr_2, lfo_1, lfo_2)
+
+        vco_1_out = self.vco_1(midi_f0, self.control_upsample(vco_pitch_mod))
+        vco_2_out = self.vco_2(midi_f0, self.control_upsample(vco_pitch_mod))
+        noise_out = self.noise()
+
+        y = self.mixer(vco_1_out, vco_2_out, noise_out)
+        y = self.filter(y, self.control_upsample(filter_mod))
+        y = self.drive(y)
+        y = self.vca(y, self.control_upsample(vca_mod))
+
+        return y
