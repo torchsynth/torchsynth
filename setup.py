@@ -69,7 +69,7 @@ setup(
             "pytest-env",
         ],
         "docs": [
-            "sphinx~=4.2.0",  # not directly required, pinned by Snyk to avoid a vulnerability
+            "sphinx>=4.2,<8.1",  # not directly required, pinned by Snyk to avoid a vulnerability
             "unofficial-pt-lightning-sphinx-theme",
             # Temporarily disabled so we can push to pypi
             # "pt-lightning-sphinx-theme @ https://github.com/PyTorchLightning/lightning_sphinx_theme/tarball/master#egg=pt-lightning-sphinx-theme",
