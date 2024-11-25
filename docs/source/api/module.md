@@ -71,6 +71,36 @@ VCO
     :show-inheritance:
     :private-members: _forward
 
+Audio Filters
+-------------
+Audio filters are a category of :class:`~torchsynth.module.SynthModule`'s that opperate
+at audio rate and perform frequency/phase modifications to the input signals. Due to
+speed considerations and challenges with efficiently implementing recursive (IIR)
+filters GPUs we have choosen to only inlude finite-impulse response (FIR)
+filters at this time. In order to facilitate modulation of filter parameters,
+overlap-add fast convolution is used to filter audio using a matrix of time-varying
+impulse responses.
+
+TimeVaryingFIRBase
+==================
+.. autoclass:: torchsynth.filter.TimeVaryingFIRBase
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+SincFilterBase
+==============
+.. autoclass:: torchsynth.filter.SincFilterBase
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+LowPassSinc
+===========
+.. autoclass:: torchsynth.filter.LowPassSinc
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Control Rate Modules
 --------------------

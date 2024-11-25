@@ -2,6 +2,8 @@
 Utility functions for torch DSP related things
 """
 
+import math
+
 import torch
 from torch import Tensor as T
 
@@ -52,6 +54,10 @@ def normalize(signal: Signal) -> Signal:
     """
     max_sample = torch.max(torch.abs(signal), dim=1, keepdim=True)[0]
     return signal / max_sample
+
+
+def next_power_of_two(value: int) -> int:
+    return int(math.pow(2, math.ceil(math.log2(value))))
 
 
 # Here are some old functions that we are not currently using but
