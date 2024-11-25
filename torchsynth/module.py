@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor as T
 from torch import tensor
+from torchlpc import sample_wise_lpc
 
 import torchsynth.util as util
 from torchsynth.config import BASE_REPRODUCIBLE_BATCH_SIZE, SynthConfig
@@ -853,6 +854,7 @@ class LFO(ControlRateModule):
             soft-max selector for LFO shapes. Higher values will tend to favour
             one LFO shape over all others. Lower values will result in a more
             even blend of LFO shapes.
+        bipolar: Whether the LFO values should return [-1.0, 1.0]
     """
 
     default_ranges: List[ModuleParameterRange] = [
@@ -883,6 +885,7 @@ class LFO(ControlRateModule):
         self,
         synthconfig: SynthConfig,
         exponent: T = tensor(2.718281828),  # e
+        bipolar: bool = False,
         **kwargs: Dict[str, T],
     ):
         self.lfo_types = ["sin", "tri", "saw", "rsaw", "sqr"]
@@ -898,6 +901,7 @@ class LFO(ControlRateModule):
             )
         super().__init__(synthconfig, **kwargs)
         self.exponent = exponent
+        self.bipolar = bipolar
 
     def output(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
@@ -924,7 +928,10 @@ class LFO(ControlRateModule):
         mode = torch.pow(mode, self.exponent)
         mode = mode / torch.sum(mode, dim=1, keepdim=True)
 
-        return torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
+        lfo = torch.matmul(mode.unsqueeze(1), shapes).squeeze(1).as_subclass(Signal)
+        if self.bipolar:
+            lfo = lfo * 2.0 - 1.0
+        return lfo
 
     def make_control(self, mod_signal: Optional[Signal] = None) -> Signal:
         """
@@ -1249,3 +1256,177 @@ class HardModeSelector(SynthModule):
         origparams = torch.stack([p.data for p in self.torchparameters.values()])
         idx = torch.argmax(origparams, dim=0)
         return F.one_hot(idx, num_classes=origparams.shape[0]).T
+
+
+class SimpleWaveshape(SynthModule):
+    """
+    Simple Tanh waveshaping module
+    """
+
+    default_parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            -24.0,
+            24.0,
+            name="drive",
+            description="drive in decibels",
+            curve=1.0,
+        ),
+    ]
+
+    def __init__(self, synthconfig: SynthConfig, **kwargs: Dict[str, T]):
+        super().__init__(synthconfig=synthconfig, **kwargs)
+
+    def output(self, x: Signal):
+        drive = self.p("drive")
+        drive = torch.pow(10.0, drive / 20.0)
+        return torch.tanh(x * drive[..., None])
+
+
+# Time-varying resonant Lowpass filter
+# From: https://github.com/DiffAPF/TB-303
+def calc_lp_biquad_coeff(w: T, q: T, eps: float = 1e-3) -> Tuple[T, T]:
+    assert w.ndim == 2
+    assert q.ndim == 2
+    assert 0.0 <= w.min()
+    assert torch.pi >= w.max()
+    assert 0.0 < q.min()
+
+    stability_factor = 1.0 - eps
+    alpha_q = torch.sin(w) / (2 * q)
+    a0 = 1.0 + alpha_q
+    a1 = -2.0 * torch.cos(w) * stability_factor
+    a1 = a1 / a0
+    a2 = (1.0 - alpha_q) * stability_factor
+    a2 = a2 / a0
+    assert (a1.abs() < 2.0).all()
+    assert (a2 < 1.0).all()
+    assert (a1 < a2 + 1.0).all()
+    assert (a1 > -(a2 + 1.0)).all()
+    a = torch.stack([a1, a2], dim=2)
+
+    b0 = (1.0 - torch.cos(w)) / 2.0
+    b0 = b0 / a0
+    b1 = 1.0 - torch.cos(w)
+    b1 = b1 / a0
+    b2 = (1.0 - torch.cos(w)) / 2.0
+    b2 = b2 / a0
+    b = torch.stack([b0, b1, b2], dim=2)
+
+    return a, b
+
+
+def time_varying_fir(x: T, b: T, zi: Optional[T] = None) -> T:
+    assert x.ndim == 2
+    assert b.ndim == 3
+    assert x.size(0) == b.size(0)
+    assert x.size(1) == b.size(1)
+    order = b.size(2) - 1
+    x_padded = F.pad(x, (order, 0))
+    if zi is not None:
+        assert zi.shape == (x.size(0), order)
+        x_padded[:, :order] = zi
+    x_unfolded = x_padded.unfold(dimension=1, size=order + 1, step=1)
+    x_unfolded = x_unfolded.unsqueeze(3)
+    b = torch.flip(b, dims=[2])  # Go from correlation to convolution
+    b = b.unsqueeze(2)
+    y = b @ x_unfolded
+    y = y.squeeze(3)
+    y = y.squeeze(2)
+    return y
+
+
+class LowpassFilter(SynthModule):
+    """
+    Time-varying IIR lowpass filter
+    """
+
+    default_parameter_ranges: List[ModuleParameterRange] = [
+        ModuleParameterRange(
+            10.0,
+            20000.0,
+            name="cutoff",
+            description="cutoff frequency in frequency Hz",
+            curve=0.25,
+        ),
+        ModuleParameterRange(
+            0.5,
+            4.0,
+            name="q",
+            description="filter resonance",
+        ),
+        ModuleParameterRange(
+            0.0,
+            20000.0,
+            curve=0.2,
+            name="mod_depth",
+            description="depth of the cutoff frequency modulation in frequency",
+        ),
+    ]
+
+    def __init__(
+        self, synthconfig: SynthConfig, device: Optional[torch.device] = None, **kwargs
+    ):
+        super().__init__(synthconfig=synthconfig, device=device, **kwargs)
+
+    def output(self, x: Signal, mod_signal: Optional[Signal] = None) -> Signal:
+        """
+        Apply a time-varying resonant low-pass filter to signal
+
+        Args:
+            x: Input audio signal to filter.
+            cutoff: filter frequency in Hz (will be limited to Nyquist).
+            q: filter resonance
+        """
+
+        # Get the base frequency and resonance for the filters
+        frequency = self.p("cutoff")
+        resonance = self.p("q")
+
+        if mod_signal is not None and mod_signal.shape != (
+            self.batch_size,
+            self.buffer_size,
+        ):
+            raise ValueError(
+                "mod_signal has incorrect shape. Expected "
+                f"{torch.Size([self.batch_size, self.buffer_size])}, "
+                f"and received {mod_signal.shape}. Make sure the mod_signal "
+                "being passed in is at full audio sampling rate."
+            )
+
+        # Convert to angular frequency
+        # Turn freqeuncy into a sample rate envelope
+        omega = self.frequency_to_angular(frequency)
+        if mod_signal is None:
+            w = torch.ones_like(x) * omega[..., None]
+        else:
+            w = self.apply_cutoff_modulation(omega, mod_signal)
+
+        # Convert to signals of filter coefficients
+        q = torch.ones_like(x) * resonance[..., None]
+        a_coeff, b_coeff = calc_lp_biquad_coeff(w, q)
+
+        y_a = sample_wise_lpc(x, a_coeff)
+        assert not torch.isinf(y_a).any()
+        assert not torch.isnan(y_a).any()
+        y_ab = time_varying_fir(y_a, b_coeff)
+        return y_ab.as_subclass(Signal)
+
+    def frequency_to_angular(
+        self, frequency, expected_min=0.0, expected_max=torch.pi
+    ) -> T:
+        """
+        Convert from frequency in Hertz to angular frequency (rads/sample)
+        """
+        omega = 2.0 * torch.pi * (frequency / self.synthconfig.sample_rate)
+        assert omega.min() >= expected_min
+        assert omega.max() <= expected_max
+        return omega
+
+    def apply_cutoff_modulation(self, omega: T, mod: Optional[Signal] = None):
+        depth = self.p("mod_depth")
+        mod_omega = self.frequency_to_angular(
+            mod * depth[..., None], expected_min=-torch.pi
+        )
+        omega = omega[..., None] + mod_omega
+        omega = torch.clamp(omega, 0.0, torch.pi)
+        return omega

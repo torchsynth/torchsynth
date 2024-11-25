@@ -41,6 +41,7 @@ setup(
         "numpy",
         "scipy",
         "torch>=1.8",
+        "torchlpc",  # for time-varying IIR
         "lightning",
         "setuptools>=65.5.1",  # not directly required, pinned by Snyk to avoid a vulnerability
         # pypi release (only master) doesn't support OrderedDict typing
