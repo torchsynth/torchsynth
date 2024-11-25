@@ -148,6 +148,19 @@ class AbstractSynth(LightningModule):
 
         return OrderedDict(parameters)
 
+    def get_raw_parameter_values(self):
+        """
+        Returns a 2D `torch.Tensor` containing raw parameter values in [0,1] range.
+        Dimensions of the returned tensor are (batch_size, num_parameters).
+        """
+        return torch.stack([p.data for p in self.parameters()], dim=1)
+
+    def get_parameter_names(self):
+        """
+        Get a list of all the parameter names.
+        """
+        return [p[0] for p in self.named_parameters()]
+
     def set_parameters(
         self, params: Dict[Tuple[str, str], T], freeze: Optional[bool] = False
     ):
@@ -164,6 +177,25 @@ class AbstractSynth(LightningModule):
             # Freeze this parameter at this value now if freeze is True
             if freeze:
                 module.get_parameter(param_name).frozen = True
+
+    def set_raw_parameter_values(self, x):
+        """
+        Directly set the values for all synth parameters. Expects a 2D `torch.Tensor`
+        with a shape of (batch_size, num_parameters) containing raw parameter
+        values in the range [0,1].
+
+        Args:
+            x: `torch.Tensor` containing new parameter values. Expected shape is
+                (batch_size, num_parameters).
+        """
+        for param, new_value in zip(self.parameters(), x.T):
+            if param.shape != new_value.shape:
+                raise AssertionError(
+                    f"Batch size mismatch. Expected {param.shape} "
+                    f"== {new_value.shape}"
+                )
+
+            param.data = new_value.detach()
 
     def freeze_parameters(self, params: List[Tuple[str, str]]):
         """

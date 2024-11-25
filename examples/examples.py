@@ -67,10 +67,10 @@ from torchsynth.module import (
     ADSR,
     VCA,
     ControlRateUpsample,
-    FmVCO,
     MonophonicKeyboard,
     Noise,
     SineVCO,
+    FmVCO,
 )
 from torchsynth.parameter import ModuleParameterRange
 
@@ -625,7 +625,7 @@ for i in range(synthconfig16.batch_size):
 
 # All synth modules and synth classes have named parameters which can be quered
 # and updated. Let's look at the parameters for the Voice we just created.
-for n, p in voice1.named_parameters():
+for n in voice1.get_parameter_names():
     print(f"{n:40}")
 
 # Parameters are passed into SynthModules during creation with an initial value and a parameter range. The parameter range is a human readable range of values, for example MIDI note numbers from 1-127 for a VCO. These values are stored in a normalized range between 0 and 1. Parameters can be accessed and set using either ranges with specific methods.
@@ -654,6 +654,27 @@ print(voice1.vco_1.p("tuning"))
 # #### Parameter Ranges
 #
 # Conversion between [0,1] range and a human range is handled by `ModuleParameterRange`. The conversion from [0,1] can be shaped by specifying a curve. Curve values less than 1 put more emphasis on lower values in the human range and curve values greater than 1 put more emphasis on larger values in the human range. A curve of 1 is a linear relationship between the two ranges.
+# -
+
+# ### Getting and setting raw parameter values
+#
+# Parameters in synths can be retrieved and set using torch tensors. The shape of the tensor returned from `get_raw_parameter_values()` is `(batch_size, num_parameters)`.
+#
+# Parameters values can also be set directly all at once by passing in a tensor with the same shape `(batch_size, num_parameters)`
+
+# Get all parameters
+param_values = voice.get_raw_parameter_values()
+print(param_values.shape)
+print(param_values)
+
+# +
+# Set all parameters from a tensor
+random_params = torch.rand_like(param_values)
+voice.set_raw_parameter_values(random_params)
+
+new_param_values = voice.get_raw_parameter_values()
+print(new_param_values.shape)
+print(new_param_values)
 
 # +
 # ModuleParameterRange with scaling of a range from 0-127
